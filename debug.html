@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wedding Timeline - Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; color: #856404; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Wedding Timeline - Debug Page</h1>
+    
+    <div class="section info">
+        <h3>📋 Application Status</h3>
+        <p><strong>Frontend URL:</strong> <a href="https://moment-weaver-66582.web.app" target="_blank">https://moment-weaver-66582.web.app</a></p>
+        <p><strong>Register URL:</strong> <a href="https://moment-weaver-66582.web.app/register" target="_blank">https://moment-weaver-66582.web.app/register</a></p>
+        <p><strong>Backend API:</strong> Cloud Run (configured)</p>
+    </div>
+
+    <div class="section warning">
+        <h3>�� Troubleshooting Steps</h3>
+        <ol>
+            <li><strong>Test the register page directly:</strong> <a href="https://moment-weaver-66582.web.app/register" target="_blank">Click here</a></li>
+            <li><strong>Hard refresh:</strong> Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)</li>
+            <li><strong>Open Developer Tools:</strong> Press F12</li>
+            <li><strong>Check Console tab:</strong> Look for red error messages</li>
+            <li><strong>Check Elements tab:</strong> Search for "Account type" in HTML</li>
+            <li><strong>Check Network tab:</strong> Verify all files load (no 404 errors)</li>
+        </ol>
+    </div>
+
+    <div class="section success">
+        <h3>✅ What Should Be Visible</h3>
+        <p>On the register page, you should see:</p>
+        <ul>
+            <li>Wedding Timeline header with calendar icon</li>
+            <li>"Create account" title</li>
+            <li>Full name input field</li>
+            <li>Email input field</li>
+            <li>Password input field</li>
+            <li><strong>"Account type" section with two radio buttons</strong></li>
+            <li>Create account button</li>
+        </ul>
+    </div>
+
+    <div class="section error">
+        <h3>🚨 If "Account type" Section is Missing</h3>
+        <p>This indicates:</p>
+        <ul>
+            <li>JavaScript component not rendering</li>
+            <li>CSS hiding the element</li>
+            <li>Build/deployment issue</li>
+            <li>Browser compatibility problem</li>
+        </ul>
+        <p><strong>Next steps:</strong> Check browser console for errors</p>
+    </div>
+
+    <div class="section info">
+        <h3>🔄 Alternative Access</h3>
+        <p><strong>Test the interface directly:</strong> <a href="/test-roles.html">Local test page</a></p>
+        <p><strong>Working HTML version:</strong> <a href="test-roles.html">test-roles.html</a></p>
+    </div>
+
+    <div class="section">
+        <h3>📞 Next Steps</h3>
+        <p>1. Follow the troubleshooting steps above</p>
+        <p>2. Note any error messages in browser console</p>
+        <p>3. Check if "Account type" appears in page HTML source</p>
+        <p>4. Report back with specific error messages found</p>
+    </div>
+</body>
+</html>

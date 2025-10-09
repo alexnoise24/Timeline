@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Register</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #dbeafe 0%, #f3f4f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .role-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin: 20px 0;
+        }
+        
+        .role-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 15px;
+        }
+        
+        .role-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+        
+        .role-option:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+        }
+        
+        .role-option.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+        
+        .role-option input {
+            margin-right: 12px;
+            width: 16px;
+            height: 16px;
+            accent-color: #2563eb;
+        }
+        
+        .role-icon {
+            font-size: 20px;
+            margin-right: 10px;
+            color: #2563eb;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        
+        .submit-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .debug {
+            margin-top: 16px;
+            padding: 10px;
+            background: #f3f4f6;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Wedding Timeline</h1>
+            <p>Plan your perfect wedding</p>
+        </div>
+        
+        <h2 style="font-size: 24px; font-weight: 600; color: #111827; margin-bottom: 24px; text-align: center;">
+            Create Account
+        </h2>
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="name">Full name</label>
+                <input type="text" id="name" placeholder="Your name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="you@example.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            
+            <!-- ROLE SELECTION SECTION -->
+            <div class="role-section">
+                <h3>Choose your account type:</h3>
+                
+                <div class="role-option" onclick="selectRole('photographer')">
+                    <input type="radio" id="photographer" name="role" value="photographer">
+                    <span class="role-icon">📷</span>
+                    <div>
+                        <div style="font-weight: 500; color: #111827;">Photographer</div>
+                        <div style="font-size: 12px; color: #6b7280;">Create and manage wedding timelines</div>
+                    </div>
+                </div>
+                
+                <div class="role-option" onclick="selectRole('guest')">
+                    <input type="radio" id="guest" name="role" value="guest" checked>
+                    <span class="role-icon">👥</span>
+                    <div>
+                        <div style="font-weight: 500; color: #111827;">Guest</div>
+                        <div style="font-size: 12px; color: #6b7280;">Access shared wedding timelines</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="submit-btn">Create account</button>
+        </form>
+        
+        <div class="footer">
+            Already have an account? <a href="/login">Sign in here</a>
+        </div>
+        
+        <div class="debug" id="debugInfo">
+            ✅ Direct HTML version loaded | Role selection visible above | Form ready
+        </div>
+    </div>
+
+    <script>
+        function selectRole(role) {
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            document.getElementById(role).checked = true;
+        }
+        
+        document.querySelectorAll('.role-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const role = this.querySelector('input').value;
+                selectRole(role);
+            });
+        });
+        
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.innerHTML = `
+                ✅ Form submitted!<br>
+                Name: ${formData.get('name')}<br>
+                Email: ${formData.get('email')}<br>
+                Selected role: ${formData.get('role')}<br>
+                Ready for backend integration!
+            `;
+            debugInfo.style.backgroundColor = '#d1fae5';
+            debugInfo.style.color = '#065f46';
+        });
+    </script>
+</body>
+</html>

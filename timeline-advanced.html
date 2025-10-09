@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Advanced Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h1 {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .back-btn {
+            background: #6b7280;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            height: fit-content;
+        }
+        
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .project-info h2 {
+            color: #1f2937;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .project-meta {
+            display: flex;
+            gap: 24px;
+            color: #6b7280;
+        }
+        
+        .add-event-btn {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .timeline {
+            position: relative;
+            max-width: 100%;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 100px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e5e7eb;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 40px;
+            padding-left: 140px;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        
+        .timeline-time {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 80px;
+            text-align: right;
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: 91px;
+            top: 8px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            border: 4px solid white;
+            box-shadow: 0 0 0 2px #e5e7eb;
+            z-index: 2;
+        }
+        
+        .timeline-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        
+        .event-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .event-category {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .category-ceremony {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .category-reception {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .category-photos {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .event-details {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        
+        .event-description {
+            color: #4b5563;
+            line-height: 1.5;
+        }
+        
+        .event-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-complete {
+            background: #10b981;
+            color: white;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+        
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+        
+        .team-member {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        
+        .member-info {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f2937;
+        }
+        
+        .member-role {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .shot-list-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        
+        .shot-checkbox {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+        
+        .task-checkbox {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .task-text {
+            flex: 1;
+            font-size: 13px;
+        }
+        
+        .task-assigned {
+            font-size: 11px;
+            color: #6b7280;
+        }
+        
+        .empty-timeline {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .empty-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+        
+        .empty-description {
+            color: #6b7280;
+            margin-bottom: 32px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* MODAL STYLES */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.hidden {
+            display: none;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 24px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .btn-modal {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-create {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-create:hover {
+            background: #1d4ed8;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="https://moment-weaver-66582.web.app/dashboard-clean.html" class="back-btn">← Back to Dashboard</a>
+        <h1>Wedding Timeline</h1>
+        <div>
+            <button onclick="showAddEventModal()" style="background: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">+ Add Event</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="project-header">
+                <div class="project-info">
+                    <h2 id="projectTitle">Sarah & John's Wedding</h2>
+                    <div class="project-meta">
+                        <span id="projectDate">📅 December 15, 2024</span>
+                        <span id="projectCollaborators">👥 3 team members</span>
+                        <span id="projectEvents">📋 5 events scheduled</span>
+                    </div>
+                </div>
+                <button class="add-event-btn" onclick="showAddEventModal()">
+                    ➕ Add Event
+                </button>
+            </div>
+            
+            <div class="timeline" id="timelineContent">
+                <!-- Sample Timeline Events -->
+                <div class="timeline-item">
+                    <div class="timeline-time">2:00 PM</div>
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="event-header">
+                            <div>
+                                <h3 class="event-title">Wedding Ceremony</h3>
+                                <div class="event-category category-ceremony">Ceremony</div>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-edit" onclick="editEvent('ceremony')">Edit</button>
+                                <button class="btn btn-complete" onclick="markComplete('ceremony')">✓ Complete</button>
+                            </div>
+                        </div>
+                        <div class="event-details">
+                            <span>📅 Dec 15, 2024</span>
+                            <span>📍 St. Mary's Church</span>
+                            <span>⏱️ 45 minutes</span>
+                        </div>
+                        <p class="event-description">
+                            Main wedding ceremony with vows exchange and ring ceremony.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-time">3:00 PM</div>
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="event-header">
+                            <div>
+                                <h3 class="event-title">Family Photos</h3>
+                                <div class="event-category category-photos">Photography</div>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-edit" onclick="editEvent('photos')">Edit</button>
+                                <button class="btn btn-complete" onclick="markComplete('photos')">✓ Complete</button>
+                            </div>
+                        </div>
+                        <div class="event-details">
+                            <span>📅 Dec 15, 2024</span>
+                            <span>📍 Church Gardens</span>
+                            <span>⏱️ 30 minutes</span>
+                        </div>
+                        <p class="event-description">
+                            Family portraits and group photos after the ceremony.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-time">6:00 PM</div>
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="event-header">
+                            <div>
+                                <h3 class="event-title">Reception Dinner</h3>
+                                <div class="event-category category-reception">Reception</div>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-edit" onclick="editEvent('reception')">Edit</button>
+                                <button class="btn btn-complete" onclick="markComplete('reception')">✓ Complete</button>
+                            </div>
+                        </div>
+                        <div class="event-details">
+                            <span>📅 Dec 15, 2024</span>
+                            <span>📍 Grand Ballroom</span>
+                            <span>⏱️ 2 hours</span>
+                        </div>
+                        <p class="event-description">
+                            Wedding reception with dinner, speeches, first dance, and cake cutting.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Empty state when no events -->
+            <div id="emptyEvents" class="empty-timeline" style="display: none;">
+                <div class="empty-icon">📅</div>
+                <h3 class="empty-title">No events scheduled</h3>
+                <p class="empty-description">Start by adding your first wedding event to the timeline.</p>
+                <button class="add-event-btn" onclick="showAddEventModal()" style="margin-top: 16px;">Add First Event</button>
+            </div>
+        </div>
+        
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <!-- TEAM COLLABORATION -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">👥 Team Members</div>
+                <div id="teamMembers">
+                    <div class="team-member">
+                        <div class="member-avatar">S</div>
+                        <div class="member-info">
+                            <div class="member-name">Sarah (Bride)</div>
+                            <div class="member-role">Bride</div>
+                        </div>
+                    </div>
+                    <div class="team-member">
+                        <div class="member-avatar">J</div>
+                        <div class="member-info">
+                            <div class="member-name">John (Groom)</div>
+                            <div class="member-role">Groom</div>
+                        </div>
+                    </div>
+                    <div class="team-member">
+                        <div class="member-avatar">P</div>
+                        <div class="member-info">
+                            <div class="member-name">Photo Team</div>
+                            <div class="member-role">Photographer</div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="inviteMember()" style="width: 100%; padding: 8px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 8px; cursor: pointer;">+ Invite Member</button>
+            </div>
+            
+            <!-- SHOT LIST -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">📸 Shot List</div>
+                <div id="shotList">
+                    <div class="shot-list-item">
+                        <input type="checkbox" class="shot-checkbox">
+                        <span>Bridal party entrance</span>
+                    </div>
+                    <div class="shot-list-item">
+                        <input type="checkbox" class="shot-checkbox" checked>
+                        <span>Ceremony kiss</span>
+                    </div>
+                    <div class="shot-list-item">
+                        <input type="checkbox" class="shot-checkbox">
+                        <span>First dance</span>
+                    </div>
+                    <div class="shot-list-item">
+                        <input type="checkbox" class="shot-checkbox" checked>
+                        <span>Cake cutting</span>
+                    </div>
+                    <div class="shot-list-item">
+                        <input type="checkbox" class="shot-checkbox">
+                        <span>Bouquet toss</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TASK MANAGEMENT -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">✅ Tasks</div>
+                <div id="taskList">
+                    <div class="task-item">
+                        <input type="checkbox" class="task-checkbox">
+                        <span class="task-text">Confirm ceremony music</span>
+                        <span class="task-assigned">Sarah</span>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="task-checkbox" checked>
+                        <span class="task-text">Finalize reception menu</span>
+                        <span class="task-assigned">John</span>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="task-checkbox">
+                        <span class="task-text">Contact photographer</span>
+                        <span class="task-assigned">Photo Team</span>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="task-checkbox" checked>
+                        <span class="task-text">Book transportation</span>
+                        <span class="task-assigned">Sarah</span>
+                    </div>
+                </div>
+                <button onclick="addTask()" style="width: 100%; padding: 8px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 8px; cursor: pointer;">+ Add Task</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ADD EVENT MODAL -->
+    <div id="addEventModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">Add New Event</h2>
+            
+            <form id="addEventForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventTitle">Event Title</label>
+                        <input type="text" id="eventTitle" placeholder="e.g., Wedding Ceremony" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventCategory">Category</label>
+                        <select id="eventCategory" required>
+                            <option value="">Select category</option>
+                            <option value="ceremony">Ceremony</option>
+                            <option value="reception">Reception</option>
+                            <option value="photos">Photography</option>
+                            <option value="preparation">Preparation</option>
+                            <option value="transportation">Transportation</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventDate">Date</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventTime">Start Time</label>
+                        <input type="time" id="eventTime" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventDuration">Duration (minutes)</label>
+                        <input type="number" id="eventDuration" placeholder="30" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventLocation">Location</label>
+                        <input type="text" id="eventLocation" placeholder="e.g., St. Mary's Church" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventDescription">Description & Notes</label>
+                    <textarea id="eventDescription" placeholder="Brief description and important notes for the team"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventAssignee">Assign To</label>
+                    <select id="eventAssignee">
+                        <option value="">Select team member</option>
+                        <option value="sarah">Sarah (Bride)</option>
+                        <option value="john">John (Groom)</option>
+                        <option value="photographer">Photo Team</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-modal btn-cancel" onclick="hideAddEventModal()">Cancel</button>
+                    <button type="submit" class="btn-modal btn-create" id="createEventBtn">Add Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Project data
+        const projectData = {
+            id: 'wedding_001',
+            name: 'Sarah & John\'s Wedding',
+            date: 'December 15, 2024',
+            collaborators: 3,
+            events: 5
+        };
+        
+        // Load project data
+        function loadProjectData() {
+            document.getElementById('projectTitle').textContent = projectData.name;
+            document.getElementById('projectDate').textContent = `📅 ${projectData.date}`;
+            document.getElementById('projectCollaborators').textContent = `👥 ${projectData.collaborators} team members`;
+            document.getElementById('projectEvents').textContent = `📋 ${projectData.events} events scheduled`;
+        }
+        
+        // Show add event modal
+        function showAddEventModal() {
+            document.getElementById('addEventModal').classList.remove('hidden');
+        }
+        
+        // Hide add event modal
+        function hideAddEventModal() {
+            document.getElementById('addEventModal').classList.add('hidden');
+        }
+        
+        // Add new event
+        function addEvent(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('eventTitle').value;
+            const category = document.getElementById('eventCategory').value;
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const duration = document.getElementById('eventDuration').value;
+            const location = document.getElementById('eventLocation').value;
+            const description = document.getElementById('eventDescription').value;
+            const assignee = document.getElementById('eventAssignee').value;
+            
+            const createBtn = document.getElementById('createEventBtn');
+            createBtn.textContent = 'Adding...';
+            createBtn.disabled = true;
+            
+            // Simulate API call
+            setTimeout(() => {
+                // Create timeline item
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item';
+                
+                // Category styling
+                const categoryClass = category ? `category-${category}` : 'category-ceremony';
+                const categoryText = category.charAt(0).toUpperCase() + category.slice(1) || 'Ceremony';
+                
+                timelineItem.innerHTML = `
+                    <div class="timeline-time">${time}</div>
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="event-header">
+                            <div>
+                                <h3 class="event-title">${title}</h3>
+                                <div class="event-category ${categoryClass}">${categoryText}</div>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-edit" onclick="editEvent('${title}')">Edit</button>
+                                <button class="btn btn-complete" onclick="markComplete('${title}')">✓ Complete</button>
+                            </div>
+                        </div>
+                        <div class="event-details">
+                            <span>📅 ${new Date(date).toLocaleDateString()}</span>
+                            <span>📍 ${location}</span>
+                            <span>⏱️ ${duration} minutes</span>
+                            ${assignee ? `<span>👤 ${assignee}</span>` : ''}
+                        </div>
+                        <p class="event-description">
+                            ${description || 'No description provided.'}
+                        </p>
+                    </div>
+                `;
+                
+                // Add to timeline
+                document.getElementById('timelineContent').appendChild(timelineItem);
+                document.getElementById('emptyEvents').style.display = 'none';
+                
+                // Update event count
+                projectData.events++;
+                updateProjectStats();
+                
+                // Hide modal and reset form
+                hideAddEventModal();
+                document.getElementById('addEventForm').reset();
+                
+                // Show success notification
+                showNotification('✅ Event added successfully!', 'success');
+                
+            }, 500);
+            
+            createBtn.textContent = 'Add Event';
+            createBtn.disabled = false;
+        }
+        
+        // Edit existing event
+        function editEvent(eventTitle) {
+            showNotification('✏️ Edit functionality coming soon!', 'info');
+        }
+        
+        // Mark event as complete
+        function markComplete(eventTitle) {
+            // Find and update the event
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            timelineItems.forEach(item => {
+                const title = item.querySelector('.event-title');
+                if (title && title.textContent === eventTitle) {
+                    const completeBtn = item.querySelector('.btn-complete');
+                    if (completeBtn) {
+                        completeBtn.textContent = '✓ Completed';
+                        completeBtn.style.background = '#10b981';
+                        item.style.opacity = '0.7';
+                    }
+                }
+            });
+            
+            showNotification('✅ Event marked as complete!', 'success');
+        }
+        
+        // Invite team member
+        function inviteMember() {
+            const email = prompt('Enter team member email:');
+            if (email) {
+                showNotification(`📧 Invitation sent to ${email}`, 'success');
+            }
+        }
+        
+        // Add new task
+        function addTask() {
+            const taskText = prompt('Enter task description:');
+            if (taskText) {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item';
+                taskItem.innerHTML = `
+                    <input type="checkbox" class="task-checkbox">
+                    <span class="task-text">${taskText}</span>
+                    <span class="task-assigned">Unassigned</span>
+                `;
+                document.getElementById('taskList').appendChild(taskItem);
+                showNotification('✅ Task added successfully!', 'success');
+            }
+        }
+        
+        // Update project statistics
+        function updateProjectStats() {
+            document.getElementById('projectEvents').textContent = `📋 ${projectData.events} events scheduled`;
+        }
+        
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.background = type === 'success' ? '#10b981' : '#f59e0b';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Advanced Timeline Management loaded');
+            loadProjectData();
+            
+            // Add event listeners
+            document.getElementById('addEventForm').addEventListener('submit', addEvent);
+        });
+    </script>
+</body>
+</html>

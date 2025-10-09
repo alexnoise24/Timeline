@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Role Selection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .role-card { border: 2px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0; cursor: pointer; }
+        .role-card:hover { border-color: #3b82f6; background-color: #f8fafc; }
+        .role-card input { margin-right: 12px; }
+        .role-card.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .icon { margin-right: 8px; color: #3b82f6; }
+        button { background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin-top: 20px; }
+        button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <h1>Wedding Timeline - Role Selection Test</h1>
+    <p>This is a direct test of the role selection interface.</p>
+    
+    <form>
+        <div class="role-card" onclick="selectRole('photographer')">
+            <input type="radio" id="photographer" name="role" value="photographer">
+            <label for="photographer">
+                <span class="icon">📷</span>
+                <strong>Photographer</strong><br>
+                <small>Create and manage wedding timelines</small>
+            </label>
+        </div>
+        
+        <div class="role-card" onclick="selectRole('guest')">
+            <input type="radio" id="guest" name="role" value="guest" checked>
+            <label for="guest">
+                <span class="icon">👥</span>
+                <strong>Guest</strong><br>
+                <small>Access shared wedding timelines</small>
+            </label>
+        </div>
+        
+        <button type="submit">Continue with selected role</button>
+    </form>
+
+    <script>
+        function selectRole(role) {
+            document.querySelectorAll('.role-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            document.getElementById(role).checked = true;
+        }
+        
+        document.querySelectorAll('.role-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const role = this.querySelector('input').value;
+                selectRole(role);
+            });
+        });
+    </script>
+</body>
+</html>

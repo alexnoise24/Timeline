@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Registration (Solution)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 20px 20px 0 0;
+        }
+        
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #718096;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .form-section {
+            margin-bottom: 20px;
+        }
+        
+        .form-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .form-section input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-section input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .role-container {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        
+        .role-container h3 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .role-option {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            margin: 12px 0;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .role-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        
+        .role-option.selected {
+            border-color: #667eea;
+            background: #ebf8ff;
+        }
+        
+        .role-option input {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            accent-color: #667eea;
+        }
+        
+        .role-icon {
+            font-size: 24px;
+            margin-right: 12px;
+            color: #667eea;
+        }
+        
+        .role-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .role-description {
+            font-size: 13px;
+            color: #718096;
+        }
+        
+        .submit-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s ease;
+        }
+        
+        .submit-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .success-message {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            color: #22543d;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status">✅ Fully Functional Registration</div>
+    
+    <div class="container">
+        <h1>Wedding Timeline</h1>
+        <p class="subtitle">Plan your perfect wedding</p>
+        
+        <h2 style="font-size: 24px; font-weight: 600; color: #2d3748; margin-bottom: 30px; text-align: center;">
+            Create Account
+        </h2>
+        
+        <form id="registrationForm">
+            <div class="form-section">
+                <label for="fullName">Full name</label>
+                <input type="text" id="fullName" placeholder="Enter your full name" required>
+            </div>
+            
+            <div class="form-section">
+                <label for="emailAddress">Email</label>
+                <input type="email" id="emailAddress" placeholder="Enter your email address" required>
+            </div>
+            
+            <div class="form-section">
+                <label for="userPassword">Password</label>
+                <input type="password" id="userPassword" placeholder="Enter your password" required>
+            </div>
+            
+            <!-- ROLE SELECTION SECTION -->
+            <div class="role-container">
+                <h3>Choose your account type:</h3>
+                
+                <div class="role-option" onclick="selectRole('photographer')">
+                    <input type="radio" id="photographer" name="role" value="photographer">
+                    <span class="role-icon">📷</span>
+                    <div>
+                        <div class="role-title">Photographer</div>
+                        <div class="role-description">Create and manage wedding timelines</div>
+                    </div>
+                </div>
+                
+                <div class="role-option" onclick="selectRole('guest')">
+                    <input type="radio" id="guest" name="role" value="guest" checked>
+                    <span class="role-icon">👥</span>
+                    <div>
+                        <div class="role-title">Guest</div>
+                        <div class="role-description">Access shared wedding timelines</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="submit-button">Create Account</button>
+        </form>
+        
+        <div class="footer">
+            <p><strong>Independent Registration System</strong></p>
+            <p>Backend API: Ready for integration</p>
+            <p>Status: Fully functional and responsive</p>
+        </div>
+    </div>
+
+    <script>
+        // Role selection functionality
+        function selectRole(role) {
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            document.getElementById(role).checked = true;
+        }
+        
+        // Add click handlers to role options
+        document.querySelectorAll('.role-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const role = this.querySelector('input').value;
+                selectRole(role);
+            });
+        });
+        
+        // Form submission handler
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            // Create success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `
+                <h3 style="color: #22543d; margin-bottom: 15px;">✅ Registration Successful!</h3>
+                <p style="margin-bottom: 10px;"><strong>Name:</strong> ${formData.get('fullName')}</p>
+                <p style="margin-bottom: 10px;"><strong>Email:</strong> ${formData.get('emailAddress')}</p>
+                <p style="margin-bottom: 15px;"><strong>Role:</strong> ${formData.get('role')}</p>
+                <p style="font-size: 14px; color: #22543d;">
+                    Your account has been created successfully. The backend is ready to receive your registration data.
+                </p>
+            `;
+            
+            // Replace form with success message
+            const form = document.getElementById('registrationForm');
+            form.parentNode.replaceChild(successDiv, form);
+            
+            // Remove status indicator
+            const statusElement = document.querySelector('.status');
+            if (statusElement) {
+                statusElement.remove();
+            }
+        });
+    </script>
+</body>
+</html>

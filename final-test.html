@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wedding Timeline - Final Test</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 500px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: linear-gradient(135deg, #dbeafe 0%, #f3f4f6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+        h1 { text-align: center; color: #111827; margin-bottom: 8px; }
+        h2 { text-align: center; color: #6b7280; font-size: 16px; margin-bottom: 30px; font-weight: normal; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 500; color: #374151; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .role-section { 
+            background: #f8fafc; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 1px solid #e2e8f0;
+            margin: 20px 0;
+        }
+        .role-option { 
+            display: flex; 
+            align-items: center; 
+            padding: 15px; 
+            border: 2px solid #cbd5e1; 
+            border-radius: 8px; 
+            margin: 10px 0; 
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .role-option:hover { border-color: #2563eb; background: #f8fafc; }
+        .role-option.selected { border-color: #2563eb; background: #eff6ff; }
+        .role-option input { margin-right: 12px; width: 16px; height: 16px; }
+        .role-icon { font-size: 20px; margin-right: 10px; }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #2563eb; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer; 
+        }
+        button:hover { background: #1d4ed8; }
+        .debug { 
+            margin-top: 20px; 
+            padding: 10px; 
+            background: #f3f4f6; 
+            border-radius: 5px; 
+            font-size: 12px; 
+            color: #6b7280; 
+            text-align: center;
+        }
+        .link { text-align: center; margin-top: 20px; }
+        .link a { color: #2563eb; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wedding Timeline</h1>
+        <h2>Plan your perfect wedding</h2>
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="name">Full name</label>
+                <input type="text" id="name" placeholder="Your name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="you@example.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            
+            <!-- ROLE SELECTION SECTION -->
+            <div class="role-section">
+                <label style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 15px; display: block;">
+                    Choose your account type:
+                </label>
+                
+                <div class="role-option" onclick="selectRole('photographer')">
+                    <input type="radio" id="photographer" name="role" value="photographer">
+                    <span class="role-icon">📷</span>
+                    <div>
+                        <div style="font-weight: 500; color: #111827;">Photographer</div>
+                        <div style="font-size: 12px; color: #6b7280;">Create and manage wedding timelines</div>
+                    </div>
+                </div>
+                
+                <div class="role-option" onclick="selectRole('guest')">
+                    <input type="radio" id="guest" name="role" value="guest" checked>
+                    <span class="role-icon">👥</span>
+                    <div>
+                        <div style="font-weight: 500; color: #111827;">Guest</div>
+                        <div style="font-size: 12px; color: #6b7280;">Access shared wedding timelines</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit">Create account</button>
+        </form>
+        
+        <div class="debug" id="debug">
+            ✅ Test page loaded successfully | Role selection should be visible above
+        </div>
+        
+        <div class="link">
+            <a href="https://moment-weaver-66582.web.app/register">Go to main application</a>
+        </div>
+    </div>
+
+    <script>
+        function selectRole(role) {
+            // Remove selected class from all options
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked option
+            event.currentTarget.classList.add('selected');
+            
+            // Check the radio button
+            document.getElementById(role).checked = true;
+        }
+        
+        // Add click handlers to role options
+        document.querySelectorAll('.role-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const role = this.querySelector('input').value;
+                selectRole(role);
+            });
+        });
+        
+        // Handle form submission
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const role = formData.get('role');
+            document.getElementById('debug').innerHTML = 
+                `✅ Form submitted! Selected role: ${role} | Name: ${formData.get('name')} | Email: ${formData.get('email')}`;
+        });
+    </script>
+</body>
+</html>

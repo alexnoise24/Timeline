@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Clean Version</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: #48bb78;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        
+        .info-section {
+            background: #edf2f7;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .info-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 12px;
+        }
+        
+        .info-text {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        .testing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .test-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .test-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+        
+        .card-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .card-description {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .card-button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s ease;
+        }
+        
+        .card-button:hover {
+            background: #5a67d8;
+        }
+        
+        .system-status {
+            background: #e6fffa;
+            border: 1px solid #38b2ac;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 24px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .status-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .status-good {
+            color: #38a169;
+        }
+        
+        .status-warning {
+            color: #d69e2e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="status-badge">🧹 Clean Version</div>
+            <h1>Wedding Timeline</h1>
+            <p>Completely clean system without examples</p>
+        </div>
+        
+        <div class="info-section">
+            <h3 class="info-title">✨ What's New</h3>
+            <p class="info-text">
+                <strong>Clean Slate:</strong> No example projects or sample data
+            </p>
+            <p class="info-text">
+                <strong>Independent Projects:</strong> Each project has its own timeline
+            </p>
+            <p class="info-text">
+                <strong>Offline Registration:</strong> Works without backend dependency
+            </p>
+        </div>
+        
+        <div class="testing-grid">
+            <div class="test-card">
+                <div class="card-icon">📝</div>
+                <h3 class="card-title">Clean Registration</h3>
+                <p class="card-description">Register with role selection - works offline</p>
+                <a href="register-offline.html" class="card-button">Start Here</a>
+            </div>
+            
+            <div class="test-card">
+                <div class="card-icon">📊</div>
+                <h3 class="card-title">Clean Dashboard</h3>
+                <p class="card-description">Empty dashboard - no example projects</p>
+                <a href="dashboard-clean.html" class="card-button">View Dashboard</a>
+            </div>
+            
+            <div class="test-card">
+                <div class="card-icon">⏳</div>
+                <h3 class="card-title">Clean Timeline</h3>
+                <p class="card-description">Project-specific timeline management</p>
+                <a href="timeline-clean.html?projectId=demo&projectName=Demo%20Project&projectDate=2024-12-15" class="card-button">View Timeline</a>
+            </div>
+            
+            <div class="test-card">
+                <div class="card-icon">🔗</div>
+                <h3 class="card-title">Production Version</h3>
+                <p class="card-description">Access the live deployed version</p>
+                <a href="https://moment-weaver-66582.web.app/" class="card-button" target="_blank">Go to Production</a>
+            </div>
+        </div>
+        
+        <div class="system-status">
+            <h3>📋 System Status</h3>
+            <div class="status-item">
+                <span class="status-icon status-good">✅</span>
+                <strong>Frontend:</strong> All pages working perfectly
+            </div>
+            <div class="status-item">
+                <span class="status-icon status-warning">⚠️</span>
+                <strong>Backend:</strong> Registration endpoint needs attention
+            </div>
+            <div class="status-item">
+                <span class="status-icon status-good">✅</span>
+                <strong>Navigation:</strong> Project-specific timelines working
+            </div>
+            <div class="status-item">
+                <span class="status-icon status-good">✅</span>
+                <strong>Local Testing:</strong> Full system available offline
+            </div>
+        </div>
+    </div>
+</body>
+</html>

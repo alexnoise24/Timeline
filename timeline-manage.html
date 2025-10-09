@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Project Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h1 {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .back-btn {
+            background: #6b7280;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .project-header {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .project-info h2 {
+            color: #1f2937;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .project-meta {
+            display: flex;
+            gap: 24px;
+            color: #6b7280;
+        }
+        
+        .add-event-btn {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .timeline-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+        }
+        
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e5e7eb;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 40px;
+            padding-left: 80px;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: 41px;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            border: 4px solid white;
+            box-shadow: 0 0 0 2px #e5e7eb;
+        }
+        
+        .timeline-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        
+        .event-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .event-category {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .category-ceremony {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .category-reception {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .category-photos {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .event-details {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        
+        .event-description {
+            color: #4b5563;
+            line-height: 1.5;
+        }
+        
+        .event-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .empty-timeline {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.hidden {
+            display: none;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .btn-save {
+            background: #2563eb;
+            color: white;
+            border: none;
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .project-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .project-meta {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="/dashboard.html" class="back-btn">← Back to Dashboard</a>
+        <h1>Wedding Timeline</h1>
+        <div>
+            <button onclick="addEvent()" style="background: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">+ Add Event</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="project-header">
+            <div class="project-info">
+                <h2>Sarah & John's Wedding</h2>
+                <div class="project-meta">
+                    <span>📅 December 15, 2024</span>
+                    <span>�� 3 collaborators</span>
+                    <span>📋 5 events planned</span>
+                </div>
+            </div>
+            <button class="add-event-btn" onclick="addEvent()">
+                ➕ Add Event
+            </button>
+        </div>
+        
+        <div class="timeline-container">
+            <div class="timeline">
+                <!-- Sample Events -->
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="event-header">
+                            <div>
+                                <h3 class="event-title">Wedding Ceremony</h3>
+                                <div class="event-category category-ceremony">Ceremony</div>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-edit" onclick="editEvent('ceremony')">Edit</button>
+                                <button class="btn btn-delete" onclick="deleteEvent('ceremony')">Delete</button>
+                            </div>
+                        </div>
+                        <div class="event-details">
+                            <span>📅 Dec 15, 2024 at 2:00 PM</span>
+                            <span>📍 St. Mary's Church</span>
+                        </div>
+                        <p class="event-description">
+                            The main wedding ceremony where Sarah and John will exchange vows.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="event-header">
+                            <div>
+                                <h3 class="event-title">Reception Dinner</h3>
+                                <div class="event-category category-reception">Reception</div>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-edit" onclick="editEvent('reception')">Edit</button>
+                                <button class="btn btn-delete" onclick="deleteEvent('reception')">Delete</button>
+                            </div>
+                        </div>
+                        <div class="event-details">
+                            <span>📅 Dec 15, 2024 at 6:00 PM</span>
+                            <span>📍 Grand Ballroom</span>
+                        </div>
+                        <p class="event-description">
+                            Celebration dinner with family and friends. Includes speeches, first dance, and cake cutting.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="event-header">
+                            <div>
+                                <h3 class="event-title">Photo Session</h3>
+                                <div class="event-category category-photos">Photography</div>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-edit" onclick="editEvent('photos')">Edit</button>
+                                <button class="btn btn-delete" onclick="deleteEvent('photos')">Delete</button>
+                            </div>
+                        </div>
+                        <div class="event-details">
+                            <span>📅 Dec 15, 2024 at 4:00 PM</span>
+                            <span>📍 Church Gardens</span>
+                        </div>
+                        <p class="event-description">
+                            Couple and family portrait session after the ceremony.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Empty state when no events -->
+            <div id="emptyEvents" class="empty-timeline" style="display: none;">
+                <div class="empty-icon">📅</div>
+                <h3>No events yet</h3>
+                <p>Start by adding your first wedding event to the timeline.</p>
+                <button class="add-event-btn" onclick="addEvent()" style="margin-top: 16px;">Add First Event</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Event Modal -->
+    <div id="eventModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modalTitle">Add New Event</h2>
+            
+            <form id="eventForm">
+                <div class="form-group">
+                    <label for="eventTitle">Event Title</label>
+                    <input type="text" id="eventTitle" placeholder="e.g., Wedding Ceremony" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventCategory">Category</label>
+                    <select id="eventCategory" required>
+                        <option value="ceremony">Ceremony</option>
+                        <option value="reception">Reception</option>
+                        <option value="photos">Photography</option>
+                        <option value="rehearsal">Rehearsal</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventDate">Date</label>
+                    <input type="date" id="eventDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventTime">Time</label>
+                    <input type="time" id="eventTime" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventLocation">Location</label>
+                    <input type="text" id="eventLocation" placeholder="e.g., St. Mary's Church" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventDescription">Description</label>
+                    <textarea id="eventDescription" placeholder="Event details and notes..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeEventModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentEventId = null;
+        
+        // Add new event
+        function addEvent() {
+            currentEventId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Event';
+            document.getElementById('eventForm').reset();
+            document.getElementById('eventModal').classList.remove('hidden');
+        }
+        
+        // Edit existing event
+        function editEvent(eventId) {
+            currentEventId = eventId;
+            document.getElementById('modalTitle').textContent = 'Edit Event';
+            
+            // Populate form with existing data (simulated)
+            document.getElementById('eventTitle').value = 'Wedding Ceremony';
+            document.getElementById('eventCategory').value = 'ceremony';
+            document.getElementById('eventDate').value = '2024-12-15';
+            document.getElementById('eventTime').value = '14:00';
+            document.getElementById('eventLocation').value = 'St. Mary\'s Church';
+            document.getElementById('eventDescription').value = 'The main wedding ceremony where Sarah and John will exchange vows.';
+            
+            document.getElementById('eventModal').classList.remove('hidden');
+        }
+        
+        // Delete event
+        function deleteEvent(eventId) {
+            if (confirm('Are you sure you want to delete this event?')) {
+                alert('Event deleted successfully!');
+                // In a real app, this would make an API call to delete the event
+            }
+        }
+        
+        // Close event modal
+        function closeEventModal() {
+            document.getElementById('eventModal').classList.add('hidden');
+        }
+        
+        // Save event
+        document.getElementById('eventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                title: document.getElementById('eventTitle').value,
+                category: document.getElementById('eventCategory').value,
+                date: document.getElementById('eventDate').value,
+                time: document.getElementById('eventTime').value,
+                location: document.getElementById('eventLocation').value,
+                description: document.getElementById('eventDescription').value
+            };
+            
+            if (currentEventId) {
+                // Edit existing event
+                alert(`Event "${formData.title}" updated successfully!`);
+            } else {
+                // Add new event
+                alert(`Event "${formData.title}" added successfully!`);
+            }
+            
+            closeEventModal();
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('eventModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEventModal();
+            }
+        });
+    </script>
+</body>
+</html>

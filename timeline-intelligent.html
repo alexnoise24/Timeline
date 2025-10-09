@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Smart Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h1 {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .back-btn {
+            background: #6b7280;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 24px;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            height: fit-content;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+        }
+        
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .project-info h2 {
+            color: #1f2937;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .project-meta {
+            display: flex;
+            gap: 24px;
+            color: #6b7280;
+        }
+        
+        .controls-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .controls-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .controls-description {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+        
+        .template-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .template-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .template-btn:hover,
+        .template-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .auto-adjust-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .toggle-switch.active {
+            background: #10b981;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(20px);
+        }
+        
+        .timeline {
+            position: relative;
+            max-width: 100%;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 120px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 40px;
+            padding-left: 160px;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .timeline-item:hover {
+            transform: translateX(8px);
+        }
+        
+        .timeline-time {
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 100px;
+            text-align: right;
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .timeline-badge {
+            position: absolute;
+            left: 104px;
+            top: 2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #e5e7eb;
+        }
+        
+        .badge-ceremony {
+            background: #fbbf24;
+        }
+        
+        .badge-reception {
+            background: #10b981;
+        }
+        
+        .badge-photos {
+            background: #3b82f6;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: 109px;
+            top: 8px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            box-shadow: 0 0 0 2px #e5e7eb;
+            z-index: 2;
+        }
+        
+        .timeline-content {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            flex: 1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+        
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 12px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 8px solid white;
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        
+        .event-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .event-category {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .category-ceremony {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .category-reception {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .category-photos {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .event-details {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        
+        .event-description {
+            color: #4b5563;
+            line-height: 1.5;
+        }
+        
+        .event-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #d97706;
+        }
+        
+        .btn-delay {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-delay:hover {
+            background: #dc2626;
+        }
+        
+        .btn-complete {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-complete:hover {
+            background: #059669;
+        }
+        
+        .dependency-indicator {
+            position: absolute;
+            top: -8px;
+            right: 16px;
+            background: #fbbf24;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .delay-warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #d97706;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+        
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+        
+        .template-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .template-card:hover {
+            background: #f3f4f6;
+            border-color: #667eea;
+        }
+        
+        .template-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .template-description {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .template-events {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        
+        .event-counter {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .counter-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .counter-item {
+            text-align: center;
+        }
+        
+        .counter-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+        
+        .counter-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.hidden {
+            display: none;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 24px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .btn-modal {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-create {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-create:hover {
+            background: #1d4ed8;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="https://moment-weaver-66582.web.app/dashboard-clean.html" class="back-btn">← Back to Dashboard</a>
+        <h1>Wedding Timeline</h1>
+        <div>
+            <button onclick="showAddEventModal()" style="background: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">+ Add Event</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <!-- TEMPLATE SELECTOR -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">📋 Event Templates</div>
+                <div id="templateList">
+                    <div class="template-card" onclick="loadTemplate('classic')">
+                        <div class="template-name">Classic Wedding</div>
+                        <div class="template-description">Traditional ceremony and reception</div>
+                        <div class="template-events">8 events • 6 hours</div>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('modern')">
+                        <div class="template-name">Modern Wedding</div>
+                        <div class="template-description">Contemporary celebration style</div>
+                        <div class="template-events">6 events • 4 hours</div>
+                    </div>
+                    <div class="template-card" onclick="loadTemplate('destination')">
+                        <div class="template-name">Destination Wedding</div>
+                        <div class="template-description">Travel and celebration combined</div>
+                        <div class="template-events">10 events • 3 days</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- EVENT COUNTER -->
+            <div class="event-counter">
+                <div class="counter-grid">
+                    <div class="counter-item">
+                        <div class="counter-number" id="totalEvents">0</div>
+                        <div class="counter-label">Total Events</div>
+                    </div>
+                    <div class="counter-item">
+                        <div class="counter-number" id="completedEvents">0</div>
+                        <div class="counter-label">Completed</div>
+                    </div>
+                    <div class="counter-item">
+                        <div class="counter-number" id="pendingEvents">0</div>
+                        <div class="counter-label">Pending</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AUTO-ADJUST SETTINGS -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">⚙️ Timeline Settings</div>
+                <div class="auto-adjust-toggle">
+                    <span>Auto-adjust on delays</span>
+                    <div class="toggle-switch active" onclick="toggleAutoAdjust()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+                <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
+                    Automatically reschedule subsequent events when one is delayed
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="controls-header">
+                <h2 class="controls-title">🎯 Smart Timeline Management</h2>
+                <p class="controls-description">
+                    Intelligent timeline that automatically adjusts when events are delayed. Choose from pre-built templates or create custom events.
+                </p>
+                
+                <div class="template-selector">
+                    <button class="template-btn" onclick="loadTemplate('classic')">Classic</button>
+                    <button class="template-btn" onclick="loadTemplate('modern')">Modern</button>
+                    <button class="template-btn" onclick="loadTemplate('destination')">Destination</button>
+                    <button class="template-btn active" onclick="loadTemplate('custom')">Custom</button>
+                </div>
+            </div>
+            
+            <!-- DELAY WARNING -->
+            <div id="delayWarning" class="delay-warning" style="display: none;">
+                ⚠️ <strong>Timeline Delay Detected:</strong> "Wedding Ceremony" is running 15 minutes late. All subsequent events have been automatically rescheduled.
+            </div>
+            
+            <div class="timeline" id="timelineContent">
+                <!-- Timeline events will be loaded here -->
+            </div>
+            
+            <!-- Empty state when no events -->
+            <div id="emptyTimeline" class="empty-timeline">
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🎭</div>
+                    <h3 style="font-size: 24px; font-weight: 600; color: #1f2937; margin-bottom: 12px;">Start with a Template</h3>
+                    <p style="color: #6b7280; margin-bottom: 32px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                        Choose from our pre-built wedding templates or start with a custom timeline. Templates automatically adjust when events are delayed.
+                    </p>
+                    <button onclick="loadTemplate('classic')" style="background: #667eea; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">Load Classic Template</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ADD EVENT MODAL -->
+    <div id="addEventModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">Add New Event</h2>
+            
+            <form id="addEventForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventTitle">Event Title</label>
+                        <input type="text" id="eventTitle" placeholder="e.g., Wedding Ceremony" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventCategory">Category</label>
+                        <select id="eventCategory" required>
+                            <option value="">Select category</option>
+                            <option value="ceremony">Ceremony</option>
+                            <option value="reception">Reception</option>
+                            <option value="photos">Photography</option>
+                            <option value="preparation">Preparation</option>
+                            <option value="transportation">Transportation</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventDate">Date</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventTime">Start Time</label>
+                        <input type="time" id="eventTime" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="eventDuration">Duration (minutes)</label>
+                        <input type="number" id="eventDuration" placeholder="30" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventLocation">Location</label>
+                        <input type="text" id="eventLocation" placeholder="e.g., St. Mary's Church" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventDescription">Description & Notes</label>
+                    <textarea id="eventDescription" placeholder="Brief description and important notes"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="isBlocking"> 
+                        This event blocks subsequent events (dependency)
+                    </label>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-modal btn-cancel" onclick="hideAddEventModal()">Cancel</button>
+                    <button type="submit" class="btn-modal btn-create" id="createEventBtn">Add Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Project data
+        let projectData = {
+            name: 'Sarah & John\'s Wedding',
+            date: 'December 15, 2024',
+            events: [],
+            autoAdjust: true
+        };
+        
+        // Event templates
+        const templates = {
+            classic: [
+                { title: 'Guest Arrival', category: 'preparation', time: '13:30', duration: 30, location: 'Church Entrance', description: 'Guests arrive and are seated' },
+                { title: 'Wedding Ceremony', category: 'ceremony', time: '14:00', duration: 45, location: 'St. Mary\'s Church', description: 'Main ceremony with vows and rings', isBlocking: true },
+                { title: 'Family Photos', category: 'photos', time: '14:45', duration: 30, location: 'Church Gardens', description: 'Family and group portraits' },
+                { title: 'Cocktail Hour', category: 'reception', time: '15:15', duration: 60, location: 'Garden Terrace', description: 'Drinks and appetizers' },
+                { title: 'Reception Dinner', category: 'reception', time: '16:15', duration: 120, location: 'Grand Ballroom', description: 'Dinner, speeches, and dancing' }
+            ],
+            modern: [
+                { title: 'First Look', category: 'photos', time: '15:00', duration: 20, location: 'Hotel Gardens', description: 'Private first look session' },
+                { title: 'Wedding Party Photos', category: 'photos', time: '15:20', duration: 40, location: 'Hotel Grounds', description: 'Wedding party portraits' },
+                { title: 'Ceremony', category: 'ceremony', time: '16:00', duration: 30, location: 'Garden Pavilion', description: 'Intimate outdoor ceremony', isBlocking: true },
+                { title: 'Reception', category: 'reception', time: '16:30', duration: 90, location: 'Garden Pavilion', description: 'Cocktails and dinner combined' }
+            ],
+            destination: [
+                { title: 'Airport Pickup', category: 'transportation', time: '10:00', duration: 60, location: 'Cancun Airport', description: 'Pick up arriving guests' },
+                { title: 'Welcome Dinner', category: 'reception', time: '19:00', duration: 120, location: 'Beach Restaurant', description: 'Casual welcome dinner' },
+                { title: 'Rehearsal', category: 'preparation', time: '16:00', duration: 60, location: 'Beach Ceremony Site', description: 'Wedding rehearsal' },
+                { title: 'Wedding Day', category: 'ceremony', time: '17:00', duration: 45, location: 'Beach Ceremony Site', description: 'Main wedding ceremony', isBlocking: true },
+                { title: 'Beach Party', category: 'reception', time: '18:00', duration: 180, location: 'Private Beach', description: 'Beach celebration' }
+            ]
+        };
+        
+        // Load project data
+        function loadProjectData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const projectName = urlParams.get('projectName');
+            
+            if (projectName) {
+                projectData.name = decodeURIComponent(projectName);
+            }
+            
+            document.getElementById('projectTitle').textContent = projectData.name;
+            document.getElementById('projectDate').textContent = `📅 ${projectData.date}`;
+        }
+        
+        // Load template
+        function loadTemplate(templateName) {
+            // Update active button
+            document.querySelectorAll('.template-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Clear current timeline
+            const timelineContent = document.getElementById('timelineContent');
+            timelineContent.innerHTML = '';
+            
+            if (templateName === 'custom') {
+                document.getElementById('emptyTimeline').style.display = 'block';
+                projectData.events = [];
+                updateEventCounter();
+                return;
+            }
+            
+            // Load template events
+            const templateEvents = templates[templateName] || [];
+            templateEvents.forEach((eventData, index) => {
+                addEventToTimeline(eventData, index);
+            });
+            
+            document.getElementById('emptyTimeline').style.display = 'none';
+            projectData.events = templateEvents;
+            updateEventCounter();
+            
+            showNotification(`✅ Loaded ${templateName} wedding template!`, 'success');
+        }
+        
+        // Add event to timeline
+        function addEventToTimeline(eventData, index) {
+            const timelineContent = document.getElementById('timelineContent');
+            const timelineItem = document.createElement('div');
+            timelineItem.className = 'timeline-item';
+            
+            // Category styling
+            const badgeClass = `badge-${eventData.category}`;
+            const categoryClass = `category-${eventData.category}`;
+            const categoryText = eventData.category.charAt(0).toUpperCase() + eventData.category.slice(1);
+            
+            timelineItem.innerHTML = `
+                <div class="timeline-time">${eventData.time}</div>
+                <div class="timeline-badge ${badgeClass}"></div>
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    ${eventData.isBlocking ? '<div class="dependency-indicator">BLOCKER</div>' : ''}
+                    <div class="event-header">
+                        <div>
+                            <h3 class="event-title">${eventData.title}</h3>
+                            <div class="event-category ${categoryClass}">${categoryText}</div>
+                        </div>
+                        <div class="event-actions">
+                            <button class="btn btn-edit" onclick="editEvent(${index})">Edit</button>
+                            <button class="btn btn-delay" onclick="delayEvent(${index})">Delay</button>
+                            <button class="btn btn-complete" onclick="completeEvent(${index})">✓ Done</button>
+                        </div>
+                    </div>
+                    <div class="event-details">
+                        <span>📅 ${eventData.date || 'Dec 15, 2024'}</span>
+                        <span>📍 ${eventData.location}</span>
+                        <span>⏱️ ${eventData.duration} minutes</span>
+                    </div>
+                    <p class="event-description">
+                        ${eventData.description}
+                    </p>
+                </div>
+            `;
+            
+            timelineContent.appendChild(timelineItem);
+        }
+        
+        // Show add event modal
+        function showAddEventModal() {
+            document.getElementById('addEventModal').classList.remove('hidden');
+        }
+        
+        // Hide add event modal
+        function hideAddEventModal() {
+            document.getElementById('addEventModal').classList.add('hidden');
+        }
+        
+        // Add new event
+        function addEvent(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('eventTitle').value;
+            const category = document.getElementById('eventCategory').value;
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const duration = document.getElementById('eventDuration').value;
+            const location = document.getElementById('eventLocation').value;
+            const description = document.getElementById('eventDescription').value;
+            const isBlocking = document.getElementById('isBlocking').checked;
+            
+            const eventData = {
+                title,
+                category,
+                date,
+                time,
+                duration: parseInt(duration),
+                location,
+                description,
+                isBlocking
+            };
+            
+            // Add to timeline
+            const timelineContent = document.getElementById('timelineContent');
+            const eventIndex = timelineContent.children.length;
+            addEventToTimeline(eventData, eventIndex);
+            
+            // Update project data
+            projectData.events.push(eventData);
+            
+            // Hide modal and reset form
+            hideAddEventModal();
+            document.getElementById('addEventForm').reset();
+            
+            // Update counters
+            updateEventCounter();
+            
+            // Hide empty state
+            document.getElementById('emptyTimeline').style.display = 'none';
+            
+            showNotification('✅ Event added successfully!', 'success');
+        }
+        
+        // Delay event (triggers auto-adjust)
+        function delayEvent(eventIndex) {
+            if (confirm('Delay this event by 15 minutes? This will automatically reschedule all subsequent events.')) {
+                // Show delay warning
+                document.getElementById('delayWarning').style.display = 'block';
+                
+                // Update event time (simulate delay)
+                const timelineItems = document.querySelectorAll('.timeline-item');
+                if (timelineItems[eventIndex]) {
+                    const timeElement = timelineItems[eventIndex].querySelector('.timeline-time');
+                    const currentTime = timeElement.textContent;
+                    
+                    // Simulate time update
+                    showNotification('⏰ Timeline automatically adjusted for delay!', 'info');
+                }
+            }
+        }
+        
+        // Complete event
+        function completeEvent(eventIndex) {
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            if (timelineItems[eventIndex]) {
+                const completeBtn = timelineItems[eventIndex].querySelector('.btn-complete');
+                if (completeBtn) {
+                    completeBtn.textContent = '✓ Completed';
+                    completeBtn.style.background = '#10b981';
+                    timelineItems[eventIndex].style.opacity = '0.7';
+                }
+            }
+            
+            updateEventCounter();
+            showNotification('✅ Event marked as complete!', 'success');
+        }
+        
+        // Edit event
+        function editEvent(eventIndex) {
+            showNotification('✏️ Edit functionality coming soon!', 'info');
+        }
+        
+        // Toggle auto-adjust
+        function toggleAutoAdjust() {
+            const toggle = document.querySelector('.toggle-switch');
+            toggle.classList.toggle('active');
+            projectData.autoAdjust = !projectData.autoAdjust;
+            
+            const status = projectData.autoAdjust ? 'enabled' : 'disabled';
+            showNotification(`⚙️ Auto-adjust ${status}`, 'info');
+        }
+        
+        // Update event counter
+        function updateEventCounter() {
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            const completedItems = document.querySelectorAll('.btn-complete');
+            const completedCount = Array.from(completedItems).filter(btn => 
+                btn.textContent === '✓ Completed'
+            ).length;
+            
+            document.getElementById('totalEvents').textContent = timelineItems.length;
+            document.getElementById('completedEvents').textContent = completedCount;
+            document.getElementById('pendingEvents').textContent = timelineItems.length - completedCount;
+        }
+        
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.background = type === 'success' ? '#10b981' : 
+                                          type === 'info' ? '#3b82f6' : '#f59e0b';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Intelligent Timeline loaded');
+            loadProjectData();
+            
+            // Add event listeners
+            document.getElementById('addEventForm').addEventListener('submit', addEvent);
+            
+            // Show empty state initially
+            document.getElementById('emptyTimeline').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

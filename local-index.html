@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Local Testing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: #48bb78;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        
+        .testing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .test-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .test-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+        
+        .card-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+        }
+        
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .card-description {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .card-button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s ease;
+        }
+        
+        .card-button:hover {
+            background: #5a67d8;
+        }
+        
+        .info-section {
+            background: #edf2f7;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 32px;
+        }
+        
+        .info-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 12px;
+        }
+        
+        .info-text {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        .server-info {
+            background: #e6fffa;
+            border: 1px solid #38b2ac;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .server-info h3 {
+            color: #234e52;
+            margin-bottom: 8px;
+        }
+        
+        .server-info p {
+            color: #2c7a7b;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="status-badge">🧪 Local Testing Environment</div>
+            <h1>Wedding Timeline</h1>
+            <p>Complete system testing interface</p>
+        </div>
+        
+        <div class="testing-grid">
+            <div class="test-card">
+                <div class="card-icon">📝</div>
+                <h3 class="card-title">User Registration</h3>
+                <p class="card-description">Test the complete registration flow with role selection (photographer/guest)</p>
+                <a href="register-solution.html" class="card-button">Open Registration</a>
+            </div>
+            
+            <div class="test-card">
+                <div class="card-icon">📊</div>
+                <h3 class="card-title">Project Dashboard</h3>
+                <p class="card-description">Test project creation and management dashboard</p>
+                <a href="dashboard-new.html" class="card-button">Open Dashboard</a>
+            </div>
+            
+            <div class="test-card">
+                <div class="card-icon">⏳</div>
+                <h3 class="card-title">Timeline Management</h3>
+                <p class="card-description">Test event creation and timeline visualization</p>
+                <a href="timeline-simple.html" class="card-button">Open Timeline</a>
+            </div>
+            
+            <div class="test-card">
+                <div class="card-icon">🔗</div>
+                <h3 class="card-title">Production Version</h3>
+                <p class="card-description">Access the live deployed version on Firebase</p>
+                <a href="https://moment-weaver-66582.web.app/" class="card-button" target="_blank">Open Production</a>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h3 class="info-title">🧪 Testing Instructions</h3>
+            <p class="info-text">
+                <strong>Complete Flow:</strong> Start with Registration → Dashboard → Timeline Management
+            </p>
+            <p class="info-text">
+                <strong>Features to Test:</strong> Role selection, project creation, event management, navigation
+            </p>
+            <p class="info-text">
+                <strong>Browser:</strong> All features work in Chrome, Firefox, Safari, and Edge
+            </p>
+        </div>
+        
+        <div class="server-info">
+            <h3>🌐 Local Server Active</h3>
+            <p><strong>Server:</strong> Python HTTP Server (Port 8000)</p>
+            <p><strong>Access:</strong> http://localhost:8000/</p>
+            <p><strong>Files:</strong> All HTML files are accessible locally</p>
+        </div>
+    </div>
+</body>
+</html>

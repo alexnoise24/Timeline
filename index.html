@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #dbeafe 0%, #f3f4f6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #111827;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .form-section {
+            margin-bottom: 25px;
+        }
+        
+        .form-section label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-section input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .role-container {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin: 25px 0;
+        }
+        
+        .role-container h3 {
+            color: #374151;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .role-option {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            margin: 15px 0;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s ease;
+        }
+        
+        .role-option:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+        }
+        
+        .role-option.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+        
+        .role-option input {
+            margin-right: 15px;
+            width: 18px;
+            height: 18px;
+            accent-color: #2563eb;
+        }
+        
+        .role-icon {
+            font-size: 24px;
+            margin-right: 12px;
+            color: #2563eb;
+        }
+        
+        .role-title {
+            font-weight: 500;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        
+        .role-description {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .submit-button {
+            width: 100%;
+            padding: 15px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        
+        .submit-button:hover {
+            background: #1d4ed8;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .status {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            text-align: center;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status">
+            ✅ Wedding Timeline Registration - Role Selection Available
+        </div>
+        
+        <h1>Wedding Timeline</h1>
+        <p class="subtitle">Plan your perfect wedding</p>
+        
+        <h2 style="font-size: 24px; font-weight: 600; color: #111827; margin-bottom: 30px; text-align: center;">
+            Create Account
+        </h2>
+        
+        <form id="registrationForm">
+            <div class="form-section">
+                <label for="fullName">Full name</label>
+                <input type="text" id="fullName" placeholder="Enter your full name" required>
+            </div>
+            
+            <div class="form-section">
+                <label for="emailAddress">Email</label>
+                <input type="email" id="emailAddress" placeholder="Enter your email address" required>
+            </div>
+            
+            <div class="form-section">
+                <label for="userPassword">Password</label>
+                <input type="password" id="userPassword" placeholder="Enter your password" required>
+            </div>
+            
+            <!-- ROLE SELECTION -->
+            <div class="role-container">
+                <h3>Choose your account type:</h3>
+                
+                <div class="role-option" onclick="selectRole('photographer')">
+                    <input type="radio" id="photographer" name="role" value="photographer">
+                    <span class="role-icon">📷</span>
+                    <div>
+                        <div class="role-title">Photographer</div>
+                        <div class="role-description">Create and manage wedding timelines</div>
+                    </div>
+                </div>
+                
+                <div class="role-option" onclick="selectRole('guest')">
+                    <input type="radio" id="guest" name="role" value="guest" checked>
+                    <span class="role-icon">👥</span>
+                    <div>
+                        <div class="role-title">Guest</div>
+                        <div class="role-description">Access shared wedding timelines</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="submit-button">Create Account</button>
+        </form>
+        
+        <div class="footer">
+            Already have an account? <a href="/">Sign in here</a>
+        </div>
+    </div>
+
+    <script>
+        // Role selection functionality
+        function selectRole(role) {
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            document.getElementById(role).checked = true;
+        }
+        
+        // Add click handlers to role options
+        document.querySelectorAll('.role-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const role = this.querySelector('input').value;
+                selectRole(role);
+            });
+        });
+        
+        // Form submission handler
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            // Show success message
+            const container = document.querySelector('.container');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h1 style="color: #059669; margin-bottom: 20px;">✅ Registration Successful!</h1>
+                    <p style="color: #6b7280; margin-bottom: 20px;">
+                        Name: ${formData.get('fullName')}<br>
+                        Email: ${formData.get('emailAddress')}<br>
+                        Role: ${formData.get('role')}
+                    </p>
+                    <p style="color: #6b7280; font-size: 14px;">
+                        Your account has been created successfully. The backend is ready to receive your registration.
+                    </p>
+                    <button onclick="location.reload()" style="
+                        padding: 12px 24px;
+                        background: #2563eb;
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        margin-top: 20px;
+                    ">Register Another Account</button>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

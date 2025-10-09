@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h1 {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .welcome-header {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .welcome-text h2 {
+            color: #1f2937;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .welcome-text p {
+            color: #6b7280;
+            font-size: 16px;
+        }
+        
+        .create-btn {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .create-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+        }
+        
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #2563eb;
+        }
+        
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+        
+        .project-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .project-description {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .project-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-planning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .project-details {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .project-footer {
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .empty-icon {
+            font-size: 64px;
+            color: #d1d5db;
+            margin-bottom: 24px;
+        }
+        
+        .empty-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+        
+        .empty-description {
+            color: #6b7280;
+            margin-bottom: 32px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.hidden {
+            display: none;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-create {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-create:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn-create:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        .project-card:active {
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .welcome-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Wedding Timeline</h1>
+        <div>
+            <button onclick="window.location.href='https://moment-weaver-66582.web.app/'" style="background: #6b7280; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">← Back</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="welcome-header">
+            <div class="welcome-text">
+                <h2>Dashboard</h2>
+                <p>Welcome to your wedding project management!</p>
+            </div>
+            <button class="create-btn" onclick="showCreateModal()">
+                ➕ New Project
+            </button>
+        </div>
+        
+        <!-- Projects Grid -->
+        <div id="projectsContainer" class="projects-grid">
+            <!-- Sample Project -->
+            <div class="project-card" onclick="openProject()">
+                <div class="project-header">
+                    <div>
+                        <h3 class="project-title">Sarah & John's Wedding</h3>
+                        <p class="project-description">A beautiful winter wedding celebration</p>
+                    </div>
+                    <div class="project-status status-active">
+                        Active
+                    </div>
+                </div>
+                
+                <div class="project-details">
+                    <div class="detail-item">
+                        📅 Dec 15, 2024
+                    </div>
+                    <div class="detail-item">
+                        👥 3 collaborators
+                    </div>
+                </div>
+                
+                <div class="project-footer">
+                    Click to manage this project →
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="loadingState" class="loading" style="display: none;">
+            <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+            <p>Loading your projects...</p>
+        </div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state">
+            <div class="empty-icon">📅</div>
+            <h3 class="empty-title">No projects yet</h3>
+            <p class="empty-description">
+                Start by creating your first wedding project. You can manage timelines, add events, and invite collaborators.
+            </p>
+            <button class="create-btn" onclick="showCreateModal()">
+                ➕ Create Your First Project
+            </button>
+        </div>
+    </div>
+    
+    <!-- Create Project Modal -->
+    <div id="createModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">Create New Project</h2>
+            
+            <form id="createProjectForm">
+                <div class="form-group">
+                    <label for="projectName">Project Name</label>
+                    <input type="text" id="projectName" placeholder="e.g., Sarah & John's Wedding" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="projectDescription">Description</label>
+                    <textarea id="projectDescription" placeholder="Brief description of the wedding project" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="weddingDate">Wedding Date</label>
+                    <input type="date" id="weddingDate" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" onclick="hideCreateModal()">Cancel</button>
+                    <button type="submit" class="btn btn-create" id="createBtn">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Show create modal
+        function showCreateModal() {
+            document.getElementById('createModal').classList.remove('hidden');
+        }
+        
+        // Hide create modal
+        function hideCreateModal() {
+            document.getElementById('createModal').classList.add('hidden');
+        }
+        
+        // Open project (navigate to timeline management) - SIMPLIFIED
+        function openProject() {
+            console.log('Navigating to timeline management...');
+            
+            // Direct navigation without delay
+            window.location.href = 'https://moment-weaver-66582.web.app/timeline-manage.html';
+        }
+        
+        // Create new project
+        async function createProject(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('projectName').value;
+            const description = document.getElementById('projectDescription').value;
+            const date = document.getElementById('weddingDate').value;
+            
+            const createBtn = document.getElementById('createBtn');
+            createBtn.textContent = 'Creating...';
+            createBtn.disabled = true;
+            
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Add project to grid
+                const projectsContainer = document.getElementById('projectsContainer');
+                const newProjectCard = document.createElement('div');
+                newProjectCard.className = 'project-card';
+                newProjectCard.onclick = () => {
+                    console.log('New project navigating...');
+                    window.location.href = 'https://moment-weaver-66582.web.app/timeline-manage.html';
+                };
+                
+                newProjectCard.innerHTML = `
+                    <div class="project-header">
+                        <div>
+                            <h3 class="project-title">${name}</h3>
+                            <p class="project-description">${description}</p>
+                        </div>
+                        <div class="project-status status-planning">
+                            Planning
+                        </div>
+                    </div>
+                    
+                    <div class="project-details">
+                        <div class="detail-item">
+                            📅 ${new Date(date).toLocaleDateString()}
+                        </div>
+                        <div class="detail-item">
+                            👥 1 collaborator
+                        </div>
+                    </div>
+                    
+                    <div class="project-footer">
+                        Click to manage this project →
+                    </div>
+                `;
+                
+                projectsContainer.appendChild(newProjectCard);
+                hideCreateModal();
+                
+                // Reset form
+                document.getElementById('createProjectForm').reset();
+                
+                // Hide empty state
+                document.getElementById('emptyState').style.display = 'none';
+                
+            } catch (error) {
+                alert('Error creating project. Please try again.');
+                console.error('Project creation error:', error);
+            } finally {
+                createBtn.textContent = 'Create Project';
+                createBtn.disabled = false;
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard loaded successfully');
+            
+            // Add event listeners
+            document.getElementById('createProjectForm').addEventListener('submit', createProject);
+            
+            // Show empty state if no projects
+            const projectsContainer = document.getElementById('projectsContainer');
+            if (projectsContainer.children.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

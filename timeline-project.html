@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Project Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .navbar {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h1 {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .back-btn {
+            background: #6b7280;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .project-header {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .project-info h2 {
+            color: #1f2937;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .project-meta {
+            display: flex;
+            gap: 24px;
+            color: #6b7280;
+        }
+        
+        .add-event-btn {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .timeline-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+        }
+        
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e5e7eb;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 40px;
+            padding-left: 80px;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: 41px;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            border: 4px solid white;
+            box-shadow: 0 0 0 2px #e5e7eb;
+        }
+        
+        .timeline-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        
+        .event-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .event-category {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .category-ceremony {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .category-reception {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .category-photos {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .event-details {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        
+        .event-description {
+            color: #4b5563;
+            line-height: 1.5;
+        }
+        
+        .event-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .empty-timeline {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .empty-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+        
+        .empty-description {
+            color: #6b7280;
+            margin-bottom: 32px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .project-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .project-meta {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="https://moment-weaver-66582.web.app/dashboard.html" class="back-btn">← Back to Dashboard</a>
+        <h1>Wedding Timeline</h1>
+        <div>
+            <button onclick="addEvent()" style="background: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">+ Add Event</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="project-header">
+            <div class="project-info">
+                <h2 id="projectTitle">Wedding Project</h2>
+                <div class="project-meta">
+                    <span id="projectDate">📅 Loading...</span>
+                    <span id="projectCollaborators">👥 Loading...</span>
+                    <span id="projectEvents">📋 Loading...</span>
+                </div>
+            </div>
+            <button class="add-event-btn" onclick="addEvent()">
+                ➕ Add Event
+            </button>
+        </div>
+        
+        <div class="timeline-container">
+            <div class="timeline" id="timelineContent">
+                <!-- Timeline events will be loaded here -->
+            </div>
+            
+            <!-- Empty state when no events -->
+            <div id="emptyEvents" class="empty-timeline">
+                <div class="empty-icon">📅</div>
+                <h3 class="empty-title">No events yet</h3>
+                <p class="empty-description">Start by adding your first wedding event to the timeline.</p>
+                <button class="add-event-btn" onclick="addEvent()" style="margin-top: 16px;">Add First Event</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get project data from URL parameters
+        function getProjectData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const projectId = urlParams.get('projectId');
+            const projectName = urlParams.get('projectName');
+            const projectDate = urlParams.get('projectDate');
+            
+            return {
+                id: projectId,
+                name: projectName || 'Wedding Project',
+                date: projectDate || 'TBD',
+                collaborators: '1',
+                events: '0'
+            };
+        }
+        
+        // Load project data
+        function loadProjectData() {
+            const project = getProjectData();
+            
+            document.getElementById('projectTitle').textContent = project.name;
+            document.getElementById('projectDate').textContent = `📅 ${project.date}`;
+            document.getElementById('projectCollaborators').textContent = `�� ${project.collaborators} collaborators`;
+            document.getElementById('projectEvents').textContent = `📋 ${project.events} events`;
+            
+            // Store project data for reference
+            localStorage.setItem('currentProjectId', project.id);
+            localStorage.setItem('currentProjectName', project.name);
+            localStorage.setItem('currentProjectDate', project.date);
+        }
+        
+        // Add new event
+        function addEvent() {
+            const eventTitle = prompt('Event Title:', 'New Event');
+            const eventDate = prompt('Event Date (YYYY-MM-DD):', '');
+            const eventTime = prompt('Event Time (HH:MM):', '');
+            const eventLocation = prompt('Location:', '');
+            
+            if (eventTitle && eventDate && eventTime) {
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item';
+                timelineItem.innerHTML = `
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="event-header">
+                            <div>
+                                <h3 class="event-title">${eventTitle}</h3>
+                                <div class="event-category category-ceremony">Custom Event</div>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn btn-edit" onclick="editEvent('${eventTitle}')">Edit</button>
+                                <button class="btn btn-delete" onclick="deleteEvent('${eventTitle}')">Delete</button>
+                            </div>
+                        </div>
+                        <div class="event-details">
+                            <span>📅 ${eventDate} at ${eventTime}</span>
+                            <span>📍 ${eventLocation || 'TBD'}</span>
+                        </div>
+                        <p class="event-description">
+                            Custom event added to your timeline.
+                        </p>
+                    </div>
+                `;
+                
+                document.getElementById('timelineContent').appendChild(timelineItem);
+                document.getElementById('emptyEvents').style.display = 'none';
+                
+                // Update event count
+                updateProjectStats();
+            }
+        }
+        
+        // Edit existing event
+        function editEvent(eventTitle) {
+            alert(`�� Edit Event: ${eventTitle}\n\nThis would open the event for editing.\n\nYou could modify:\n• Event details\n• Date and time\n• Location\n• Description`);
+        }
+        
+        // Delete event
+        function deleteEvent(eventTitle) {
+            if (confirm(`Are you sure you want to delete "${eventTitle}"?`)) {
+                // Find and remove the event
+                const timelineItems = document.querySelectorAll('.timeline-item');
+                timelineItems.forEach(item => {
+                    const title = item.querySelector('.event-title');
+                    if (title && title.textContent === eventTitle) {
+                        item.remove();
+                    }
+                });
+                
+                updateProjectStats();
+                
+                // Show empty state if no events left
+                const timelineContent = document.getElementById('timelineContent');
+                if (timelineContent.children.length === 0) {
+                    document.getElementById('emptyEvents').style.display = 'block';
+                }
+            }
+        }
+        
+        // Update project statistics
+        function updateProjectStats() {
+            const events = document.querySelectorAll('.timeline-item').length;
+            document.getElementById('projectEvents').textContent = `📋 ${events} events`;
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Project Timeline loaded successfully');
+            loadProjectData();
+        });
+    </script>
+</body>
+</html>

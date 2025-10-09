@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Timeline - Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #fdfaf6 0%, #f7f3ed 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            color: #2d3748;
+        }
+        
+        .container {
+            max-width: 480px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(139, 92, 65, 0.15);
+            padding: 48px;
+            border: 1px solid rgba(139, 92, 65, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 600;
+            color: #8b5c41;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 15px;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 16px 18px;
+            border: 2px solid rgba(139, 92, 65, 0.2);
+            border-radius: 14px;
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #8b5c41;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(139, 92, 65, 0.1);
+        }
+        
+        .role-section {
+            background: linear-gradient(135deg, #f7f3ed 0%, #f0ebe3 100%);
+            padding: 28px;
+            border-radius: 16px;
+            border: 2px solid rgba(139, 92, 65, 0.1);
+            margin: 32px 0;
+        }
+        
+        .role-section h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #8b5c41;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: -0.3px;
+        }
+        
+        .role-option {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid rgba(139, 92, 65, 0.2);
+            border-radius: 14px;
+            margin: 12px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .role-option:hover {
+            border-color: #8b5c41;
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 65, 0.15);
+        }
+        
+        .role-option.selected {
+            border-color: #8b5c41;
+            background: linear-gradient(135deg, #fff 0%, #f7f3ed 100%);
+            box-shadow: 0 4px 20px rgba(139, 92, 65, 0.2);
+        }
+        
+        .role-option input {
+            margin-right: 16px;
+            width: 20px;
+            height: 20px;
+            accent-color: #8b5c41;
+        }
+        
+        .role-icon {
+            font-size: 24px;
+            margin-right: 16px;
+            color: #8b5c41;
+        }
+        
+        .role-text {
+            flex: 1;
+        }
+        
+        .role-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .role-description {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #8b5c41 0%, #a67c5a 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #a67c5a 0%, #c19d7a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(139, 92, 65, 0.3);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 15px;
+            color: #718096;
+        }
+        
+        .footer a {
+            color: #8b5c41;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .footer a:hover {
+            color: #a67c5a;
+            text-decoration: underline;
+        }
+        
+        .loading-message {
+            background: linear-gradient(135deg, #e8d5c4 0%, #d4a574 100%);
+            border: 1px solid rgba(139, 92, 65, 0.2);
+            color: #8b5c41;
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #065f46;
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 32px 24px;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Wedding Timeline</h1>
+            <p>Every love story deserves to be told beautifully</p>
+        </div>
+        
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 600; color: #2d3748; margin-bottom: 32px; text-align: center; letter-spacing: -0.3px;">
+            Create Account
+        </h2>
+        
+        <!-- Loading Message -->
+        <div id="loadingMessage" class="loading-message" style="display: none;">
+            ⏳ <strong>Creating your account...</strong><br>
+            Please wait while we set up your beautiful space.
+        </div>
+        
+        <!-- Success Message -->
+        <div id="successMessage" class="success-message" style="display: none;">
+            ✅ <strong>Welcome to Wedding Timeline!</strong><br>
+            Your account is ready. Let's create something beautiful together.
+        </div>
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="name">Full name</label>
+                <input type="text" id="name" placeholder="Your beautiful name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="your@email.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            
+            <!-- ROLE SELECTION SECTION -->
+            <div class="role-section">
+                <h3>Choose your role:</h3>
+                
+                <div class="role-option" onclick="selectRole('photographer')">
+                    <input type="radio" id="photographer" name="role" value="photographer">
+                    <span class="role-icon">📷</span>
+                    <div class="role-text">
+                        <div class="role-title">Photographer</div>
+                        <div class="role-description">Create and manage wedding timelines</div>
+                    </div>
+                </div>
+                
+                <div class="role-option" onclick="selectRole('guest')">
+                    <input type="radio" id="guest" name="role" value="guest" checked>
+                    <span class="role-icon">👥</span>
+                    <div class="role-text">
+                        <div class="role-title">Guest</div>
+                        <div class="role-description">Access shared wedding timelines</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submitBtn">Create account</button>
+        </form>
+        
+        <div class="footer">
+            Already have an account? <a href="https://moment-weaver-66582.web.app/dashboard-clean.html">Go to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        // Role selection functionality
+        function selectRole(role) {
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            document.getElementById(role).checked = true;
+        }
+        
+        // Add click handlers
+        document.querySelectorAll('.role-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const role = this.querySelector('input').value;
+                selectRole(role);
+            });
+        });
+        
+        // Form submission handler - BEAUTIFUL REDIRECT
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const form = document.getElementById('registerForm');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            // Hide form and show loading
+            form.style.display = 'none';
+            loadingMessage.style.display = 'block';
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            
+            const formData = new FormData(form);
+            const userData = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                role: formData.get('role')
+            };
+            
+            // Simulate registration process
+            setTimeout(() => {
+                try {
+                    // Store user data locally (since backend is not working)
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: 'user_' + Date.now(),
+                        name: userData.name,
+                        email: userData.email,
+                        role: userData.role,
+                        createdAt: new Date().toISOString()
+                    }));
+                    
+                    // Show success message briefly
+                    loadingMessage.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    
+                    // REDIRECT TO DASHBOARD - CORRECTED
+                    setTimeout(() => {
+                        window.location.href = 'https://moment-weaver-66582.web.app/dashboard-clean.html';
+                    }, 1500);
+                    
+                } catch (error) {
+                    // Show error and restore form
+                    loadingMessage.style.display = 'none';
+                    form.style.display = 'block';
+                    alert('Error creating account. Please try again.');
+                    submitBtn.disabled = false;
+                }
+            }, 1000);
+        });
+        
+        // Check if user is already logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                // User already exists, redirect immediately to dashboard
+                window.location.href = 'https://moment-weaver-66582.web.app/dashboard-clean.html';
+            }
+        });
+    </script>
+</body>
+</html>

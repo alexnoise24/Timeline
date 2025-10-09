@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wedding Timeline - Register</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #dbeafe 0%, #f3f4f6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            max-width: 400px; 
+            width: 100%; 
+        }
+        h1 { text-align: center; color: #2563eb; margin-bottom: 20px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .role-section { 
+            background: #f8fafc; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            border: 1px solid #e2e8f0;
+        }
+        .role-option { 
+            display: flex; 
+            align-items: center; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border: 2px solid #cbd5e1; 
+            border-radius: 8px; 
+            cursor: pointer; 
+        }
+        .role-option:hover { border-color: #2563eb; background: #f8fafc; }
+        .role-option.selected { border-color: #2563eb; background: #eff6ff; }
+        .role-option input { margin-right: 10px; }
+        button { 
+            width: 100%; 
+            padding: 10px; 
+            background: #2563eb; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px;
+        }
+        .debug { margin-top: 15px; padding: 10px; background: #f0fdf4; border-radius: 4px; color: #166534; font-size: 12px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wedding Timeline</h1>
+        
+        <form id="form">
+            <div class="form-group">
+                <label>Full name</label>
+                <input type="text" id="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
+            
+            <div class="role-section">
+                <label style="font-weight: bold; margin-bottom: 15px; display: block;">Account type:</label>
+                
+                <div class="role-option" onclick="selectRole('photographer')">
+                    <input type="radio" id="photographer" name="role" value="photographer">
+                    <label for="photographer">
+                        <strong>📷 Photographer</strong><br>
+                        <small>Create and manage wedding timelines</small>
+                    </label>
+                </div>
+                
+                <div class="role-option" onclick="selectRole('guest')">
+                    <input type="radio" id="guest" name="role" value="guest" checked>
+                    <label for="guest">
+                        <strong>👥 Guest</strong><br>
+                        <small>Access shared wedding timelines</small>
+                    </label>
+                </div>
+            </div>
+            
+            <button type="submit">Create account</button>
+        </form>
+        
+        <div class="debug" id="debug">
+            ✅ Page loaded | Role selection active | Form ready
+        </div>
+    </div>
+
+    <script>
+        function selectRole(role) {
+            document.querySelectorAll('.role-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            document.getElementById(role).checked = true;
+        }
+        
+        document.querySelectorAll('.role-option').forEach(opt => {
+            opt.addEventListener('click', function() {
+                selectRole(this.querySelector('input').value);
+            });
+        });
+        
+        document.getElementById('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            document.getElementById('debug').innerHTML = `
+                ✅ Submitted!<br>
+                Name: ${formData.get('name')}<br>
+                Email: ${formData.get('email')}<br>
+                Role: ${formData.get('role')}<br>
+                Backend ready!
+            `;
+        });
+    </script>
+</body>
+</html>
