@@ -1,11 +1,10 @@
 import axios from 'axios';
 
-// Ensure consistent base URL with /api prefix
+// Base URL without trailing slash
 const baseURL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
-const API_URL = baseURL; // Remove the automatic /api addition
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: `${baseURL}/api`, // All API calls will be prefixed with /api
   headers: {
     'Content-Type': 'application/json',
   },
@@ -29,14 +28,39 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors
+// Response interceptor for logging and error handling
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+  (response) => {
+    if (import.meta.env.DEV) {
+      console.log('Response:', response.status, response.config.url, response.data);
     }
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      console.error('API Error:', {
+        url: error.config.url,
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.config.headers
+      });
+
+      // Only handle 401 for non-login/register routes
+      const isAuthRoute = ['/auth/login', '/auth/register', '/auth/check-email'].some(route => 
+        error.config.url?.includes(route)
+      );
+
+      if (error.response.status === 401 && !isAuthRoute) {
+        // Only clear token and redirect if we're not already on the login page
+        if (!window.location.pathname.includes('login')) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
+      }
+    } else {
+      console.error('Network/Request Error:', error.message);
+    }
+    
     return Promise.reject(error);
   }
 );

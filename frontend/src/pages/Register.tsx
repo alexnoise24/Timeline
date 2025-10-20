@@ -17,24 +17,33 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
+    // Basic client-side validation
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long');
-      setIsLoading(false);
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
     try {
-      const acceptedTimelineId = await register(formData.name, formData.email, formData.password, formData.role);
-      // Redirect to invited timeline if present, otherwise Dashboard
-      if (acceptedTimelineId) {
-        navigate(`/timeline/${acceptedTimelineId}`);
-      } else {
-        navigate('/');
-      }
+      setIsLoading(true);
+      
+      // Register and automatically log in the user
+      await register(formData.name, formData.email, formData.password, formData.role);
+      
+      // After successful registration, redirect to login with a welcome message
+      // Using replace: true to prevent going back to register page
+      navigate('/login', { 
+        state: { from: 'register' },
+        replace: true
+      });
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      console.error('Registration error:', err);
+      setError(err.message || 'Registration failed. Please try again.');
       setIsLoading(false);
     }
   };
