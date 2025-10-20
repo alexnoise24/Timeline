@@ -1,14 +1,24 @@
 import axios from 'axios';
 
-// Use Vite proxy by default so the backend port can change (e.g., 5050)
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Ensure consistent base URL with /api prefix
+const baseURL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+const API_URL = baseURL; // Remove the automatic /api addition
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true
 });
+
+// Log API requests in development
+if (import.meta.env.DEV) {
+  api.interceptors.request.use(request => {
+    console.log('Request:', request.method?.toUpperCase(), request.url, request.data);
+    return request;
+  });
+}
 
 // Add token to requests
 api.interceptors.request.use((config) => {
