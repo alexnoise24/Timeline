@@ -18,6 +18,7 @@ interface NewProjectForm {
 }
 
 export default function Dashboard() {
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { timelines, createTimeline, fetchTimelines, isLoading } = useTimelineStore();
@@ -39,25 +40,27 @@ export default function Dashboard() {
   }, [user, fetchTimelines, fetchMyInvitations]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
+  e.preventDefault();
+  if (!user) return;
+  setError(''); // Reset error state
 
-    try {
-      const created = await createTimeline({
-        title: newProject.title,
-        description: newProject.description,
-        weddingDate: newProject.date,
-      });
+  try {
+    const created = await createTimeline({
+      title: newProject.title,
+      description: newProject.description,
+      weddingDate: new Date(newProject.date).toISOString(), // Convert to ISO string
+    });
 
-      setIsCreateModalOpen(false);
-      setNewProject({ title: '', description: '', date: '' });
-      if (created?._id) {
-        navigate(`/timeline/${created._id}`);
-      }
-    } catch (error) {
-      console.error('Error creating project:', error);
+    setIsCreateModalOpen(false);
+    setNewProject({ title: '', description: '', date: '' });
+    if (created?._id) {
+      navigate(`/timeline/${created._id}`);
     }
-  };
+  } catch (error: any) {
+    console.error('Error creating project:', error);
+    setError(error.response?.data?.message || 'Failed to create project. Please try again.');
+  }
+};
 
   // Status fields are not in backend model; omit status badge
 
@@ -199,11 +202,13 @@ export default function Dashboard() {
               <div>
                 <label className="block text-sm font-medium text-primary-700 mb-1">Wedding Date</label>
                 <Input
-                  type="date"
-                  value={newProject.date}
-                  onChange={(e) => setNewProject(prev => ({ ...prev, date: e.target.value }))}
-                  required
-                />
+  type="date"
+  value={newProject.date}
+  onChange={(e) => setNewProject(prev => ({ ...prev, date: e.target.value }))}
+  required
+  min={new Date().toISOString().split('T')[0]} // Prevent selecting past dates
+  className="w-full" // Make it full width
+/>
               </div>
               <div className="flex gap-3 mt-2">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setIsCreateModalOpen(false)}>
