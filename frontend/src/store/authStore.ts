@@ -48,33 +48,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (name: string, email: string, password: string, role: 'photographer' | 'guest' = 'guest') => {
-    set({ isLoading: true });
-    try {
-      const { data } = await api.post('/auth/register', { name, email, password, role });
-      localStorage.setItem('token', data.token);
-      set({ user: data.user, token: data.token, isAuthenticated: true });
-      initSocket(data.token);
-      // Auto-accept invite if there's a pending invite token
-      const inviteToken = localStorage.getItem('inviteToken');
-      if (inviteToken) {
-        try {
-          const res = await api.post('/invitations/accept-invite-token', { token: inviteToken });
-          localStorage.removeItem('inviteToken');
-          return res.data?.timelineId || null;
-        } catch (_) {
-          // ignore and continue
-        }
-      }
-      return null;
-    } catch (error: any) {
-      const serverData = error.response?.data;
-      const firstValidation = Array.isArray(serverData?.errors) ? serverData.errors[0]?.msg : undefined;
-      throw new Error(serverData?.message || firstValidation || 'Failed to register');
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+  register: async (name, email, password, role = 'guest') => {
+  try {
+    const { data } = await api.post('/api/auth/register', {
+      name,
+      email,
+      password,
+      role
+    });
+    return data;
+  } catch (error: any) {
+    const serverData = error.response?.data;
+    const firstValidation = Array.isArray(serverData?.errors) ? serverData.errors[0]?.msg : undefined;
+    throw new Error(serverData?.message || firstValidation || 'Failed to register');
+  }
+},
 
   logout: () => {
     localStorage.removeItem('token');
