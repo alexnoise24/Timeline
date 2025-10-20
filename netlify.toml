@@ -1,6 +1,6 @@
 [build]
   base = "."
-  command = "cd frontend && npm install && npm run build"
+  command = "n 20.0.0 && cd frontend && npm install --legacy-peer-deps && npm run build"
   publish = "frontend/dist"
   
 [dev]
@@ -12,6 +12,11 @@
   NPM_VERSION = "10"
   CI = "false"
   NPM_FLAGS = "--legacy-peer-deps"
+  NPM_FLAGS = "--force"
+
+[context.production.environment]
+  NODE_VERSION = "20.0.0"
+  NPM_VERSION = "10"
 
 # SPA routing for React Router
 [[redirects]]
