@@ -8,66 +8,46 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<string | null>; // returns accepted timelineId if invite
-  register: (name: string, email: string, password: string, role?: 'photographer' | 'guest') => Promise<string | null>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role?: 'photographer' | 'guest') => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
 
-
-
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: localStorage.getItem('token'),
+  token: null,
   isLoading: false,
-  isAuthenticated: false, // Start as false, will be updated after checkAuth
+  isAuthenticated: false,
 
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await api.post('/api/auth/login', { email, password });
       
       if (!data.token) {
         throw new Error('No authentication token received');
       }
 
-      // Save token to localStorage
       localStorage.setItem('token', data.token);
       
-      // Update auth state
       set({
         user: data.user,
         token: data.token,
         isAuthenticated: true,
         isLoading: false
       });
-      
-      // Initialize socket connection
+
       initSocket(data.token);
-      
-      // Auto-accept invite if there's a pending invite token
-      const inviteToken = localStorage.getItem('inviteToken');
-      if (inviteToken) {
-        try {
-          const res = await api.post('/invitations/accept-invite-token', { token: inviteToken });
-          localStorage.removeItem('inviteToken');
-          return res.data?.timelineId || null;
-        } catch (error) {
-          console.error('Failed to accept invite:', error);
-          // Continue with normal login flow even if invite acceptance fails
-        }
-      }
-      
-      return null;
     } catch (error: any) {
-      console.error('Login error:', error);
-      const serverData = error.response?.data;
-      const errorMessage = error.message || 
-                         serverData?.message || 
-                         (Array.isArray(serverData?.errors) ? serverData.errors[0]?.msg : undefined) || 
-                         'Login failed. Please check your credentials and try again.';
-      set({ isLoading: false });
-      throw new Error(errorMessage);
+      localStorage.removeItem('token');
+      set({ 
+        user: null, 
+        token: null, 
+        isAuthenticated: false,
+        isLoading: false 
+      });
+      throw error;
     }
   },
 
@@ -76,55 +56,42 @@ export const useAuthStore = create<AuthState>((set) => ({
     console.log('Starting registration for:', email);
     
     try {
-      // First, check if user exists
-      try {
-        console.log('Checking if email exists...');
-        await api.post('/auth/check-email', { email });
-      } catch (error: any) {
-        console.error('Email check failed:', error);
-        if (error.response?.status === 409) {
-          throw new Error('This email is already registered. Please use a different email or log in.');
-        }
-        throw new Error('Failed to check email availability. Please try again.');
-      }
-
-      console.log('Email available, proceeding with registration...');
-      
-      // 1. Register the user
-      await api.post('/auth/register', { name, email, password, role });
+      // Register the user
+      await api.post('/api/auth/register', { 
+        name, 
+        email, 
+        password, 
+        role 
+      });
       
       console.log('Registration successful, logging in...');
 
-      // 2. Log the user in automatically
+      // Log the user in
       const { data } = await api.post('/api/auth/login', { email, password });
-      console.log('Login response received:', { hasToken: !!data.token, user: data.user?.email });
-
+      
       if (!data.token) {
         throw new Error('No authentication token received');
       }
 
-      // 3. Save token and update state
+      // Save token and update state
       localStorage.setItem('token', data.token);
       
-      const newState = {
+      // Update state with user data
+      set({
         user: data.user,
         token: data.token,
         isAuthenticated: true,
         isLoading: false
-      };
-      
-      // 4. Update state in a single call
-      set(newState);
-      
-      // 5. Initialize socket connection
+      });
+
+      // Initialize socket connection
       initSocket(data.token);
       
-      console.log('Registration and login successful, state updated:', {
-        isAuthenticated: true,
-        userEmail: data.user?.email
-      });
+      console.log('Registration and login successful');
       
-      return data;
+      // Return the user data for the component to handle navigation
+      return data.user;
+      
     } catch (error: any) {
       console.error('Registration error:', error);
       
@@ -140,23 +107,26 @@ export const useAuthStore = create<AuthState>((set) => ({
       // Handle specific error cases
       if (error.response) {
         const serverData = error.response.data || {};
-        const errorMessage = error.message || 
-                           serverData.message || 
+        const errorMessage = serverData.message || 
                            (Array.isArray(serverData.errors) ? serverData.errors[0]?.msg : undefined) || 
+                           error.message ||
                            'Registration failed. Please try again.';
         throw new Error(errorMessage);
       }
       
       throw error;
-    } finally {
-      set(prev => ({ ...prev, isLoading: false }));
     }
   },
 
   logout: () => {
     localStorage.removeItem('token');
     disconnectSocket();
-    set({ user: null, token: null, isAuthenticated: false });
+    set({ 
+      user: null, 
+      token: null, 
+      isAuthenticated: false,
+      isLoading: false 
+    });
   },
 
   checkAuth: async () => {
@@ -164,7 +134,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     console.log('checkAuth called, token exists:', !!token);
     
     if (!token) {
-      console.log('No token found, setting isAuthenticated to false');
       set({ 
         user: null,
         token: null,
@@ -179,7 +148,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       console.log('Verifying token with server...');
-      const { data } = await api.get('/auth/me');
+      const { data } = await api.get('/api/auth/me');
       
       if (data?.user) {
         console.log('User authenticated successfully:', data.user.email);
@@ -195,20 +164,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         
         // Initialize socket with the token
         initSocket(token);
-        
-        // Verify the state was set correctly
-        console.log('Auth state after successful check:', {
-          hasToken: !!token,
-          isAuthenticated: true,
-          userEmail: data.user.email
-        });
       } else {
-        console.warn('No user data received from /api/auth/me');
         throw new Error('No user data received');
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      // Clear invalid token
+      console.error('Authentication check failed:', error);
       localStorage.removeItem('token');
       set({ 
         user: null, 
@@ -216,14 +176,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: false,
         isLoading: false 
       });
-      
-      // If we're not already on the login page, redirect
-      if (!window.location.pathname.includes('login')) {
-        window.location.href = '/login';
-      }
-    } finally {
-      // Ensure loading is always set to false
-      set(prev => ({ ...prev, isLoading: false }));
     }
-  },
+  }
 }));

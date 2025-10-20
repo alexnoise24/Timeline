@@ -4,7 +4,7 @@ import axios from 'axios';
 const baseURL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 
 const api = axios.create({
-  baseURL: `${baseURL}/api`, // All API calls will be prefixed with /api
+  baseURL: baseURL, // Base URL without /api since backend routes already include it
   headers: {
     'Content-Type': 'application/json',
   },

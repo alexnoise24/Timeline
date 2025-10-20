@@ -14,7 +14,7 @@ const Register: React.FC = () => {
   const { register } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
 
@@ -35,12 +35,8 @@ const Register: React.FC = () => {
       // Register and automatically log in the user
       await register(formData.name, formData.email, formData.password, formData.role);
       
-      // After successful registration, redirect to login with a welcome message
-      // Using replace: true to prevent going back to register page
-      navigate('/login', { 
-        state: { from: 'register' },
-        replace: true
-      });
+      // After successful registration, redirect to dashboard
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'Registration failed. Please try again.');
