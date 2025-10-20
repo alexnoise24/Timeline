@@ -1,14 +1,14 @@
 # Netlify build configuration for Vite (React)
 
 [build]
-  base = "frontend"
-  command = "npm ci && npm run build"
+   base = "."
+  command = "cd frontend && npm ci && npm run build"
   publish = "frontend/dist"
 
 [build.environment]
   NODE_VERSION = "20"
 
-# SPA routing so React Router works on hard refresh
+# SPA routing for React Router
 [[redirects]]
   from = "/*"
   to = "/index.html"

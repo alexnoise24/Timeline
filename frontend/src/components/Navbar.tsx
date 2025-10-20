@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Calendar, LogOut, User, Plus, Users, Camera } from 'lucide-react';
+import { Calendar, LogOut, Plus, Users, Camera } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import Button from './ui/Button';
 
