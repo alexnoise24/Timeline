@@ -18,11 +18,11 @@ interface NewProjectForm {
 }
 
 export default function Dashboard() {
-  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { timelines, createTimeline, fetchTimelines, isLoading } = useTimelineStore();
   const { invitations, fetchMyInvitations, acceptInvitation, declineInvitation, isLoading: loadingInvites } = useInvitationsStore();
+  const [error, setError] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newProject, setNewProject] = useState<NewProjectForm>({
     title: '',
