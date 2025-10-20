@@ -14,19 +14,9 @@ interface AuthState {
   checkAuth: () => Promise<void>;
 }
 
-// Helper function to log auth state changes
-const logAuthState = (action: string, state: any) => {
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`[Auth Store] ${action}`, {
-      hasToken: !!state.token,
-      isAuthenticated: state.isAuthenticated,
-      user: state.user ? 'User exists' : 'No user',
-      isLoading: state.isLoading
-    });
-  }
-};
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: localStorage.getItem('token'),
   isLoading: false,
