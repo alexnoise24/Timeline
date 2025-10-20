@@ -25,7 +25,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      const { data } = await api.post('/api/auth/login', { email, password });
+      const { data } = await api.post('/auth/login', { email, password });
       
       if (!data.token) {
         throw new Error('No authentication token received');
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const inviteToken = localStorage.getItem('inviteToken');
       if (inviteToken) {
         try {
-          const res = await api.post('/api/invitations/accept-invite-token', { token: inviteToken });
+          const res = await api.post('/invitations/accept-invite-token', { token: inviteToken });
           localStorage.removeItem('inviteToken');
           return res.data?.timelineId || null;
         } catch (error) {
@@ -79,7 +79,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       // First, check if user exists
       try {
         console.log('Checking if email exists...');
-        await api.post('/api/auth/check-email', { email });
+        await api.post('/auth/check-email', { email });
       } catch (error: any) {
         console.error('Email check failed:', error);
         if (error.response?.status === 409) {
@@ -91,7 +91,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.log('Email available, proceeding with registration...');
       
       // 1. Register the user
-      await api.post('/api/auth/register', { name, email, password, role });
+      await api.post('/auth/register', { name, email, password, role });
       
       console.log('Registration successful, logging in...');
 
@@ -179,7 +179,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       console.log('Verifying token with server...');
-      const { data } = await api.get('/api/auth/me');
+      const { data } = await api.get('/auth/me');
       
       if (data?.user) {
         console.log('User authenticated successfully:', data.user.email);
