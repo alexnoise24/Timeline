@@ -21,32 +21,32 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: !!localStorage.getItem('token'),
 
   login: async (email, password) => {
-    set({ isLoading: true });
-    try {
-      const { data } = await api.post('/auth/login', { email, password });
-      localStorage.setItem('token', data.token);
-      set({ user: data.user, token: data.token, isAuthenticated: true });
-      initSocket(data.token);
-      // Auto-accept invite if there's a pending invite token
-      const inviteToken = localStorage.getItem('inviteToken');
-      if (inviteToken) {
-        try {
-          const res = await api.post('/invitations/accept-invite-token', { token: inviteToken });
-          localStorage.removeItem('inviteToken');
-          return res.data?.timelineId || null;
-        } catch (_) {
-          // ignore and continue
-        }
+  set({ isLoading: true });
+  try {
+    const { data } = await api.post('/api/auth/login', { email, password });
+    localStorage.setItem('token', data.token);
+    set({ user: data.user, token: data.token, isAuthenticated: true });
+    initSocket(data.token);
+    // Auto-accept invite if there's a pending invite token
+    const inviteToken = localStorage.getItem('inviteToken');
+    if (inviteToken) {
+      try {
+        const res = await api.post('/api/invitations/accept-invite-token', { token: inviteToken });
+        localStorage.removeItem('inviteToken');
+        return res.data?.timelineId || null;
+      } catch (_) {
+        // ignore and continue
       }
-      return null;
-    } catch (error: any) {
-      const serverData = error.response?.data;
-      const firstValidation = Array.isArray(serverData?.errors) ? serverData.errors[0]?.msg : undefined;
-      throw new Error(serverData?.message || firstValidation || 'Failed to sign in');
-    } finally {
-      set({ isLoading: false });
     }
-  },
+    return null;
+  } catch (error: any) {
+    const serverData = error.response?.data;
+    const firstValidation = Array.isArray(serverData?.errors) ? serverData.errors[0]?.msg : undefined;
+    throw new Error(serverData?.message || firstValidation || 'Failed to sign in');
+  } finally {
+    set({ isLoading: false });
+  }
+},
 
   register: async (name, email, password, role = 'guest') => {
   try {
@@ -71,19 +71,19 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   checkAuth: async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      set({ isAuthenticated: false });
-      return;
-    }
+  const token = localStorage.getItem('token');
+  if (!token) {
+    set({ isAuthenticated: false });
+    return;
+  }
 
-    try {
-      const { data } = await api.get('/auth/me');
-      set({ user: data.user, isAuthenticated: true });
-      initSocket(token);
-    } catch (error) {
-      localStorage.removeItem('token');
-      set({ user: null, token: null, isAuthenticated: false });
-    }
-  },
+  try {
+    const { data } = await api.get('/api/auth/me');
+    set({ user: data.user, isAuthenticated: true });
+    initSocket(token);
+  } catch (error) {
+    localStorage.removeItem('token');
+    set({ user: null, token: null, isAuthenticated: false });
+  }
+},
 }));
