@@ -28,14 +28,13 @@ export default function Login() {
     setError('');
 
     try {
-      const acceptedTimelineId = await login(email, password);
-      if (acceptedTimelineId) {
-        navigate(`/timeline/${acceptedTimelineId}`);
-      } else {
-        navigate('/');
-      }
+      await login(email, password);
+      // After successful login, check if there's a timeline ID in the location state
+      const state = location.state as { from?: { pathname: string } };
+      const redirectTo = state?.from?.pathname || '/';
+      navigate(redirectTo);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Login failed. Please check your credentials.');
     }
   };
 
