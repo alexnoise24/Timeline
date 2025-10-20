@@ -8,9 +8,10 @@
   port = 5173  # Default Vite port
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "20.0.0"
   NPM_VERSION = "10"
   CI = "false"
+  NPM_FLAGS = "--legacy-peer-deps"
 
 # SPA routing for React Router
 [[redirects]]
