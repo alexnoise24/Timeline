@@ -17,18 +17,24 @@ const httpServer = createServer(app);
 // Allow any origin in development (echo request origin) to avoid dev port issues
 const isProd = process.env.NODE_ENV === 'production';
 
+// Configure allowed origins
+const allowedOrigins = isProd 
+  ? ['https://weddingtimelinealexobregon.netlify.app', 'http://localhost:3000']
+  : true;
+
+// Socket.IO CORS configuration
 const io = new Server(httpServer, {
   cors: {
-    origin: isProd ? process.env.FRONTEND_URL : true,
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
   }
 });
 
-// Middleware
+// Express CORS configuration
 app.use(cors({
-  origin: isProd ? process.env.FRONTEND_URL : true,
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
