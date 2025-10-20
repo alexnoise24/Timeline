@@ -40,27 +40,32 @@ export default function Dashboard() {
   }, [user, fetchTimelines, fetchMyInvitations]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!user) return;
-  setError(''); // Reset error state
+    e.preventDefault();
+    if (!user) return;
+    setError(''); // Reset error state
 
-  try {
-    const created = await createTimeline({
-      title: newProject.title,
-      description: newProject.description,
-      weddingDate: new Date(newProject.date).toISOString(), // Convert to ISO string
-    });
+    try {
+      if (!newProject.title.trim()) {
+        setError('Project title is required');
+        return;
+      }
 
-    setIsCreateModalOpen(false);
-    setNewProject({ title: '', description: '', date: '' });
-    if (created?._id) {
-      navigate(`/timeline/${created._id}`);
+      const created = await createTimeline({
+        title: newProject.title,
+        description: newProject.description,
+        weddingDate: new Date(newProject.date).toISOString(),
+      });
+
+      setIsCreateModalOpen(false);
+      setNewProject({ title: '', description: '', date: '' });
+      if (created?._id) {
+        navigate(`/timeline/${created._id}`);
+      }
+    } catch (error: any) {
+      console.error('Error creating project:', error);
+      setError(error.response?.data?.message || 'Failed to create project. Please try again.');
     }
-  } catch (error: any) {
-    console.error('Error creating project:', error);
-    setError(error.response?.data?.message || 'Failed to create project. Please try again.');
-  }
-};
+  };
 
   // Status fields are not in backend model; omit status badge
 
