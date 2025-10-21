@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Calendar, Users, LogOut } from 'lucide-react';
+import { Toaster, toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -22,13 +23,19 @@ export default function Dashboard() {
   const { user, logout } = useAuthStore();
   const { timelines, createTimeline, fetchTimelines, isLoading } = useTimelineStore();
   const { invitations, fetchMyInvitations, acceptInvitation, declineInvitation, isLoading: loadingInvites } = useInvitationsStore();
-  const [error, setError] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newProject, setNewProject] = useState<NewProjectForm>({
     title: '',
     description: '',
     date: ''
   });
+
+  const showError = (message: string) => {
+    toast.error(message, {
+      duration: 5000,
+      position: 'top-center',
+    });
+  };
 
   useEffect(() => {
     if (user) {
@@ -42,11 +49,10 @@ export default function Dashboard() {
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    setError(''); // Reset error state
 
     try {
       if (!newProject.title.trim()) {
-        setError('Project title is required');
+        showError('Project title is required');
         return;
       }
 
@@ -56,14 +62,20 @@ export default function Dashboard() {
         weddingDate: new Date(newProject.date).toISOString(),
       });
 
+      // Ensure timeline was created with an ID
+      if (!created?._id) {
+        throw new Error('Failed to create timeline - no ID returned');
+      }
+
+      // Close modal and reset form only after successful creation
       setIsCreateModalOpen(false);
       setNewProject({ title: '', description: '', date: '' });
-      if (created?._id) {
-        navigate(`/timeline/${created._id}`);
-      }
+      
+      toast.success('Project created successfully!');
+      navigate(`/timeline/${created._id}`);
     } catch (error: any) {
       console.error('Error creating project:', error);
-      setError(error.response?.data?.message || 'Failed to create project. Please try again.');
+      showError(error.response?.data?.message || 'Failed to create project. Please try again.');
     }
   };
 
@@ -71,6 +83,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-white">
+      <Toaster position="top-center" />
       <Navbar />
       <div className="px-6 max-w-6xl mx-auto">
         {/* Header */}
