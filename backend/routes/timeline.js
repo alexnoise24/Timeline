@@ -282,4 +282,32 @@ router.post('/:id/events/:eventId/notes', authenticate, requireTimelineAccess, a
   }
 });
 
+// Delete timeline (only owner can delete)
+router.delete('/:id', authenticate, requireTimelineOwner, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const timeline = await Timeline.findById(id);
+    
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    // Delete the timeline
+    await Timeline.findByIdAndDelete(id);
+
+    // TODO: Also remove this timeline from all users' invitedTimelines
+    const User = (await import('../models/User.js')).default;
+    await User.updateMany(
+      { 'invitedTimelines.timelineId': id },
+      { $pull: { invitedTimelines: { timelineId: id } } }
+    );
+
+    res.json({ message: 'Timeline deleted successfully' });
+  } catch (error) {
+    console.error('Delete timeline error:', error);
+    res.status(500).json({ message: 'Failed to delete timeline' });
+  }
+});
+
 export default router;

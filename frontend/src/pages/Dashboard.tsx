@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell } from 'lucide-react';
+import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell, Trash2 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Button from '@/components/ui/Button';
@@ -22,11 +22,13 @@ interface NewProjectForm {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  const { timelines, createTimeline, fetchTimelines, isLoading } = useTimelineStore();
+  const { timelines, createTimeline, fetchTimelines, deleteTimeline, isLoading } = useTimelineStore();
   const { invitations, fetchMyInvitations, acceptInvitation, declineInvitation } = useInvitationsStore();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedTimelineForInvite, setSelectedTimelineForInvite] = useState<{ id: string; title: string } | null>(null);
+  const [selectedTimelineForDelete, setSelectedTimelineForDelete] = useState<{ id: string; title: string } | null>(null);
   const [newProject, setNewProject] = useState<NewProjectForm>({
     title: '',
     description: '',
@@ -81,6 +83,29 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error declining invitation:', error);
       showError('Failed to decline invitation');
+    }
+  };
+
+  const handleOpenDeleteModal = (timelineId: string, timelineTitle: string) => {
+    setSelectedTimelineForDelete({ id: timelineId, title: timelineTitle });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setSelectedTimelineForDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedTimelineForDelete) return;
+
+    try {
+      await deleteTimeline(selectedTimelineForDelete.id);
+      toast.success('Timeline deleted successfully');
+      handleCloseDeleteModal();
+    } catch (error) {
+      console.error('Error deleting timeline:', error);
+      showError('Failed to delete timeline');
     }
   };
 
@@ -199,18 +224,32 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenInviteModal(timeline._id, timeline.title);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="w-full flex items-center justify-center gap-2"
-                    >
-                      <UserPlus size={16} />
-                      Invite Collaborators
-                    </Button>
+                    <div className="space-y-2">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenInviteModal(timeline._id, timeline.title);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full flex items-center justify-center gap-2"
+                      >
+                        <UserPlus size={16} />
+                        Invite Collaborators
+                      </Button>
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDeleteModal(timeline._id, timeline.title);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full flex items-center justify-center gap-2 text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400"
+                      >
+                        <Trash2 size={16} />
+                        Delete Timeline
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -334,6 +373,50 @@ export default function Dashboard() {
             timelineTitle={selectedTimelineForInvite.title}
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal}>
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 size={24} className="text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-black">Delete Timeline</h2>
+                <p className="text-sm text-primary-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-900 mb-2">
+                You are about to permanently delete:
+              </p>
+              <p className="font-semibold text-red-900">
+                "{selectedTimelineForDelete?.title}"
+              </p>
+              <p className="text-xs text-red-700 mt-2">
+                All events, notes, and data associated with this timeline will be permanently deleted.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="flex-1" 
+                onClick={handleCloseDeleteModal}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleConfirmDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete Permanently
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   );
