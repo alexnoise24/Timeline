@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Check, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+
+interface PasswordRequirement {
+  label: string;
+  met: boolean;
+}
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -11,16 +17,29 @@ const Register: React.FC = () => {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const { register } = useAuthStore();
   const navigate = useNavigate();
+
+  // Password validation requirements
+  const getPasswordRequirements = (password: string): PasswordRequirement[] => {
+    return [
+      { label: 'At least 6 characters', met: password.length >= 6 },
+      { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+      { label: 'One special character (!@#$%^&*)', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+    ];
+  };
+
+  const passwordRequirements = getPasswordRequirements(formData.password);
+  const isPasswordValid = passwordRequirements.every(req => req.met);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Basic client-side validation
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    // Validate password requirements
+    if (!isPasswordValid) {
+      setError('Please meet all password requirements');
       return;
     }
 
@@ -92,9 +111,32 @@ const Register: React.FC = () => {
               placeholder="••••••••"
               value={formData.password}
               onChange={(e) => updateFormData('password', e.target.value)}
+              onFocus={() => setShowPasswordRequirements(true)}
+              onBlur={() => setShowPasswordRequirements(false)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
             />
+            
+            {/* Password requirements box */}
+            {showPasswordRequirements && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs font-semibold text-blue-900 mb-2">Password must contain:</p>
+                <ul className="space-y-1">
+                  {passwordRequirements.map((req, index) => (
+                    <li key={index} className="flex items-center gap-2 text-xs">
+                      {req.met ? (
+                        <Check size={14} className="text-green-600" />
+                      ) : (
+                        <X size={14} className="text-gray-400" />
+                      )}
+                      <span className={req.met ? 'text-green-700' : 'text-gray-600'}>
+                        {req.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="bg-primary-50 p-5 rounded-lg border border-gray-200">

@@ -10,7 +10,10 @@ router.post('/register',
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Invalid email'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+    body('password')
+      .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+      .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+      .matches(/[!@#$%^&*(),.?":{}|<>]/).withMessage('Password must contain at least one special character'),
     body('role').isIn(['photographer', 'guest']).withMessage('Role must be photographer or guest')
   ],
   async (req, res) => {
