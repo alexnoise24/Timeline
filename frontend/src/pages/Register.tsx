@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useInvitationsStore } from '@/store/invitationsStore';
 
 interface PasswordRequirement {
   label: string;
@@ -9,6 +10,9 @@ interface PasswordRequirement {
 }
 
 const Register: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,7 +23,15 @@ const Register: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const { register } = useAuthStore();
+  const { acceptInviteToken } = useInvitationsStore();
   const navigate = useNavigate();
+
+  // Set role to guest if coming from invite link
+  useEffect(() => {
+    if (inviteToken) {
+      setFormData(prev => ({ ...prev, role: 'guest' }));
+    }
+  }, [inviteToken]);
 
   // Password validation requirements
   const getPasswordRequirements = (password: string): PasswordRequirement[] => {
@@ -51,6 +63,22 @@ const Register: React.FC = () => {
     try {
       setIsLoading(true);
       await register(formData.name, formData.email, formData.password, formData.role);
+      
+      // If user registered via invite link, accept the invitation
+      if (inviteToken) {
+        try {
+          const result = await acceptInviteToken(inviteToken);
+          if (result?.timelineId) {
+            // Navigate directly to the shared timeline
+            navigate(`/timeline/${result.timelineId}`, { replace: true });
+            return;
+          }
+        } catch (inviteError) {
+          console.error('Failed to accept invitation:', inviteError);
+          // Continue to dashboard even if invite acceptance fails
+        }
+      }
+      
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -72,6 +100,13 @@ const Register: React.FC = () => {
         </div>
 
         <h2 className="text-xl font-semibold text-black mb-6 text-center">Create Account</h2>
+
+        {inviteToken && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 text-sm">
+            <p className="font-semibold mb-1">📨 You've been invited!</p>
+            <p className="text-xs">Create your account to access the shared wedding timeline.</p>
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">

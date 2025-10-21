@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Users, LogOut } from 'lucide-react';
+import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
+import InviteModal from '@/components/InviteModal';
 import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -22,8 +23,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { timelines, createTimeline, fetchTimelines, isLoading } = useTimelineStore();
-  const { invitations, fetchMyInvitations, acceptInvitation, declineInvitation, isLoading: loadingInvites } = useInvitationsStore();
+  const { invitations, fetchMyInvitations, acceptInvitation, declineInvitation } = useInvitationsStore();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [selectedTimelineForInvite, setSelectedTimelineForInvite] = useState<{ id: string; title: string } | null>(null);
   const [newProject, setNewProject] = useState<NewProjectForm>({
     title: '',
     description: '',
@@ -40,11 +43,24 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       fetchTimelines();
-      if (user.role === 'guest') {
-        fetchMyInvitations();
-      }
+      fetchMyInvitations(); // Fetch for all users
     }
   }, [user, fetchTimelines, fetchMyInvitations]);
+
+  const handleOpenInviteModal = (timelineId: string, timelineTitle: string) => {
+    setSelectedTimelineForInvite({ id: timelineId, title: timelineTitle });
+    setIsInviteModalOpen(true);
+  };
+
+  const handleCloseInviteModal = () => {
+    setIsInviteModalOpen(false);
+    setSelectedTimelineForInvite(null);
+  };
+
+  // Separate owned and shared timelines
+  const ownedTimelines = timelines.filter(t => t && t.owner && user && t.owner._id === user._id);
+  const sharedTimelines = timelines.filter(t => t && t.owner && user && t.owner._id !== user._id);
+  const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,91 +120,138 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Guest Invitations */}
-        {user?.role === 'guest' && (
-          <div className="mb-6">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
-              <h3 className="text-lg font-semibold text-black mb-3">Your Invitations</h3>
-              {loadingInvites ? (
-                <div className="text-primary-600">Loading invitations...</div>
-              ) : invitations.length === 0 ? (
-                <div className="text-primary-600">No invitations yet.</div>
-              ) : (
-                <div className="grid gap-3" style={{gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))'}}>
-                  {invitations.map((inv) => {
-                    const clickable = inv.status === 'accepted';
-                    return (
-                      <div
-                        key={inv.timelineId}
-                        className={`border border-gray-200 rounded-lg p-3 ${clickable ? 'cursor-pointer hover:bg-primary-50' : 'opacity-70'}`}
-                        onClick={() => clickable && navigate(`/timeline/${inv.timelineId}`)}
-                        role={clickable ? 'button' : undefined}
-                        aria-disabled={!clickable}
-                      >
-                        <div className="font-semibold text-black">{inv.timelineTitle}</div>
-                        <div className="text-xs text-primary-600 mt-1">
-                          {inv.weddingDate ? new Date(inv.weddingDate).toLocaleDateString() : ''}
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          {inv.status === 'pending' ? (
-                            <>
-                              <Button onClick={() => acceptInvitation(inv.timelineId)} size="sm">Accept</Button>
-                              <Button onClick={() => declineInvitation(inv.timelineId)} size="sm" variant="outline">Decline</Button>
-                            </>
-                          ) : (
-                            <span className="text-xs text-primary-600">Status: {inv.status}</span>
-                          )}
-                        </div>
+        {/* Pending Invitations Notification */}
+        {pendingInvitations.length > 0 && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <Bell size={20} className="text-blue-600" />
+              <h3 className="text-lg font-semibold text-blue-900">
+                {pendingInvitations.length} Pending Invitation{pendingInvitations.length > 1 ? 's' : ''}
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {pendingInvitations.map((inv) => (
+                <div key={inv.timelineId} className="p-3 bg-white rounded-lg border border-blue-200">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="font-semibold text-black">{inv.timelineTitle}</div>
+                      <div className="text-sm text-primary-600 mt-1">
+                        {inv.invitedBy?.name} invited you
+                        {inv.weddingDate && ` • ${new Date(inv.weddingDate).toLocaleDateString()}`}
                       </div>
-                    );
-                  })}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => acceptInvitation(inv.timelineId)} size="sm">Accept</Button>
+                      <Button onClick={() => declineInvitation(inv.timelineId)} size="sm" variant="outline">Decline</Button>
+                    </div>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         )}
 
-        {/* Projects Grid */}
-        <div className="grid gap-6" style={{gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))'}}>
-          {timelines.filter(Boolean).map((timeline) => (
-            <Card key={timeline!._id} className="cursor-pointer" onClick={() => navigate(`/timeline/${timeline!._id}`)}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-black mb-2">{timeline!.title || 'Untitled'}</h3>
-                    <p className="text-sm text-primary-600 leading-6">{timeline!.description || ''}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 mb-4 text-sm text-primary-600">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-primary-600" />
-                    <span>{timeline!.weddingDate ? new Date(timeline!.weddingDate).toLocaleDateString() : ''}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={16} className="text-primary-600" />
-                    <span>{timeline!.collaborators?.length || 0} collaborators</span>
-                  </div>
-                </div>
-                <div className="p-3 bg-primary-50 rounded-lg border border-gray-200 text-xs text-primary-600">
-                  Click to manage this project →
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* My Projects */}
+        {user?.role === 'photographer' && ownedTimelines.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-black mb-4">My Projects</h2>
+            <div className="grid gap-6" style={{gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))'}}>
+              {ownedTimelines.map((timeline) => (
+                <Card key={timeline._id} className="group relative">
+                  <CardContent className="p-6">
+                    <div className="cursor-pointer" onClick={() => navigate(`/timeline/${timeline._id}`)}>
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-black mb-2">{timeline.title || 'Untitled'}</h3>
+                          <p className="text-sm text-primary-600 leading-6">{timeline.description || ''}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 mb-4 text-sm text-primary-600">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={16} className="text-primary-600" />
+                          <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users size={16} className="text-primary-600" />
+                          <span>{timeline.collaborators?.length || 0} collaborators</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenInviteModal(timeline._id, timeline.title);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full flex items-center justify-center gap-2"
+                    >
+                      <UserPlus size={16} />
+                      Invite Collaborators
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Shared Timelines */}
+        {sharedTimelines.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Share2 size={24} className="text-primary-600" />
+              <h2 className="text-xl font-bold text-black">Shared Timelines</h2>
+            </div>
+            <div className="grid gap-6" style={{gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))'}}>
+              {sharedTimelines.map((timeline) => (
+                <Card key={timeline._id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/timeline/${timeline._id}`)}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">{timeline.title || 'Untitled'}</h3>
+                        <p className="text-sm text-primary-600 leading-6">{timeline.description || ''}</p>
+                        <p className="text-xs text-primary-500 mt-2">
+                          Owned by {timeline.owner?.name || 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 mb-4 text-sm text-primary-600">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-primary-600" />
+                        <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-primary-600" />
+                        <span>{timeline.collaborators?.length || 0} collaborators</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-200 text-xs text-green-700">
+                      Shared with you • Click to view →
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Empty State */}
-        {timelines.length === 0 && !isLoading && (
+        {ownedTimelines.length === 0 && sharedTimelines.length === 0 && !isLoading && (
           <div className="text-center p-12 bg-white border border-gray-200 rounded-xl shadow-sm">
             <Calendar size={64} className="text-primary-300 mx-auto mb-6" />
             <h3 className="text-2xl font-semibold text-black mb-3">No projects yet</h3>
             <p className="text-primary-600 mb-8 max-w-md mx-auto">
-              Start by creating your first wedding project. You can manage timelines, add events, and invite collaborators.
+              {user?.role === 'photographer' 
+                ? "Start by creating your first wedding project. You can manage timelines, add events, and invite collaborators."
+                : "You don't have any shared timelines yet. Ask a photographer to invite you to their project."}
             </p>
-            <Button onClick={() => setIsCreateModalOpen(true)} className="text-base font-medium inline-flex items-center gap-2">
-              <Plus size={20} />
-              Create Your First Project
-            </Button>
+            {user?.role === 'photographer' && (
+              <Button onClick={() => setIsCreateModalOpen(true)} className="text-base font-medium inline-flex items-center gap-2">
+                <Plus size={20} />
+                Create Your First Project
+              </Button>
+            )}
           </div>
         )}
 
@@ -239,6 +302,16 @@ export default function Dashboard() {
             </form>
           </div>
         </Modal>
+
+        {/* Invite Modal */}
+        {selectedTimelineForInvite && (
+          <InviteModal
+            isOpen={isInviteModalOpen}
+            onClose={handleCloseInviteModal}
+            timelineId={selectedTimelineForInvite.id}
+            timelineTitle={selectedTimelineForInvite.title}
+          />
+        )}
       </div>
     </div>
   );

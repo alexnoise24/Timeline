@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import InviteLanding from './pages/InviteLanding';
+import InviteAccept from './pages/InviteAccept';
 import Dashboard from './pages/Dashboard';
 import TimelineView from './pages/TimelineView';
 
@@ -84,7 +84,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/invite/:token" element={<InviteLanding />} />
+        <Route path="/invite/:token" element={<InviteAccept />} />
         <Route
           path="/login"
           element={
