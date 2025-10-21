@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-// Base URL without trailing slash
-const baseURL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+// Base URL with /api prefix
+const baseURL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '') + '/api';
 
 const api = axios.create({
-  baseURL: baseURL, // Base URL without /api since backend routes already include it
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   },

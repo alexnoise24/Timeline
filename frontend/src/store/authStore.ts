@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      const { data } = await api.post('/api/auth/login', { email, password });
+      const { data } = await api.post('/auth/login', { email, password });
       
       if (!data.token) {
         throw new Error('No authentication token received');
@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     
     try {
       // Register the user
-      await api.post('/api/auth/register', { 
+      await api.post('/auth/register', { 
         name, 
         email, 
         password, 
@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.log('Registration successful, logging in...');
 
       // Log the user in
-      const { data } = await api.post('/api/auth/login', { email, password });
+      const { data } = await api.post('/auth/login', { email, password });
       
       if (!data.token) {
         throw new Error('No authentication token received');
@@ -148,7 +148,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       console.log('Verifying token with server...');
-      const { data } = await api.get('/api/auth/me');
+      const { data } = await api.get('/auth/me');
       
       if (data?.user) {
         console.log('User authenticated successfully:', data.user.email);
