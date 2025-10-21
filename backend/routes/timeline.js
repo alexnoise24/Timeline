@@ -20,18 +20,28 @@ router.get('/', authenticate, async (req, res) => {
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(userId).populate({
       path: 'invitedTimelines.timelineId',
-      match: { 'invitedTimelines.status': 'accepted' },
       populate: [
         { path: 'owner', select: 'name email avatar' },
         { path: 'collaborators.user', select: 'name email avatar' }
       ]
     });
 
+    // Filter for accepted invitations and ensure timeline exists
     const invitedTimelines = user.invitedTimelines
-      .filter(invite => invite.status === 'accepted')
-      .map(invite => invite.timelineId);
+      .filter(invite => invite.status === 'accepted' && invite.timelineId)
+      .map(invite => invite.timelineId)
+      .filter(timeline => timeline !== null); // Remove any null timelines
 
-    const allTimelines = [...ownedTimelines, ...invitedTimelines];
+    // Combine and deduplicate timelines (in case user owns a timeline they're also invited to)
+    const timelineIds = new Set([
+      ...ownedTimelines.map(t => t._id.toString()),
+      ...invitedTimelines.map(t => t._id.toString())
+    ]);
+    
+    const allTimelines = [
+      ...ownedTimelines,
+      ...invitedTimelines.filter(t => !ownedTimelines.some(owned => owned._id.toString() === t._id.toString()))
+    ];
 
     res.json({ timelines: allTimelines });
   } catch (error) {

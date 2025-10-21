@@ -62,6 +62,28 @@ export default function Dashboard() {
   const sharedTimelines = timelines.filter(t => t && t.owner && user && t.owner._id !== user._id);
   const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
 
+  const handleAcceptInvitation = async (timelineId: string) => {
+    try {
+      await acceptInvitation(timelineId);
+      // Refresh timelines to show the newly accepted timeline
+      await fetchTimelines();
+      toast.success('Invitation accepted!');
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      showError('Failed to accept invitation');
+    }
+  };
+
+  const handleDeclineInvitation = async (timelineId: string) => {
+    try {
+      await declineInvitation(timelineId);
+      toast.success('Invitation declined');
+    } catch (error) {
+      console.error('Error declining invitation:', error);
+      showError('Failed to decline invitation');
+    }
+  };
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -141,8 +163,8 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={() => acceptInvitation(inv.timelineId)} size="sm">Accept</Button>
-                      <Button onClick={() => declineInvitation(inv.timelineId)} size="sm" variant="outline">Decline</Button>
+                      <Button onClick={() => handleAcceptInvitation(inv.timelineId)} size="sm">Accept</Button>
+                      <Button onClick={() => handleDeclineInvitation(inv.timelineId)} size="sm" variant="outline">Decline</Button>
                     </div>
                   </div>
                 </div>
