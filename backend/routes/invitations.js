@@ -92,7 +92,7 @@ router.post('/accept-invite-token',
   }
 );
 
-// Send invitation to guest
+// Send invitation to user (photographer or guest)
 router.post('/invite/:timelineId',
   authenticate,
   requirePhotographer,
@@ -111,19 +111,20 @@ router.post('/invite/:timelineId',
       const { timelineId } = req.params;
       const { email, message } = req.body;
 
-      // Find the guest user (they must already be registered)
-      const guestUser = await User.findOne({ email: email.toLowerCase() });
+      // Find the user (they must already be registered)
+      const invitedUser = await User.findOne({ email: email.toLowerCase() });
 
-      if (!guestUser) {
-        return res.status(404).json({ message: 'User not found. They must register as a guest first.' });
+      if (!invitedUser) {
+        return res.status(404).json({ message: 'User not found. They must register first.' });
       }
 
-      if (guestUser.role !== 'guest') {
-        return res.status(400).json({ message: 'User must be registered as a guest to receive invitations.' });
+      // Check if user is trying to invite themselves
+      if (invitedUser._id.toString() === req.user._id.toString()) {
+        return res.status(400).json({ message: 'You cannot invite yourself to a timeline.' });
       }
 
       // Check if invitation already exists
-      const existingInvitation = guestUser.invitedTimelines.find(
+      const existingInvitation = invitedUser.invitedTimelines.find(
         invite => invite.timelineId.toString() === timelineId.toString()
       );
 
@@ -131,21 +132,21 @@ router.post('/invite/:timelineId',
         return res.status(400).json({ message: 'User is already invited to this timeline.' });
       }
 
-      // Add invitation to guest's profile
-      guestUser.invitedTimelines.push({
+      // Add invitation to user's profile
+      invitedUser.invitedTimelines.push({
         timelineId,
         invitedBy: req.user._id,
         status: 'pending'
       });
 
-      await guestUser.save();
+      await invitedUser.save();
 
       // TODO: Send email notification (we'll implement this later)
 
       res.json({
         message: 'Invitation sent successfully',
         invitation: {
-          email: guestUser.email,
+          email: invitedUser.email,
           timelineId,
           status: 'pending'
         }
