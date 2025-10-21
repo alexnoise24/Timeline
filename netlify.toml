@@ -1,12 +1,10 @@
 [build]
   publish = "frontend/dist"
-  command = "npm install -g npm@10 && cd frontend && npm install --legacy-peer-deps && npm run build"
+  command = "cd frontend && npm install --legacy-peer-deps && npm run build"
 
 [build.environment]
-  NODE_VERSION = "20.0.0"
-  NPM_VERSION = "10"
+  NODE_VERSION = "20"
   CI = "false"
-  NPM_FLAGS = "--legacy-peer-deps --force"
 
 [context.production.environment]
   NODE_VERSION = "20.0.0"
