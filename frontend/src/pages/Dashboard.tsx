@@ -8,6 +8,7 @@ import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
 import InviteModal from '@/components/InviteModal';
+import Sidebar from '@/components/Sidebar';
 import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -145,10 +146,12 @@ export default function Dashboard() {
   // Status fields are not in backend model; omit status badge
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex h-screen bg-white">
       <Toaster position="top-center" />
-      <Navbar />
-      <div className="px-6 max-w-6xl mx-auto">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar />
+        <div className="flex-1 overflow-y-auto px-6 max-w-6xl mx-auto w-full py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8 p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
           <div>
@@ -417,6 +420,7 @@ export default function Dashboard() {
             </div>
           </div>
         </Modal>
+        </div>
       </div>
     </div>
   );

@@ -99,6 +99,33 @@ export interface Timeline {
   updatedAt: string;
 }
 
+export interface Message {
+  _id: string;
+  timelineId: string;
+  sender: User;
+  content: string;
+  createdAt: string;
+  readBy: Array<{
+    user: User | string;
+    readAt: string;
+  }>;
+}
+
+export interface Conversation {
+  timeline: {
+    _id: string;
+    title: string;
+    couple?: {
+      partner1?: string;
+      partner2?: string;
+    };
+    weddingDate: string;
+    owner: User;
+  };
+  lastMessage?: Message;
+  unreadCount: number;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;

@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import InviteAccept from './pages/InviteAccept';
 import Dashboard from './pages/Dashboard';
 import TimelineView from './pages/TimelineView';
+import Messages from './pages/Messages';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -106,6 +107,22 @@ function App() {
           element={
             <PrivateRoute>
               <TimelineView />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <PrivateRoute>
+              <Messages />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
             </PrivateRoute>
           }
         />

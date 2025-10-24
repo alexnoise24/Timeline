@@ -42,6 +42,18 @@ export const setupSocketHandlers = (io) => {
       socket.to(`timeline-${data.timelineId}`).emit('note-added', data);
     });
 
+    socket.on('message-sent', (data) => {
+      // Broadcast to all users in the timeline room
+      io.to(`timeline-${data.timelineId}`).emit('message-received', data);
+    });
+
+    socket.on('typing', (data) => {
+      socket.to(`timeline-${data.timelineId}`).emit('user-typing', {
+        userId: socket.userId,
+        timelineId: data.timelineId
+      });
+    });
+
     socket.on('disconnect', () => {
       console.log(`Usuario desconectado: ${socket.userId}`);
     });

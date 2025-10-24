@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import timelineRoutes from './routes/timeline.js';
 import userRoutes from './routes/user.js';
 import invitationRoutes from './routes/invitations.js';
+import messageRoutes from './routes/messages.js';
 import { setupSocketHandlers } from './socket/handlers.js';
 
 dotenv.config();
@@ -83,6 +84,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/timelines', timelineRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

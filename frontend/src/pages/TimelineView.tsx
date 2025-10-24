@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { formatDate, formatDateTime, getCategoryColor, getCategoryLabel, getInitials } from '@/lib/utils';
 import Overview from '@/components/Overview';
 import ShootList from '@/components/ShootList';
+import Sidebar from '@/components/Sidebar';
 
 type TabType = 'overview' | 'timeline' | 'shotlist';
 
@@ -125,10 +126,13 @@ export default function TimelineView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center h-96">
-          <p className="text-gray-600">Loading timeline...</p>
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <Navbar />
+          <div className="flex items-center justify-center h-96">
+            <p className="text-gray-600">Loading timeline...</p>
+          </div>
         </div>
       </div>
     );
@@ -136,10 +140,13 @@ export default function TimelineView() {
 
   if (!currentTimeline) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center h-96">
-          <p className="text-gray-600">Timeline not found</p>
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <Navbar />
+          <div className="flex items-center justify-center h-96">
+            <p className="text-gray-600">Timeline not found</p>
+          </div>
         </div>
       </div>
     );
@@ -150,10 +157,12 @@ export default function TimelineView() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar />
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="mb-4">
@@ -516,6 +525,9 @@ export default function TimelineView() {
           </div>
         </form>
       </Modal>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
