@@ -528,6 +528,5 @@ export default function TimelineView() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
