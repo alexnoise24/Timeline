@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users, ArrowLeft } from 'lucide-react';
+import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera } from 'lucide-react';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useAuthStore } from '@/store/authStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -11,6 +11,10 @@ import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
 import { formatDate, formatDateTime, getCategoryColor, getCategoryLabel, getInitials } from '@/lib/utils';
+import Overview from '@/components/Overview';
+import ShootList from '@/components/ShootList';
+
+type TabType = 'overview' | 'timeline' | 'shotlist';
 
 export default function TimelineView() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +37,7 @@ export default function TimelineView() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteStatus, setInviteStatus] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   useEffect(() => {
     if (id) {
@@ -161,16 +166,13 @@ export default function TimelineView() {
               Go back to timelines
             </Button>
           </div>
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
                 {currentTimeline.couple?.partner1 && currentTimeline.couple?.partner2
                   ? `${currentTimeline.couple.partner1} & ${currentTimeline.couple.partner2}`
                   : currentTimeline.title}
               </h1>
-              {currentTimeline.description && (
-                <p className="text-gray-600 mt-2">{currentTimeline.description}</p>
-              )}
               <div className="flex items-center space-x-4 mt-4 text-sm text-gray-600">
                 <div className="flex items-center">
                   <Calendar size={16} className="mr-2" />
@@ -188,38 +190,85 @@ export default function TimelineView() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Button onClick={openAddEventModal}>
-                <Plus size={20} className="mr-2" />
-                Add Event
-              </Button>
-              {canInvite && (
-                <div className="flex items-center space-x-2">
-                  <form onSubmit={handleInvite} className="flex items-center space-x-2 w-[320px]">
-                    <Input
-                      type="email"
-                      placeholder="Invite guest by email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      required
-                    />
-                    <Button type="submit">Invite</Button>
-                  </form>
-                  <Button variant="outline" onClick={handleCopyLink}>Copy link</Button>
-                  {inviteStatus && (
-                    <div className="text-sm text-gray-600 mt-2">{inviteStatus}</div>
-                  )}
-                  {copyStatus && (
-                    <div className="text-sm text-gray-600 mt-2">{copyStatus}</div>
-                  )}
-                </div>
-              )}
-            </div>
+            {canInvite && activeTab === 'timeline' && (
+              <div className="flex items-center space-x-2">
+                <form onSubmit={handleInvite} className="flex items-center space-x-2 w-[320px]">
+                  <Input
+                    type="email"
+                    placeholder="Invite guest by email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    required
+                  />
+                  <Button type="submit">Invite</Button>
+                </form>
+                <Button variant="outline" onClick={handleCopyLink}>Copy link</Button>
+                {inviteStatus && (
+                  <div className="text-sm text-gray-600 mt-2">{inviteStatus}</div>
+                )}
+                {copyStatus && (
+                  <div className="text-sm text-gray-600 mt-2">{copyStatus}</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-3 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px ${
+                activeTab === 'overview'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Clipboard size={18} />
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('timeline')}
+              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px ${
+                activeTab === 'timeline'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Calendar size={18} />
+              Timeline
+            </button>
+            <button
+              onClick={() => setActiveTab('shotlist')}
+              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px ${
+                activeTab === 'shotlist'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Camera size={18} />
+              Shot Lists
+            </button>
           </div>
         </div>
 
-        {/* Events Timeline */}
-        <div className="space-y-6">
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <Overview timeline={currentTimeline} />
+        )}
+
+        {activeTab === 'shotlist' && (
+          <ShootList timeline={currentTimeline} />
+        )}
+
+        {activeTab === 'timeline' && (
+          <div className="space-y-6">
+            {/* Add Event Button */}
+            <div className="flex justify-end">
+              <Button onClick={openAddEventModal} className="flex items-center gap-2">
+                <Plus size={20} />
+                Add Event
+              </Button>
+            </div>
           {sortedEvents.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
@@ -339,7 +388,8 @@ export default function TimelineView() {
               </Card>
             ))
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Add Event Modal */}

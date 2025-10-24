@@ -31,6 +31,19 @@ export interface ChangeLog {
   description?: string;
 }
 
+export interface Shot {
+  _id: string;
+  title: string;
+  category: 'preparation' | 'details' | 'ceremony' | 'first_look' | 'family' | 'couple' | 'reception' | 'venue' | 'other';
+  description?: string;
+  isCompleted: boolean;
+  completedBy?: User;
+  completedAt?: string;
+  createdBy: User;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Event {
   _id: string;
   title: string;
@@ -62,9 +75,24 @@ export interface Timeline {
     partner2?: string;
   };
   description?: string;
+  // Overview/General Information fields
+  startTime?: string;
+  endTime?: string;
+  contacts?: {
+    partner1Phone?: string;
+    partner2Phone?: string;
+    plannerContact?: string;
+  };
+  locations?: {
+    ceremony?: string;
+    reception?: string;
+  };
+  guestAttire?: string;
+  generalNotes?: string;
   owner: User;
   collaborators: Collaborator[];
   events: Event[];
+  shotList: Shot[];
   changeLogs: ChangeLog[];
   isPublic: boolean;
   createdAt: string;

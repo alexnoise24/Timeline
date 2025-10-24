@@ -37,6 +37,41 @@ const changeLogSchema = new mongoose.Schema({
   description: String
 });
 
+const shotSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true
+  },
+  category: {
+    type: String,
+    enum: ['preparation', 'details', 'ceremony', 'first_look', 'family', 'couple', 'reception', 'venue', 'other'],
+    default: 'other'
+  },
+  description: String,
+  isCompleted: {
+    type: Boolean,
+    default: false
+  },
+  completedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  completedAt: Date,
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const eventSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -89,6 +124,20 @@ const timelineSchema = new mongoose.Schema({
     partner2: String
   },
   description: String,
+  // Overview/General Information fields
+  startTime: String,
+  endTime: String,
+  contacts: {
+    partner1Phone: String,
+    partner2Phone: String,
+    plannerContact: String
+  },
+  locations: {
+    ceremony: String,
+    reception: String
+  },
+  guestAttire: String,
+  generalNotes: String,
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -110,6 +159,7 @@ const timelineSchema = new mongoose.Schema({
     }
   }],
   events: [eventSchema],
+  shotList: [shotSchema],
   changeLogs: [changeLogSchema],
   isPublic: {
     type: Boolean,

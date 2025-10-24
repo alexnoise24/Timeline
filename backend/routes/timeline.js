@@ -58,7 +58,9 @@ router.get('/:id', authenticate, requireTimelineAccess, async (req, res) => {
       .populate('events.createdBy', 'name email avatar')
       .populate('events.notes.author', 'name email avatar')
       .populate('changeLogs.user', 'name email avatar')
-      .populate('events.changeLogs.user', 'name email avatar');
+      .populate('events.changeLogs.user', 'name email avatar')
+      .populate('shotList.createdBy', 'name email avatar')
+      .populate('shotList.completedBy', 'name email avatar');
 
     if (!timeline) {
       return res.status(404).json({ message: 'Timeline no encontrado' });
@@ -279,6 +281,116 @@ router.post('/:id/events/:eventId/notes', authenticate, requireTimelineAccess, a
     res.status(201).json({ note: newNote });
   } catch (error) {
     res.status(500).json({ message: 'Error al agregar nota' });
+  }
+});
+
+// Add shot to timeline
+router.post('/:id/shots', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    // Check if user has edit permissions
+    const canEdit = timeline.owner.equals(req.userId) ||
+      timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+      req.userTimelineRole === 'invited';
+
+    if (!canEdit) {
+      return res.status(403).json({ message: 'You do not have permission to edit' });
+    }
+
+    const { title, category, description } = req.body;
+    const shot = {
+      title,
+      category,
+      description,
+      isCompleted: false,
+      createdBy: req.userId
+    };
+
+    timeline.shotList.push(shot);
+    await timeline.save();
+
+    const newShot = timeline.shotList[timeline.shotList.length - 1];
+    await timeline.populate('shotList.createdBy', 'name email avatar');
+
+    res.status(201).json({ shot: newShot });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to add shot' });
+  }
+});
+
+// Update shot
+router.put('/:id/shots/:shotId', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    // Check if user has edit permissions
+    const canEdit = timeline.owner.equals(req.userId) ||
+      timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+      req.userTimelineRole === 'invited';
+
+    if (!canEdit) {
+      return res.status(403).json({ message: 'You do not have permission to edit' });
+    }
+
+    const shot = timeline.shotList.id(req.params.shotId);
+    if (!shot) {
+      return res.status(404).json({ message: 'Shot not found' });
+    }
+
+    // If marking as completed, set completion info
+    if (req.body.isCompleted && !shot.isCompleted) {
+      shot.completedBy = req.userId;
+      shot.completedAt = new Date();
+    } else if (req.body.isCompleted === false && shot.isCompleted) {
+      shot.completedBy = undefined;
+      shot.completedAt = undefined;
+    }
+
+    Object.assign(shot, req.body);
+    shot.updatedAt = new Date();
+
+    await timeline.save();
+    await timeline.populate('shotList.createdBy shotList.completedBy', 'name email avatar');
+
+    res.json({ shot });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update shot' });
+  }
+});
+
+// Delete shot
+router.delete('/:id/shots/:shotId', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    // Check if user has edit permissions
+    const canEdit = timeline.owner.equals(req.userId) ||
+      timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+      req.userTimelineRole === 'invited';
+
+    if (!canEdit) {
+      return res.status(403).json({ message: 'You do not have permission to edit' });
+    }
+
+    timeline.shotList.pull(req.params.shotId);
+    await timeline.save();
+
+    res.json({ message: 'Shot deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete shot' });
   }
 });
 
