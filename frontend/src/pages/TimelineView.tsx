@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users, ArrowLeft } from 'lucide-react';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useAuthStore } from '@/store/authStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -14,6 +14,7 @@ import { formatDate, formatDateTime, getCategoryColor, getCategoryLabel, getInit
 
 export default function TimelineView() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { currentTimeline, fetchTimeline, addEvent, addNote, isLoading } = useTimelineStore();
   const { user } = useAuthStore();
   const { inviteGuest, createInviteLink } = useInvitationsStore();
@@ -150,6 +151,16 @@ export default function TimelineView() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="mb-4">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center gap-2"
+            >
+              <ArrowLeft size={16} />
+              Go back to timelines
+            </Button>
+          </div>
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
