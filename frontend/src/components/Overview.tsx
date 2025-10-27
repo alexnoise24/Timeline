@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Edit2, Save, X } from 'lucide-react';
 import { Timeline } from '@/types';
 import { useAuthStore } from '@/store/authStore';
@@ -16,10 +16,20 @@ export default function Overview({ timeline }: OverviewProps) {
   const { user } = useAuthStore();
   const { updateOverview } = useTimelineStore();
   const [isEditing, setIsEditing] = useState(false);
+  // Helper function to format date without timezone issues
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     title: timeline.title || '',
     description: timeline.description || '',
-    weddingDate: timeline.weddingDate ? new Date(timeline.weddingDate).toISOString().split('T')[0] : '',
+    weddingDate: formatDateForInput(timeline.weddingDate),
     startTime: timeline.startTime || '',
     endTime: timeline.endTime || '',
     partner1Phone: timeline.contacts?.partner1Phone || '',
@@ -30,6 +40,24 @@ export default function Overview({ timeline }: OverviewProps) {
     guestAttire: timeline.guestAttire || '',
     generalNotes: timeline.generalNotes || '',
   });
+
+  // Update form data when timeline changes (e.g., after save)
+  useEffect(() => {
+    setFormData({
+      title: timeline.title || '',
+      description: timeline.description || '',
+      weddingDate: formatDateForInput(timeline.weddingDate),
+      startTime: timeline.startTime || '',
+      endTime: timeline.endTime || '',
+      partner1Phone: timeline.contacts?.partner1Phone || '',
+      partner2Phone: timeline.contacts?.partner2Phone || '',
+      plannerContact: timeline.contacts?.plannerContact || '',
+      ceremonyLocation: timeline.locations?.ceremony || '',
+      receptionLocation: timeline.locations?.reception || '',
+      guestAttire: timeline.guestAttire || '',
+      generalNotes: timeline.generalNotes || '',
+    });
+  }, [timeline]);
 
   const canEdit = user && (
     timeline.owner._id === user._id ||
