@@ -33,7 +33,7 @@ export default function Overview({ timeline }: OverviewProps) {
 
   const canEdit = user && (
     timeline.owner._id === user._id ||
-    timeline.collaborators.some(c => c.user._id === user._id && c.role === 'editor')
+    timeline.collaborators.some(c => c.user && c.user._id === user._id && c.role === 'editor')
   );
 
   const handleSave = async () => {
