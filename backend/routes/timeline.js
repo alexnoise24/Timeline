@@ -153,6 +153,37 @@ router.post('/:id/collaborators', authenticate, requireTimelineOwner, async (req
   }
 });
 
+// Remove collaborator (only owner)
+router.delete('/:id/collaborators/:userId', authenticate, requireTimelineOwner, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+
+    if (!timeline || !timeline.owner.equals(req.userId)) {
+      return res.status(403).json({ message: 'No autorizado' });
+    }
+
+    const { userId } = req.params;
+
+    // Filter out the collaborator
+    const initialLength = timeline.collaborators.length;
+    timeline.collaborators = timeline.collaborators.filter(
+      c => c.user.toString() !== userId
+    );
+
+    if (timeline.collaborators.length === initialLength) {
+      return res.status(404).json({ message: 'Collaborator not found' });
+    }
+
+    await timeline.save();
+    await timeline.populate('collaborators.user', 'name email avatar');
+
+    res.json({ message: 'Collaborator removed successfully', timeline });
+  } catch (error) {
+    console.error('Error removing collaborator:', error);
+    res.status(500).json({ message: 'Error al eliminar colaborador' });
+  }
+});
+
 // Add event to timeline
 router.post('/:id/events', authenticate, requireTimelineAccess, async (req, res) => {
   try {

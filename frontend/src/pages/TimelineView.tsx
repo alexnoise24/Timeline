@@ -14,6 +14,7 @@ import { formatDate, formatDateTime, getCategoryColor, getCategoryLabel, getInit
 import Overview from '@/components/Overview';
 import ShootList from '@/components/ShootList';
 import Sidebar from '@/components/Sidebar';
+import CollaboratorsModal from '@/components/CollaboratorsModal';
 
 type TabType = 'overview' | 'timeline' | 'shotlist';
 
@@ -39,6 +40,7 @@ export default function TimelineView() {
   const [inviteStatus, setInviteStatus] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isCollaboratorsModalOpen, setIsCollaboratorsModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -193,10 +195,15 @@ export default function TimelineView() {
                     {currentTimeline.location}
                   </div>
                 )}
-                <div className="flex items-center">
-                  <Users size={16} className="mr-2" />
-                  {currentTimeline.collaborators.length + 1} collaborators
-                </div>
+                <button
+                  onClick={() => setIsCollaboratorsModalOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <Users size={16} className="text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">
+                    {currentTimeline.collaborators.length + 1} collaborators
+                  </span>
+                </button>
               </div>
             </div>
             {canInvite && activeTab === 'timeline' && (
@@ -525,6 +532,13 @@ export default function TimelineView() {
           </div>
         </form>
       </Modal>
+
+      {/* Collaborators Modal */}
+      <CollaboratorsModal
+        isOpen={isCollaboratorsModalOpen}
+        onClose={() => setIsCollaboratorsModalOpen(false)}
+        timeline={currentTimeline}
+      />
           </div>
         </div>
       </div>

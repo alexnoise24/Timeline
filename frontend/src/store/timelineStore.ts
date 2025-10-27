@@ -16,6 +16,7 @@ interface TimelineState {
   updateEvent: (timelineId: string, eventId: string, data: Partial<Event>) => Promise<void>;
   addNote: (timelineId: string, eventId: string, content: string) => Promise<void>;
   addCollaborator: (timelineId: string, userId: string, role: string) => Promise<void>;
+  removeCollaborator: (timelineId: string, userId: string) => Promise<void>;
   addShot: (timelineId: string, shot: Partial<Shot>) => Promise<void>;
   updateShot: (timelineId: string, shotId: string, data: Partial<Shot>) => Promise<void>;
   deleteShot: (timelineId: string, shotId: string) => Promise<void>;
@@ -132,6 +133,11 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
 
   addCollaborator: async (timelineId, userId, role) => {
     await api.post(`/timelines/${timelineId}/collaborators`, { userId, role });
+    await get().fetchTimeline(timelineId);
+  },
+
+  removeCollaborator: async (timelineId, userId) => {
+    await api.delete(`/timelines/${timelineId}/collaborators/${userId}`);
     await get().fetchTimeline(timelineId);
   },
 
