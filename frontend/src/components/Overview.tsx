@@ -23,7 +23,9 @@ export default function Overview({ timeline }: OverviewProps) {
     const year = date.getUTCFullYear();
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
     const day = String(date.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const formatted = `${year}-${month}-${day}`;
+    console.log('Formatting date:', dateString, '→', formatted);
+    return formatted;
   };
 
   const [formData, setFormData] = useState({
@@ -43,10 +45,14 @@ export default function Overview({ timeline }: OverviewProps) {
 
   // Update form data when timeline changes (e.g., after save)
   useEffect(() => {
+    console.log('Timeline changed, updating form. Wedding date from server:', timeline.weddingDate);
+    const formattedDate = formatDateForInput(timeline.weddingDate);
+    console.log('Setting formData.weddingDate to:', formattedDate);
+    
     setFormData({
       title: timeline.title || '',
       description: timeline.description || '',
-      weddingDate: formatDateForInput(timeline.weddingDate),
+      weddingDate: formattedDate,
       startTime: timeline.startTime || '',
       endTime: timeline.endTime || '',
       partner1Phone: timeline.contacts?.partner1Phone || '',
@@ -66,9 +72,18 @@ export default function Overview({ timeline }: OverviewProps) {
 
   const handleSave = async () => {
     try {
+      console.log('Saving date from form:', formData.weddingDate);
+      
+      if (!formData.weddingDate) {
+        toast.error('Please select a wedding date');
+        return;
+      }
+      
       // Fix timezone issue: set time to noon to prevent date shifting
       const weddingDate = new Date(formData.weddingDate);
       weddingDate.setHours(12, 0, 0, 0);
+      
+      console.log('Date to save (ISO):', weddingDate.toISOString());
       
       await updateOverview(timeline._id, {
         title: formData.title,
@@ -91,6 +106,7 @@ export default function Overview({ timeline }: OverviewProps) {
       setIsEditing(false);
       toast.success('Overview updated successfully');
     } catch (error) {
+      console.error('Error saving overview:', error);
       toast.error('Failed to update overview');
     }
   };
@@ -99,7 +115,7 @@ export default function Overview({ timeline }: OverviewProps) {
     setFormData({
       title: timeline.title || '',
       description: timeline.description || '',
-      weddingDate: timeline.weddingDate ? new Date(timeline.weddingDate).toISOString().split('T')[0] : '',
+      weddingDate: formatDateForInput(timeline.weddingDate),
       startTime: timeline.startTime || '',
       endTime: timeline.endTime || '',
       partner1Phone: timeline.contacts?.partner1Phone || '',
