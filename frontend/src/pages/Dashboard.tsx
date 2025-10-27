@@ -120,10 +120,14 @@ export default function Dashboard() {
         return;
       }
 
+      // Fix timezone issue: set time to noon to prevent date shifting
+      const weddingDate = new Date(newProject.date);
+      weddingDate.setHours(12, 0, 0, 0);
+
       const created = await createTimeline({
         title: newProject.title,
         description: newProject.description,
-        weddingDate: new Date(newProject.date).toISOString(),
+        weddingDate: weddingDate.toISOString(),
       });
 
       // Ensure timeline was created with an ID

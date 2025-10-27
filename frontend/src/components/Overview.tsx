@@ -38,10 +38,14 @@ export default function Overview({ timeline }: OverviewProps) {
 
   const handleSave = async () => {
     try {
+      // Fix timezone issue: set time to noon to prevent date shifting
+      const weddingDate = new Date(formData.weddingDate);
+      weddingDate.setHours(12, 0, 0, 0);
+      
       await updateOverview(timeline._id, {
         title: formData.title,
         description: formData.description,
-        weddingDate: new Date(formData.weddingDate).toISOString(),
+        weddingDate: weddingDate.toISOString(),
         startTime: formData.startTime,
         endTime: formData.endTime,
         contacts: {
