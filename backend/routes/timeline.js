@@ -269,6 +269,39 @@ router.put('/:id/events/:eventId', authenticate, requireTimelineAccess, async (r
   }
 });
 
+// Delete event
+router.delete('/:id/events/:eventId', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    // Check if user has edit permissions
+    const canEdit = timeline.owner.equals(req.userId) ||
+      timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+      req.userTimelineRole === 'invited';
+
+    if (!canEdit) {
+      return res.status(403).json({ message: 'No tienes permisos para eliminar' });
+    }
+
+    const event = timeline.events.id(req.params.eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Evento no encontrado' });
+    }
+
+    event.remove();
+    await timeline.save();
+
+    res.json({ message: 'Event deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ message: 'Error al eliminar evento' });
+  }
+});
+
 // Add note to event
 router.post('/:id/events/:eventId/notes', authenticate, requireTimelineAccess, async (req, res) => {
   try {

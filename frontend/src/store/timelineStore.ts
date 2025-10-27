@@ -14,6 +14,7 @@ interface TimelineState {
   deleteTimeline: (id: string) => Promise<void>;
   addEvent: (timelineId: string, event: Partial<Event>) => Promise<void>;
   updateEvent: (timelineId: string, eventId: string, data: Partial<Event>) => Promise<void>;
+  deleteEvent: (timelineId: string, eventId: string) => Promise<void>;
   addNote: (timelineId: string, eventId: string, content: string) => Promise<void>;
   addCollaborator: (timelineId: string, userId: string, role: string) => Promise<void>;
   removeCollaborator: (timelineId: string, userId: string) => Promise<void>;
@@ -110,6 +111,21 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
 
     const socket = getSocket();
     socket?.emit('event-updated', { timelineId, event: data.event });
+  },
+
+  deleteEvent: async (timelineId, eventId) => {
+    await api.delete(`/timelines/${timelineId}/events/${eventId}`);
+    set((state) => ({
+      currentTimeline: state.currentTimeline
+        ? {
+            ...state.currentTimeline,
+            events: state.currentTimeline.events.filter((e) => e._id !== eventId),
+          }
+        : null,
+    }));
+
+    const socket = getSocket();
+    socket?.emit('event-deleted', { timelineId, eventId });
   },
 
   addNote: async (timelineId, eventId, content) => {

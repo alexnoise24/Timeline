@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera } from 'lucide-react';
+import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2 } from 'lucide-react';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useAuthStore } from '@/store/authStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -21,10 +21,11 @@ type TabType = 'overview' | 'timeline' | 'shotlist';
 export default function TimelineView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentTimeline, fetchTimeline, addEvent, addNote, isLoading } = useTimelineStore();
+  const { currentTimeline, fetchTimeline, addEvent, updateEvent, deleteEvent, addNote, isLoading } = useTimelineStore();
   const { user } = useAuthStore();
   const { inviteGuest, createInviteLink } = useInvitationsStore();
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [noteContent, setNoteContent] = useState('');
@@ -53,8 +54,16 @@ export default function TimelineView() {
     if (!id) return;
 
     try {
-      await addEvent(id, eventFormData);
+      if (isEditingEvent && selectedEvent) {
+        // Update existing event
+        await updateEvent(id, selectedEvent._id, eventFormData);
+      } else {
+        // Add new event
+        await addEvent(id, eventFormData);
+      }
       setIsEventModalOpen(false);
+      setIsEditingEvent(false);
+      setSelectedEvent(null);
       setEventFormData({
         title: '',
         description: '',
@@ -64,7 +73,32 @@ export default function TimelineView() {
         category: 'other',
       });
     } catch (error) {
-      console.error('Error adding event:', error);
+      console.error('Error saving event:', error);
+    }
+  };
+
+  const openEditEventModal = (event: Event) => {
+    setSelectedEvent(event);
+    setIsEditingEvent(true);
+    setEventFormData({
+      title: event.title,
+      description: event.description || '',
+      date: event.date ? new Date(event.date).toISOString().split('T')[0] : '',
+      time: event.time || '',
+      location: event.location || '',
+      category: event.category,
+    });
+    setIsEventModalOpen(true);
+  };
+
+  const handleDeleteEvent = async (eventId: string, eventTitle: string) => {
+    if (!id) return;
+    if (!window.confirm(`Are you sure you want to delete "${eventTitle}"?`)) return;
+
+    try {
+      await deleteEvent(id, eventId);
+    } catch (error) {
+      console.error('Error deleting event:', error);
     }
   };
 
@@ -118,11 +152,20 @@ export default function TimelineView() {
   };
 
   const openAddEventModal = () => {
+    setIsEditingEvent(false);
+    setSelectedEvent(null);
     // Prefill date with timeline weddingDate (YYYY-MM-DD)
     const defaultDate = currentTimeline
       ? new Date(currentTimeline.weddingDate).toISOString().slice(0, 10)
       : '';
-    setEventFormData((prev) => ({ ...prev, date: prev.date || defaultDate }));
+    setEventFormData({
+      title: '',
+      description: '',
+      date: defaultDate,
+      time: '',
+      location: '',
+      category: 'other',
+    });
     setIsEventModalOpen(true);
   };
 
@@ -315,14 +358,33 @@ export default function TimelineView() {
                             {getCategoryLabel(event.category)}
                           </span>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openNoteModal(event)}
-                        >
-                          <MessageSquare size={16} className="mr-1" />
-                          Note
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditEventModal(event)}
+                            title="Edit event"
+                          >
+                            <Edit2 size={16} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteEvent(event._id, event.title)}
+                            className="text-red-600 hover:bg-red-50"
+                            title="Delete event"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openNoteModal(event)}
+                            title="Add note"
+                          >
+                            <MessageSquare size={16} />
+                          </Button>
+                        </div>
                       </div>
 
                       {event.description && (
@@ -408,11 +470,11 @@ export default function TimelineView() {
         )}
       </div>
 
-      {/* Add Event Modal */}
+      {/* Add/Edit Event Modal */}
       <Modal
         isOpen={isEventModalOpen}
         onClose={() => setIsEventModalOpen(false)}
-        title="Add New Event"
+        title={isEditingEvent ? "Edit Event" : "Add Event"}
         size="lg"
       >
         <form onSubmit={handleAddEvent} className="space-y-4">
@@ -482,7 +544,7 @@ export default function TimelineView() {
               Cancel
             </Button>
             <Button type="submit" className="flex-1">
-              Add Event
+              {isEditingEvent ? "Save Changes" : "Add Event"}
             </Button>
           </div>
         </form>
