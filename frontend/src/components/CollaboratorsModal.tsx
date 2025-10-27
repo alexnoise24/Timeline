@@ -116,34 +116,41 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
               Collaborators ({timeline.collaborators.length})
             </h3>
             <div className="space-y-2">
-              {timeline.collaborators
-                .filter(collab => collab.user) // Filter out null users
-                .map((collab) => (
+              {timeline.collaborators.map((collab, index) => {
+                const userId = collab.user?._id || (typeof collab.user === 'string' ? collab.user : null);
+                const userName = collab.user?.name || 'Unknown User';
+                const userEmail = collab.user?.email || 'No email available';
+                const userInitial = userName.charAt(0).toUpperCase();
+                
+                return (
                   <div
-                    key={collab.user._id}
+                    key={userId?.toString() || `collab-${index}`}
                     className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold">
-                        {collab.user.name?.charAt(0).toUpperCase() || 'G'}
+                        {userInitial}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{collab.user.name || 'Unknown'}</p>
-                        <p className="text-sm text-gray-600">{collab.user.email || 'No email'}</p>
+                        <p className="font-medium text-gray-900">{userName}</p>
+                        <p className="text-sm text-gray-600">{userEmail}</p>
+                        {!collab.user?.name && (
+                          <p className="text-xs text-orange-600 mt-1">⚠️ User data not loaded</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full capitalize">
                         {collab.role}
                       </span>
-                      {isOwner && (
+                      {isOwner && userId && (
                         <button
-                          onClick={() => handleRemoveCollaborator(collab.user._id, collab.user.name || 'User')}
-                          disabled={removingId === collab.user._id}
+                          onClick={() => handleRemoveCollaborator(userId.toString(), userName)}
+                          disabled={removingId === userId?.toString()}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                           title="Remove collaborator"
                         >
-                          {removingId === collab.user._id ? (
+                          {removingId === userId?.toString() ? (
                             <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
                           ) : (
                             <Trash2 size={16} />
@@ -152,7 +159,8 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
                       )}
                     </div>
                   </div>
-                ))}
+                );
+              })}
             </div>
           </div>
         ) : (
