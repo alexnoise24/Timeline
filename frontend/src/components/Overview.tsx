@@ -79,9 +79,8 @@ export default function Overview({ timeline }: OverviewProps) {
         return;
       }
       
-      // Fix timezone issue: set time to noon to prevent date shifting
-      const weddingDate = new Date(formData.weddingDate);
-      weddingDate.setHours(12, 0, 0, 0);
+      // Fix timezone issue: set time to noon UTC to prevent date shifting
+      const weddingDate = new Date(formData.weddingDate + 'T12:00:00.000Z');
       
       console.log('Date to save (ISO):', weddingDate.toISOString());
       
