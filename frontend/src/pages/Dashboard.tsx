@@ -159,10 +159,12 @@ export default function Dashboard() {
             <p className="text-primary-600">Welcome back, {user?.name}! Manage your wedding projects here.</p>
           </div>
           <div className="flex gap-3">
-            <Button onClick={() => setIsCreateModalOpen(true)} className="inline-flex items-center gap-2">
-              <Plus size={20} />
-              New Project
-            </Button>
+            {user?.role === 'photographer' && (
+              <Button onClick={() => setIsCreateModalOpen(true)} className="inline-flex items-center gap-2">
+                <Plus size={20} />
+                New Project
+              </Button>
+            )}
             <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2">
               <LogOut size={20} />
               Logout

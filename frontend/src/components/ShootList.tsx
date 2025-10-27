@@ -38,7 +38,7 @@ export default function ShootList({ timeline }: ShootListProps) {
 
   const canEdit = user && (
     timeline.owner._id === user._id ||
-    timeline.collaborators.some(c => c.user._id === user._id && c.role === 'editor')
+    timeline.collaborators.some(c => c.user._id === user._id)
   );
 
   const handleAddShot = async (e: React.FormEvent) => {
