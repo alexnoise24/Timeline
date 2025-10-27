@@ -66,41 +66,43 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
               Collaborators ({timeline.collaborators.length})
             </h3>
             <div className="space-y-2">
-              {timeline.collaborators.map((collab) => (
-                <div
-                  key={collab.user._id}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold">
-                      {collab.user.name.charAt(0).toUpperCase()}
+              {timeline.collaborators
+                .filter(collab => collab.user) // Filter out null users
+                .map((collab) => (
+                  <div
+                    key={collab.user._id}
+                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold">
+                        {collab.user.name?.charAt(0).toUpperCase() || 'G'}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{collab.user.name || 'Unknown'}</p>
+                        <p className="text-sm text-gray-600">{collab.user.email || 'No email'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{collab.user.name}</p>
-                      <p className="text-sm text-gray-600">{collab.user.email}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full capitalize">
+                        {collab.role}
+                      </span>
+                      {isOwner && (
+                        <button
+                          onClick={() => handleRemoveCollaborator(collab.user._id, collab.user.name || 'User')}
+                          disabled={removingId === collab.user._id}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Remove collaborator"
+                        >
+                          {removingId === collab.user._id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full capitalize">
-                      {collab.role}
-                    </span>
-                    {isOwner && (
-                      <button
-                        onClick={() => handleRemoveCollaborator(collab.user._id, collab.user.name)}
-                        disabled={removingId === collab.user._id}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        title="Remove collaborator"
-                      >
-                        {removingId === collab.user._id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
-                        ) : (
-                          <Trash2 size={16} />
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         ) : (
