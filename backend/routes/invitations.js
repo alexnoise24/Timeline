@@ -84,6 +84,20 @@ router.post('/accept-invite-token',
       }
       await user.save();
 
+      // Add user to timeline's collaborators if not already added
+      const alreadyCollaborator = timeline.collaborators.some(
+        collab => collab.user.toString() === req.user._id.toString()
+      );
+
+      if (!alreadyCollaborator) {
+        timeline.collaborators.push({
+          user: req.user._id,
+          role: 'editor',
+          addedAt: new Date()
+        });
+        await timeline.save();
+      }
+
       return res.json({ message: 'Invitation accepted', timelineId });
     } catch (error) {
       console.error('Accept invite token error:', error);
@@ -184,6 +198,25 @@ router.post('/accept-invitation/:timelineId',
 
       invitation.status = 'accepted';
       await user.save();
+
+      // Add user to timeline's collaborators if not already added
+      const timeline = await Timeline.findById(timelineId);
+      if (!timeline) {
+        return res.status(404).json({ message: 'Timeline not found' });
+      }
+
+      const alreadyCollaborator = timeline.collaborators.some(
+        collab => collab.user.toString() === userId.toString()
+      );
+
+      if (!alreadyCollaborator) {
+        timeline.collaborators.push({
+          user: userId,
+          role: 'editor',
+          addedAt: new Date()
+        });
+        await timeline.save();
+      }
 
       res.json({
         message: 'Invitation accepted successfully',
