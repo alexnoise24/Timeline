@@ -269,6 +269,71 @@ router.post('/decline-invitation/:timelineId',
   }
 );
 
+// Get pending invitations for a timeline (owner only)
+router.get('/timeline/:timelineId/pending',
+  authenticate,
+  requirePhotographer,
+  requireTimelineOwner,
+  async (req, res) => {
+    try {
+      const { timelineId } = req.params;
+
+      // Find all users with pending invitations to this timeline
+      const usersWithInvitations = await User.find({
+        'invitedTimelines.timelineId': timelineId,
+        'invitedTimelines.status': 'pending'
+      }).select('name email invitedTimelines');
+
+      const pendingInvitations = usersWithInvitations.map(user => {
+        const invitation = user.invitedTimelines.find(
+          inv => inv.timelineId.toString() === timelineId && inv.status === 'pending'
+        );
+        return {
+          userId: user._id,
+          userName: user.name,
+          userEmail: user.email,
+          invitedAt: invitation.invitedAt,
+          status: invitation.status
+        };
+      });
+
+      res.json({ invitations: pendingInvitations });
+    } catch (error) {
+      console.error('Get timeline invitations error:', error);
+      res.status(500).json({ message: 'Failed to get invitations' });
+    }
+  }
+);
+
+// Revoke invitation (owner only)
+router.delete('/timeline/:timelineId/revoke/:userId',
+  authenticate,
+  requirePhotographer,
+  requireTimelineOwner,
+  async (req, res) => {
+    try {
+      const { timelineId, userId } = req.params;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Remove the invitation from the user's invitedTimelines
+      user.invitedTimelines = user.invitedTimelines.filter(
+        inv => inv.timelineId.toString() !== timelineId.toString()
+      );
+
+      await user.save();
+
+      res.json({ message: 'Invitation revoked successfully' });
+    } catch (error) {
+      console.error('Revoke invitation error:', error);
+      res.status(500).json({ message: 'Failed to revoke invitation' });
+    }
+  }
+);
+
 // Get user's invitations
 router.get('/my-invitations',
   authenticate,
