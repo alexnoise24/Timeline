@@ -45,14 +45,19 @@ router.post('/accept-invite-token',
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log('Validation errors:', errors.array());
         return res.status(400).json({ errors: errors.array() });
       }
 
       const { token } = req.body;
+      console.log('Accepting invite token for user:', req.user?.email);
+      
       let payload;
       try {
         payload = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('Token verified, timelineId:', payload.timelineId);
       } catch (err) {
+        console.error('Token verification failed:', err.message);
         return res.status(400).json({ message: 'Invalid or expired invite token' });
       }
 
@@ -60,13 +65,17 @@ router.post('/accept-invite-token',
 
       const timeline = await Timeline.findById(timelineId);
       if (!timeline) {
+        console.error('Timeline not found:', timelineId);
         return res.status(404).json({ message: 'Timeline not found' });
       }
 
       const user = await User.findById(req.user._id);
       if (!user) {
+        console.error('User not found:', req.user._id);
         return res.status(404).json({ message: 'User not found' });
       }
+      
+      console.log('User found:', user.email);
 
       // Ensure invitedTimelines entry exists and set accepted
       const existing = user.invitedTimelines.find(
@@ -96,8 +105,12 @@ router.post('/accept-invite-token',
           addedAt: new Date()
         });
         await timeline.save();
+        console.log('Added user to timeline collaborators');
+      } else {
+        console.log('User already a collaborator');
       }
 
+      console.log('Invitation accepted successfully for timeline:', timelineId);
       return res.json({ message: 'Invitation accepted', timelineId });
     } catch (error) {
       console.error('Accept invite token error:', error);

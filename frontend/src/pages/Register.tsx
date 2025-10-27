@@ -64,18 +64,30 @@ const Register: React.FC = () => {
       setIsLoading(true);
       await register(formData.name, formData.email, formData.password, formData.role);
       
-      // If user registered via invite link, accept the invitation
+      // If user registered via invite link, try to accept the invitation
       if (inviteToken) {
         try {
+          // Small delay to ensure auth state is fully set
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const result = await acceptInviteToken(inviteToken);
+          localStorage.removeItem('inviteToken');
+          
           if (result?.timelineId) {
             // Navigate directly to the shared timeline
             navigate(`/timeline/${result.timelineId}`, { replace: true });
             return;
           }
-        } catch (inviteError) {
+        } catch (inviteError: any) {
           console.error('Failed to accept invitation:', inviteError);
-          // Continue to dashboard even if invite acceptance fails
+          localStorage.removeItem('inviteToken');
+          
+          // Show error message but continue to dashboard
+          setError('Account created! However, the invitation link may have expired. Please ask for a new invite.');
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 3000);
+          return;
         }
       }
       
