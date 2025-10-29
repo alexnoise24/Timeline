@@ -302,6 +302,60 @@ router.delete('/:id/events/:eventId', authenticate, requireTimelineAccess, async
   }
 });
 
+// Toggle event completion status
+router.patch('/:id/events/:eventId/complete', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    // Check if user has edit permissions
+    const canEdit = timeline.owner.equals(req.userId) ||
+      timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+      req.userTimelineRole === 'invited';
+
+    if (!canEdit) {
+      return res.status(403).json({ message: 'No permission to mark event as complete' });
+    }
+
+    const event = timeline.events.id(req.params.eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Toggle completion status
+    event.isCompleted = !event.isCompleted;
+    
+    if (event.isCompleted) {
+      event.completedBy = req.userId;
+      event.completedAt = new Date();
+      event.changeLogs.push({
+        action: 'updated',
+        user: req.userId,
+        description: 'Event marked as complete'
+      });
+    } else {
+      event.completedBy = undefined;
+      event.completedAt = undefined;
+      event.changeLogs.push({
+        action: 'updated',
+        user: req.userId,
+        description: 'Event marked as incomplete'
+      });
+    }
+
+    await timeline.save();
+    await timeline.populate('events.createdBy events.completedBy events.changeLogs.user', 'name email avatar');
+
+    res.json({ event });
+  } catch (error) {
+    console.error('Error toggling event completion:', error);
+    res.status(500).json({ message: 'Error updating event completion status' });
+  }
+});
+
 // Add note to event
 router.post('/:id/events/:eventId/notes', authenticate, requireTimelineAccess, async (req, res) => {
   try {

@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
 import InviteModal from '@/components/InviteModal';
 import Sidebar from '@/components/Sidebar';
+import CountdownTimer from '@/components/CountdownTimer';
 import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -221,7 +222,7 @@ export default function Dashboard() {
                           <p className="text-sm text-primary-600 leading-6">{timeline.description || ''}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 mb-4 text-sm text-primary-600">
+                      <div className="flex items-center gap-4 mb-3 text-sm text-primary-600">
                         <div className="flex items-center gap-2">
                           <Calendar size={16} className="text-primary-600" />
                           <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
@@ -231,6 +232,11 @@ export default function Dashboard() {
                           <span>{timeline.collaborators?.length || 0} collaborators</span>
                         </div>
                       </div>
+                      {timeline.weddingDate && (
+                        <div className="mb-4">
+                          <CountdownTimer targetDate={timeline.weddingDate} compact />
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Button
@@ -285,7 +291,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 mb-4 text-sm text-primary-600">
+                    <div className="flex items-center gap-4 mb-3 text-sm text-primary-600">
                       <div className="flex items-center gap-2">
                         <Calendar size={16} className="text-primary-600" />
                         <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
@@ -295,6 +301,11 @@ export default function Dashboard() {
                         <span>{timeline.collaborators?.length || 0} collaborators</span>
                       </div>
                     </div>
+                    {timeline.weddingDate && (
+                      <div className="mb-3">
+                        <CountdownTimer targetDate={timeline.weddingDate} compact />
+                      </div>
+                    )}
                     <div className="p-3 bg-green-50 rounded-lg border border-green-200 text-xs text-green-700">
                       Shared with you • Click to view →
                     </div>

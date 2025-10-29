@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useAuthStore } from '@/store/authStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
+import CountdownTimer from '@/components/CountdownTimer';
 import { formatDate, formatDateTime, getCategoryColor, getCategoryLabel, getInitials } from '@/lib/utils';
 import Overview from '@/components/Overview';
 import ShootList from '@/components/ShootList';
@@ -21,7 +22,7 @@ type TabType = 'overview' | 'timeline' | 'shotlist';
 export default function TimelineView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentTimeline, fetchTimeline, addEvent, updateEvent, deleteEvent, addNote, isLoading } = useTimelineStore();
+  const { currentTimeline, fetchTimeline, addEvent, updateEvent, deleteEvent, toggleEventCompletion, addNote, isLoading } = useTimelineStore();
   const { user } = useAuthStore();
   const { inviteGuest, createInviteLink } = useInvitationsStore();
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -99,6 +100,15 @@ export default function TimelineView() {
       await deleteEvent(id, eventId);
     } catch (error) {
       console.error('Error deleting event:', error);
+    }
+  };
+
+  const handleToggleCompletion = async (eventId: string) => {
+    if (!id) return;
+    try {
+      await toggleEventCompletion(id, eventId);
+    } catch (error) {
+      console.error('Error toggling event completion:', error);
     }
   };
 
@@ -339,24 +349,41 @@ export default function TimelineView() {
             </Card>
           ) : (
             sortedEvents.map((event, index) => (
-              <Card key={event._id} className="relative">
+              <Card key={event._id} className={`relative ${event.isCompleted ? 'opacity-75 bg-gray-50' : ''}`}>
                 {index !== sortedEvents.length - 1 && (
                   <div className="absolute left-8 top-full h-6 w-0.5 bg-gray-200" />
                 )}
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex">
                     <div className="flex-shrink-0 mr-3 sm:mr-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                        <Calendar className="text-primary-600" size={20} />
-                      </div>
+                      <button
+                        onClick={() => handleToggleCompletion(event._id)}
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors ${
+                          event.isCompleted
+                            ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                            : 'bg-primary-100 text-primary-600 hover:bg-primary-200'
+                        }`}
+                        title={event.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+                      >
+                        {event.isCompleted ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                      </button>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base sm:text-xl font-semibold text-gray-900 break-words">{event.title}</h3>
-                          <span className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${getCategoryColor(event.category)}`}>
-                            {getCategoryLabel(event.category)}
-                          </span>
+                          <h3 className={`text-base sm:text-xl font-semibold text-gray-900 break-words ${
+                            event.isCompleted ? 'line-through text-gray-500' : ''
+                          }`}>{event.title}</h3>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getCategoryColor(event.category)}`}>
+                              {getCategoryLabel(event.category)}
+                            </span>
+                            {event.isCompleted && (
+                              <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700">
+                                ✓ Completed
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
                           <Button
@@ -388,7 +415,9 @@ export default function TimelineView() {
                       </div>
 
                       {event.description && (
-                        <p className="text-sm sm:text-base text-gray-600 mt-2 break-words">{event.description}</p>
+                        <p className={`text-sm sm:text-base mt-2 break-words ${
+                          event.isCompleted ? 'text-gray-500 line-through' : 'text-gray-600'
+                        }`}>{event.description}</p>
                       )}
 
                       <div className="flex flex-wrap gap-3 sm:gap-4 mt-3 text-xs sm:text-sm text-gray-600">
@@ -409,6 +438,16 @@ export default function TimelineView() {
                           </div>
                         )}
                       </div>
+
+                      {/* Countdown Timer */}
+                      {!event.isCompleted && event.date && event.time && (
+                        <div className="mt-3">
+                          <CountdownTimer 
+                            targetDate={`${event.date.split('T')[0]}T${event.time}`} 
+                            showIcon 
+                          />
+                        </div>
+                      )}
 
                       {/* Notes */}
                       {event.notes.length > 0 && (

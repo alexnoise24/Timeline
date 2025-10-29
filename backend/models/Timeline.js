@@ -89,6 +89,15 @@ const eventSchema = new mongoose.Schema({
     enum: ['ceremony', 'reception', 'preparation', 'photography', 'other'],
     default: 'other'
   },
+  isCompleted: {
+    type: Boolean,
+    default: false
+  },
+  completedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  completedAt: Date,
   notes: [noteSchema],
   changeLogs: [changeLogSchema],
   createdBy: {

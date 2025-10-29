@@ -52,6 +52,9 @@ export interface Event {
   time?: string;
   location?: string;
   category: 'ceremony' | 'reception' | 'preparation' | 'photography' | 'other';
+  isCompleted: boolean;
+  completedBy?: User;
+  completedAt?: string;
   notes: Note[];
   changeLogs: ChangeLog[];
   createdBy: User;
