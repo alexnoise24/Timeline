@@ -7,12 +7,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 // Initialize Firebase in the service worker
 // TODO: Replace with your actual Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAp4cELjeAhey_-RtJ26ehQtI0WOXSPoqU",
+  authDomain: "moment-weaver-66582.firebaseapp.com",
+  projectId: "moment-weaver-66582",
+  storageBucket: "moment-weaver-66582.firebasestorage.app",
+  messagingSenderId: "110581331447",
+  appId: "1:110581331447:web:c6c8c69163f713ecf42af2"
 };
 
 firebase.initializeApp(firebaseConfig);
