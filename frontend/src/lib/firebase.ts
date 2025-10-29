@@ -48,6 +48,33 @@ export async function requestNotificationPermission(): Promise<string | null> {
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       console.log('Service worker registered:', registration);
       
+      // Wait for service worker to be active
+      let serviceWorkerReady = registration.active;
+      if (!serviceWorkerReady) {
+        // If service worker is installing, wait for it
+        if (registration.installing) {
+          await new Promise<void>((resolve) => {
+            registration.installing!.addEventListener('statechange', function() {
+              if (this.state === 'activated') {
+                resolve();
+              }
+            });
+          });
+        } else if (registration.waiting) {
+          // Service worker is waiting, make it active
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          await new Promise<void>((resolve) => {
+            registration.waiting!.addEventListener('statechange', function() {
+              if (this.state === 'activated') {
+                resolve();
+              }
+            });
+          });
+        }
+      }
+      
+      console.log('Service worker is ready, requesting FCM token...');
+      
       // Get FCM token
       const token = await getToken(messaging, {
         vapidKey: VAPID_KEY,
