@@ -10,8 +10,16 @@ import userRoutes from './routes/user.js';
 import invitationRoutes from './routes/invitations.js';
 import messageRoutes from './routes/messages.js';
 import { setupSocketHandlers } from './socket/handlers.js';
+import { initializeFirebase } from './services/firebase.js';
 
 dotenv.config();
+
+// Initialize Firebase Admin SDK
+try {
+  initializeFirebase();
+} catch (error) {
+  console.error('⚠️ Failed to initialize Firebase Admin. Push notifications will not work:', error.message);
+}
 
 const app = express();
 const httpServer = createServer(app);
