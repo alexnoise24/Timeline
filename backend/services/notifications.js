@@ -1,4 +1,4 @@
-import admin from './firebase.js';
+import admin, { getFirebaseApp } from './firebase.js';
 import User from '../models/User.js';
 
 /**
@@ -35,6 +35,9 @@ export const sendPushNotification = async (userIds, notification, data = {}) => 
 
     console.log(`📤 Sending notification to ${allTokens.length} devices`);
 
+    // Get Firebase app instance
+    const firebaseApp = getFirebaseApp();
+
     // Prepare the message
     const message = {
       notification: {
@@ -49,7 +52,7 @@ export const sendPushNotification = async (userIds, notification, data = {}) => 
     };
 
     // Send to all tokens
-    const response = await admin.messaging().sendEachForMulticast(message);
+    const response = await admin.messaging(firebaseApp).sendEachForMulticast(message);
 
     console.log(`✅ Notification sent successfully: ${response.successCount} succeeded, ${response.failureCount} failed`);
 

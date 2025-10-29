@@ -46,6 +46,21 @@ export default function Messages() {
   useEffect(() => {
     if (activeConversation) {
       fetchMessages(activeConversation);
+      
+      // Join the timeline room for real-time updates
+      const socket = getSocket();
+      if (socket) {
+        socket.emit('join-timeline', activeConversation);
+        console.log(`Joined timeline room: ${activeConversation}`);
+      }
+      
+      // Leave the room when changing conversations
+      return () => {
+        if (socket && activeConversation) {
+          socket.emit('leave-timeline', activeConversation);
+          console.log(`Left timeline room: ${activeConversation}`);
+        }
+      };
     }
   }, [activeConversation, fetchMessages]);
 
