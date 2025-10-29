@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useMessageStore } from '@/store/messageStore';
 import { useAuthStore } from '@/store/authStore';
-import { Send, UserPlus, MessageCircle } from 'lucide-react';
+import { Send, UserPlus, MessageCircle, ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import Button from '@/components/ui/Button';
@@ -88,7 +88,10 @@ export default function Messages() {
         
         <div className="flex-1 flex overflow-hidden">
           {/* Conversations List */}
-          <div className="w-80 bg-gray-800 text-white flex flex-col border-r border-gray-700">
+          <div className={`
+            ${activeConversation ? 'hidden md:flex' : 'flex'}
+            w-full md:w-80 bg-gray-800 text-white flex-col border-r border-gray-700
+          `}>
             <div className="p-4 border-b border-gray-700 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Messages</h2>
               <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
@@ -149,17 +152,31 @@ export default function Messages() {
           </div>
 
           {/* Chat Area */}
-          <div className="flex-1 flex flex-col bg-gray-700">
+          <div className={`
+            ${!activeConversation ? 'hidden md:flex' : 'flex'}
+            flex-1 flex-col bg-gray-700
+          `}>
             {activeConversationData ? (
               <>
                 {/* Chat Header */}
                 <div className="bg-gray-800 p-4 border-b border-gray-700">
-                  <h2 className="text-xl font-semibold text-white">
-                    {getConversationTitle(activeConversationData)}
-                  </h2>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {new Date(activeConversationData.timeline.weddingDate).toLocaleDateString()}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    {/* Mobile back button */}
+                    <button
+                      onClick={() => setActiveConversation(null)}
+                      className="md:hidden p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <ArrowLeft size={20} className="text-white" />
+                    </button>
+                    <div className="flex-1">
+                      <h2 className="text-lg sm:text-xl font-semibold text-white">
+                        {getConversationTitle(activeConversationData)}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                        {new Date(activeConversationData.timeline.weddingDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Messages */}
@@ -182,24 +199,24 @@ export default function Messages() {
                           key={message._id}
                           className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                         >
-                          <div className={`flex gap-2 max-w-md ${isOwn ? 'flex-row-reverse' : ''}`}>
-                            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+                          <div className={`flex gap-2 max-w-[85%] sm:max-w-md ${isOwn ? 'flex-row-reverse' : ''}`}>
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
                               {getInitials(message.sender.name)}
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               {!isOwn && (
                                 <p className="text-xs text-gray-400 mb-1">
                                   {message.sender.name}
                                 </p>
                               )}
                               <div
-                                className={`px-4 py-2 rounded-lg ${
+                                className={`px-3 sm:px-4 py-2 rounded-lg ${
                                   isOwn
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-600 text-white'
                                 }`}
                               >
-                                <p className="break-words">{message.content}</p>
+                                <p className="break-words text-sm sm:text-base">{message.content}</p>
                               </div>
                               <p className="text-xs text-gray-400 mt-1">
                                 {formatDateTime(message.createdAt)}
@@ -214,21 +231,21 @@ export default function Messages() {
                 </div>
 
                 {/* Message Input */}
-                <form onSubmit={handleSendMessage} className="p-4 bg-gray-800 border-t border-gray-700">
+                <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-gray-800 border-t border-gray-700">
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       placeholder="Type a message..."
-                      className="flex-1 px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-400"
+                      className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-400"
                     />
                     <Button
                       type="submit"
                       disabled={!messageInput.trim()}
-                      className="px-6"
+                      className="px-4 sm:px-6"
                     >
-                      <Send size={20} />
+                      <Send size={18} className="sm:w-5 sm:h-5" />
                     </Button>
                   </div>
                 </form>

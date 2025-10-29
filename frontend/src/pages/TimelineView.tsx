@@ -207,9 +207,9 @@ export default function TimelineView() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="mb-4">
             <Button 
               variant="outline" 
@@ -220,14 +220,14 @@ export default function TimelineView() {
               Go back to timelines
             </Button>
           </div>
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
                 {currentTimeline.couple?.partner1 && currentTimeline.couple?.partner2
                   ? `${currentTimeline.couple.partner1} & ${currentTimeline.couple.partner2}`
                   : currentTimeline.title}
               </h1>
-              <div className="flex items-center space-x-4 mt-4 text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 sm:mt-4 text-xs sm:text-sm text-gray-600">
                 <div className="flex items-center">
                   <Calendar size={16} className="mr-2" />
                   {formatDate(currentTimeline.weddingDate)}
@@ -250,61 +250,61 @@ export default function TimelineView() {
               </div>
             </div>
             {canInvite && activeTab === 'timeline' && (
-              <div className="flex items-center space-x-2">
-                <form onSubmit={handleInvite} className="flex items-center space-x-2 w-[320px]">
+              <div className="w-full lg:w-auto">
+                <form onSubmit={handleInvite} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Input
                     type="email"
                     placeholder="Invite guest by email"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     required
+                    className="flex-1 sm:w-64"
                   />
-                  <Button type="submit">Invite</Button>
+                  <div className="flex gap-2">
+                    <Button type="submit" className="flex-1 sm:flex-none">Invite</Button>
+                    <Button variant="outline" onClick={handleCopyLink} className="flex-1 sm:flex-none">Copy link</Button>
+                  </div>
                 </form>
-                <Button variant="outline" onClick={handleCopyLink}>Copy link</Button>
-                {inviteStatus && (
-                  <div className="text-sm text-gray-600 mt-2">{inviteStatus}</div>
-                )}
-                {copyStatus && (
-                  <div className="text-sm text-gray-600 mt-2">{copyStatus}</div>
+                {(inviteStatus || copyStatus) && (
+                  <div className="text-xs sm:text-sm text-gray-600 mt-2">{inviteStatus || copyStatus}</div>
                 )}
               </div>
             )}
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center gap-3 border-b border-gray-200">
+          <div className="flex items-center gap-1 sm:gap-3 border-b border-gray-200 overflow-x-auto">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-colors border-b-2 -mb-px whitespace-nowrap ${
                 activeTab === 'overview'
                   ? 'border-black text-black'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Clipboard size={18} />
+              <Clipboard size={16} className="sm:w-[18px] sm:h-[18px]" />
               Overview
             </button>
             <button
               onClick={() => setActiveTab('timeline')}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-colors border-b-2 -mb-px whitespace-nowrap ${
                 activeTab === 'timeline'
                   ? 'border-black text-black'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Calendar size={18} />
+              <Calendar size={16} className="sm:w-[18px] sm:h-[18px]" />
               Timeline
             </button>
             <button
               onClick={() => setActiveTab('shotlist')}
-              className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-colors border-b-2 -mb-px whitespace-nowrap ${
                 activeTab === 'shotlist'
                   ? 'border-black text-black'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Camera size={18} />
+              <Camera size={16} className="sm:w-[18px] sm:h-[18px]" />
               Shot Lists
             </button>
           </div>
@@ -320,11 +320,11 @@ export default function TimelineView() {
         )}
 
         {activeTab === 'timeline' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Add Event Button */}
             <div className="flex justify-end">
-              <Button onClick={openAddEventModal} className="flex items-center gap-2">
-                <Plus size={20} />
+              <Button onClick={openAddEventModal} className="flex items-center gap-2 w-full sm:w-auto justify-center">
+                <Plus size={18} />
                 Add Event
               </Button>
             </div>
@@ -343,22 +343,22 @@ export default function TimelineView() {
                 {index !== sortedEvents.length - 1 && (
                   <div className="absolute left-8 top-full h-6 w-0.5 bg-gray-200" />
                 )}
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex">
-                    <div className="flex-shrink-0 mr-4">
-                      <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                        <Calendar className="text-primary-600" size={24} />
+                    <div className="flex-shrink-0 mr-3 sm:mr-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                        <Calendar className="text-primary-600" size={20} />
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-xl font-semibold text-gray-900">{event.title}</h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base sm:text-xl font-semibold text-gray-900 break-words">{event.title}</h3>
                           <span className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${getCategoryColor(event.category)}`}>
                             {getCategoryLabel(event.category)}
                           </span>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           <Button
                             size="sm"
                             variant="outline"
@@ -388,10 +388,10 @@ export default function TimelineView() {
                       </div>
 
                       {event.description && (
-                        <p className="text-gray-600 mt-2">{event.description}</p>
+                        <p className="text-sm sm:text-base text-gray-600 mt-2 break-words">{event.description}</p>
                       )}
 
-                      <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-600">
+                      <div className="flex flex-wrap gap-3 sm:gap-4 mt-3 text-xs sm:text-sm text-gray-600">
                         <div className="flex items-center">
                           <Calendar size={16} className="mr-2" />
                           {formatDate(event.date)}

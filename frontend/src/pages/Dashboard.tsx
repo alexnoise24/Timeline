@@ -154,50 +154,50 @@ export default function Dashboard() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        <div className="flex-1 overflow-y-auto px-6 max-w-6xl mx-auto w-full py-8">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 max-w-6xl mx-auto w-full py-4 sm:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8 p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8 p-4 sm:p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold text-black mb-1">Dashboard</h1>
-            <p className="text-primary-600">Welcome back, {user?.name}! Manage your wedding projects here.</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-black mb-1">Dashboard</h1>
+            <p className="text-sm sm:text-base text-primary-600">Welcome back, {user?.name}!</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             {user?.role === 'photographer' && (
-              <Button onClick={() => setIsCreateModalOpen(true)} className="inline-flex items-center gap-2">
-                <Plus size={20} />
-                New Project
+              <Button onClick={() => setIsCreateModalOpen(true)} className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center">
+                <Plus size={18} />
+                <span className="hidden xs:inline">New Project</span>
               </Button>
             )}
-            <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2">
-              <LogOut size={20} />
-              Logout
+            <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center">
+              <LogOut size={18} />
+              <span className="hidden xs:inline">Logout</span>
             </Button>
           </div>
         </div>
 
         {/* Pending Invitations Notification */}
         {pendingInvitations.length > 0 && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl">
             <div className="flex items-center gap-2 mb-3">
-              <Bell size={20} className="text-blue-600" />
-              <h3 className="text-lg font-semibold text-blue-900">
+              <Bell size={18} className="text-blue-600" />
+              <h3 className="text-base sm:text-lg font-semibold text-blue-900">
                 {pendingInvitations.length} Pending Invitation{pendingInvitations.length > 1 ? 's' : ''}
               </h3>
             </div>
             <div className="space-y-2">
               {pendingInvitations.map((inv) => (
                 <div key={inv.timelineId} className="p-3 bg-white rounded-lg border border-blue-200">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex-1">
-                      <div className="font-semibold text-black">{inv.timelineTitle}</div>
-                      <div className="text-sm text-primary-600 mt-1">
+                      <div className="font-semibold text-sm sm:text-base text-black">{inv.timelineTitle}</div>
+                      <div className="text-xs sm:text-sm text-primary-600 mt-1">
                         {inv.invitedBy?.name} invited you
                         {inv.weddingDate && ` • ${new Date(inv.weddingDate).toLocaleDateString()}`}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button onClick={() => handleAcceptInvitation(inv.timelineId)} size="sm">Accept</Button>
-                      <Button onClick={() => handleDeclineInvitation(inv.timelineId)} size="sm" variant="outline">Decline</Button>
+                    <div className="flex gap-2 sm:flex-shrink-0">
+                      <Button onClick={() => handleAcceptInvitation(inv.timelineId)} size="sm" className="flex-1 sm:flex-none">Accept</Button>
+                      <Button onClick={() => handleDeclineInvitation(inv.timelineId)} size="sm" variant="outline" className="flex-1 sm:flex-none">Decline</Button>
                     </div>
                   </div>
                 </div>
@@ -208,9 +208,9 @@ export default function Dashboard() {
 
         {/* My Projects */}
         {user?.role === 'photographer' && ownedTimelines.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-black mb-4">My Projects</h2>
-            <div className="grid gap-6" style={{gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))'}}>
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-lg sm:text-xl font-bold text-black mb-4">My Projects</h2>
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {ownedTimelines.map((timeline) => (
                 <Card key={timeline._id} className="group relative">
                   <CardContent className="p-6">
@@ -267,12 +267,12 @@ export default function Dashboard() {
 
         {/* Shared Timelines */}
         {sharedTimelines.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <Share2 size={24} className="text-primary-600" />
-              <h2 className="text-xl font-bold text-black">Shared Timelines</h2>
+              <Share2 size={20} className="text-primary-600" />
+              <h2 className="text-lg sm:text-xl font-bold text-black">Shared Timelines</h2>
             </div>
-            <div className="grid gap-6" style={{gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))'}}>
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {sharedTimelines.map((timeline) => (
                 <Card key={timeline._id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/timeline/${timeline._id}`)}>
                   <CardContent className="p-6">
@@ -307,16 +307,16 @@ export default function Dashboard() {
 
         {/* Empty State */}
         {ownedTimelines.length === 0 && sharedTimelines.length === 0 && !isLoading && (
-          <div className="text-center p-12 bg-white border border-gray-200 rounded-xl shadow-sm">
-            <Calendar size={64} className="text-primary-300 mx-auto mb-6" />
-            <h3 className="text-2xl font-semibold text-black mb-3">No projects yet</h3>
-            <p className="text-primary-600 mb-8 max-w-md mx-auto">
+          <div className="text-center p-6 sm:p-12 bg-white border border-gray-200 rounded-xl shadow-sm">
+            <Calendar size={48} className="sm:w-16 sm:h-16 text-primary-300 mx-auto mb-4 sm:mb-6" />
+            <h3 className="text-xl sm:text-2xl font-semibold text-black mb-3">No projects yet</h3>
+            <p className="text-sm sm:text-base text-primary-600 mb-6 sm:mb-8 max-w-md mx-auto">
               {user?.role === 'photographer' 
                 ? "Start by creating your first wedding project. You can manage timelines, add events, and invite collaborators."
                 : "You don't have any shared timelines yet. Ask a photographer to invite you to their project."}
             </p>
             {user?.role === 'photographer' && (
-              <Button onClick={() => setIsCreateModalOpen(true)} className="text-base font-medium inline-flex items-center gap-2">
+              <Button onClick={() => setIsCreateModalOpen(true)} className="text-sm sm:text-base font-medium inline-flex items-center gap-2">
                 <Plus size={20} />
                 Create Your First Project
               </Button>
