@@ -48,6 +48,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  fcmTokens: [{
+    token: {
+      type: String,
+      required: true
+    },
+    device: {
+      type: String,
+      default: 'web'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    lastUsed: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

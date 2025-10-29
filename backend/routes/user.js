@@ -46,4 +46,78 @@ router.get('/:userId', authenticate, async (req, res) => {
   }
 });
 
+// Save/Update FCM token for push notifications
+router.post('/fcm-token', authenticate, async (req, res) => {
+  try {
+    const { fcmToken, device = 'web' } = req.body;
+    
+    if (!fcmToken) {
+      return res.status(400).json({ message: 'FCM token is required' });
+    }
+
+    const user = await User.findById(req.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if token already exists
+    const existingTokenIndex = user.fcmTokens.findIndex(t => t.token === fcmToken);
+    
+    if (existingTokenIndex >= 0) {
+      // Update existing token's lastUsed timestamp
+      user.fcmTokens[existingTokenIndex].lastUsed = new Date();
+    } else {
+      // Add new token
+      user.fcmTokens.push({
+        token: fcmToken,
+        device,
+        createdAt: new Date(),
+        lastUsed: new Date()
+      });
+
+      // Limit to 5 tokens per user (remove oldest if exceeds)
+      if (user.fcmTokens.length > 5) {
+        user.fcmTokens.sort((a, b) => b.lastUsed - a.lastUsed);
+        user.fcmTokens = user.fcmTokens.slice(0, 5);
+      }
+    }
+
+    await user.save();
+    
+    res.json({ 
+      message: 'FCM token saved successfully',
+      tokenCount: user.fcmTokens.length
+    });
+  } catch (error) {
+    console.error('Error saving FCM token:', error);
+    res.status(500).json({ message: 'Failed to save FCM token' });
+  }
+});
+
+// Remove FCM token (when user logs out or denies notifications)
+router.delete('/fcm-token', authenticate, async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    
+    if (!fcmToken) {
+      return res.status(400).json({ message: 'FCM token is required' });
+    }
+
+    const user = await User.findById(req.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.fcmTokens = user.fcmTokens.filter(t => t.token !== fcmToken);
+    await user.save();
+    
+    res.json({ message: 'FCM token removed successfully' });
+  } catch (error) {
+    console.error('Error removing FCM token:', error);
+    res.status(500).json({ message: 'Failed to remove FCM token' });
+  }
+});
+
 export default router;

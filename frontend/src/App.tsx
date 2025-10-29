@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { MobileMenuProvider } from './context/MobileMenuContext';
+import NotificationHandler from './components/NotificationHandler';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import InviteAccept from './pages/InviteAccept';
@@ -86,6 +87,7 @@ function App() {
   return (
     <MobileMenuProvider>
       <BrowserRouter>
+        <NotificationHandler />
         <Routes>
           <Route path="/invite/:token" element={<InviteAccept />} />
           <Route
