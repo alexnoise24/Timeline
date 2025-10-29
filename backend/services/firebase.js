@@ -17,7 +17,15 @@ export const initializeFirebase = () => {
     // Check if we're using environment variable (production) or file (development)
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       // Production: use environment variable
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      let serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+      
+      // Fix: Replace literal \n with actual newlines in private_key
+      // This is needed because environment variables treat \n as literal text
+      const serviceAccount = JSON.parse(serviceAccountJson);
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
+      
       firebaseApp = admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });

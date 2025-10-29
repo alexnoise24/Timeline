@@ -98,8 +98,10 @@ export const notifyTimelineMembers = async (timelineId, senderId, notification, 
     }
 
     // Get all member IDs except the sender
-    const memberIds = [timeline.createdBy, ...timeline.guests]
-      .filter(id => id.toString() !== senderId.toString())
+    // Extract user IDs from collaborators array
+    const collaboratorIds = (timeline.collaborators || []).map(c => c.user);
+    const memberIds = [timeline.owner, ...collaboratorIds]
+      .filter(id => id && id.toString() !== senderId.toString())
       .map(id => id.toString());
 
     if (memberIds.length === 0) {
