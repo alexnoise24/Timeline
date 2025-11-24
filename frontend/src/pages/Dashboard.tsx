@@ -152,17 +152,17 @@ export default function Dashboard() {
   // Status fields are not in backend model; omit status badge
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-background">
       <Toaster position="top-center" />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 max-w-6xl mx-auto w-full py-4 sm:py-8">
+        <div className="flex-1 overflow-y-auto px-6 sm:px-8 max-w-7xl mx-auto w-full py-8 sm:py-12">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8 p-4 sm:p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8 sm:mb-12 p-8 sm:p-10 bg-white rounded-2xl shadow-sm">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-black mb-1">{t('dashboard.title')}</h1>
-            <p className="text-sm sm:text-base text-primary-600">{t('dashboard.welcome', { name: user?.name })}</p>
+            <h1 className="text-3xl sm:text-4xl font-heading text-text mb-2">{t('dashboard.title')}</h1>
+            <p className="text-base sm:text-lg text-text opacity-70">{t('dashboard.welcome', { name: user?.name })}</p>
           </div>
           <div className="flex gap-2 sm:gap-3">
             {user?.role === 'photographer' && (
@@ -180,10 +180,10 @@ export default function Dashboard() {
 
         {/* Pending Invitations Notification */}
         {pendingInvitations.length > 0 && (
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="mb-6 sm:mb-10 p-6 sm:p-8 bg-white border border-accent border-opacity-30 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Bell size={18} className="text-blue-600" />
-              <h3 className="text-base sm:text-lg font-semibold text-blue-900">
+              <h3 className="text-lg sm:text-xl font-heading text-text">
                 {t('dashboard.pendingInvitations', { count: pendingInvitations.length })}
               </h3>
             </div>
@@ -211,17 +211,17 @@ export default function Dashboard() {
 
         {/* My Projects */}
         {user?.role === 'photographer' && ownedTimelines.length > 0 && (
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-lg sm:text-xl font-bold text-black mb-4">{t('dashboard.myProjects')}</h2>
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-heading text-text mb-6 sm:mb-8">{t('dashboard.myProjects')}</h2>
+            <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {ownedTimelines.map((timeline) => (
                 <Card key={timeline._id} className="group relative">
                   <CardContent className="p-6">
                     <div className="cursor-pointer" onClick={() => navigate(`/timeline/${timeline._id}`)}>
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold text-black mb-2">{timeline.title || 'Untitled'}</h3>
-                          <p className="text-sm text-primary-600 leading-6">{timeline.description || ''}</p>
+                          <h3 className="text-xl font-heading text-text mb-3">{timeline.title || 'Untitled'}</h3>
+                          <p className="text-base text-text opacity-75 leading-relaxed">{timeline.description || ''}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4 mb-3 text-sm text-primary-600">
@@ -275,12 +275,12 @@ export default function Dashboard() {
 
         {/* Shared Timelines */}
         {sharedTimelines.length > 0 && (
-          <div className="mb-6 sm:mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Share2 size={20} className="text-primary-600" />
-              <h2 className="text-lg sm:text-xl font-bold text-black">{t('dashboard.sharedTimelines')}</h2>
+          <div className="mb-8 sm:mb-12">
+            <div className="flex items-center gap-3 mb-6 sm:mb-8">
+              <Share2 size={24} className="text-accent" />
+              <h2 className="text-2xl sm:text-3xl font-heading text-text">{t('dashboard.sharedTimelines')}</h2>
             </div>
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {sharedTimelines.map((timeline) => (
                 <Card key={timeline._id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/timeline/${timeline._id}`)}>
                   <CardContent className="p-6">

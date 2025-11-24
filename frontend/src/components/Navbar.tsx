@@ -12,9 +12,9 @@ export default function Navbar() {
   const { toggleSidebar } = useMobileMenu();
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="bg-white shadow-sm border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           <div className="flex items-center gap-3">
             {/* Mobile menu button */}
             <button
@@ -24,9 +24,9 @@ export default function Navbar() {
               <Menu size={24} className="text-gray-700" />
             </button>
             
-            <Link to="/" className="flex items-center space-x-2">
-              <Calendar className="text-primary-600" size={28} />
-              <span className="text-lg sm:text-xl font-bold text-gray-900 hidden xs:inline">{t('app.name')}</span>
+            <Link to="/" className="flex items-center space-x-3">
+              <Calendar className="text-accent" size={32} />
+              <span className="text-xl sm:text-2xl font-heading text-text hidden xs:inline">{t('app.name')}</span>
             </Link>
           </div>
 

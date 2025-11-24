@@ -10,19 +10,14 @@ export default {
         'xs': '475px',
       },
       fontFamily: {
-        sans: [
-          'ui-sans-serif',
-          'system-ui',
-          '-apple-system',
-          'Segoe UI',
-          'Roboto',
-          'Helvetica Neue',
-          'Arial',
-          'Noto Sans',
-          'sans-serif'
-        ],
+        sans: ['Sofia Pro', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        heading: ['Recoleta', 'Georgia', 'serif'],
       },
       colors: {
+        background: '#F2F1F0',
+        text: '#3B3B3B',
+        button: '#AFAFAF',
+        accent: '#CDD973',
         primary: {
           50: '#fafafa',
           100: '#f5f5f5',
@@ -31,15 +26,23 @@ export default {
           400: '#a3a3a3',
           500: '#737373',
           600: '#525252',
-          700: '#404040',
+          700: '#3B3B3B',
           800: '#262626',
           900: '#171717',
-          DEFAULT: '#111111'
+          DEFAULT: '#3B3B3B'
         },
-        accent: {
-          DEFAULT: '#000000'
-        }
-      }
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
+        '26': '6.5rem',
+        '30': '7.5rem',
+      },
+      borderRadius: {
+        'xl': '1rem',
+        '2xl': '1.5rem',
+        '3xl': '2rem',
+      },
     },
   },
   plugins: [],

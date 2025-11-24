@@ -9,26 +9,27 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
     const variants = {
-      primary: 'bg-black text-white hover:bg-primary-800 focus:ring-black',
-      secondary: 'bg-primary-700 text-white hover:bg-primary-800 focus:ring-primary-700',
-      outline: 'border-2 border-black text-black hover:bg-primary-50',
-      ghost: 'text-black hover:bg-primary-100',
-      danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+      primary: 'bg-button text-white hover:bg-opacity-90 focus:ring-button shadow-sm',
+      secondary: 'bg-accent text-text hover:bg-opacity-90 focus:ring-accent',
+      outline: 'border-2 border-button text-text hover:bg-button hover:bg-opacity-10',
+      ghost: 'text-text hover:bg-button hover:bg-opacity-10',
+      danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
     };
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2 text-base',
-      lg: 'px-6 py-3 text-lg',
+      sm: 'px-4 py-2 text-sm',
+      md: 'px-6 py-3 text-base',
+      lg: 'px-8 py-4 text-lg',
     };
 
     return (
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg font-medium transition-colors',
+          'inline-flex items-center justify-center rounded-xl font-medium transition-all duration-300',
           'focus:outline-none focus:ring-2 focus:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
+          'tracking-wide',
           variants[variant],
           sizes[size],
           className
