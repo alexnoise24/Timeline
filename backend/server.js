@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import timelineRoutes from './routes/timeline.js';
 import userRoutes from './routes/user.js';
@@ -103,6 +105,18 @@ app.get('/api/health', (req, res) => {
 
 // Socket.io setup
 setupSocketHandlers(io);
+
+// Serve static files from frontend/dist
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendPath = path.join(__dirname, '../frontend/dist');
+
+app.use(express.static(frontendPath));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
