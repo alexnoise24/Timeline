@@ -49,9 +49,10 @@ cd "$PROJECT_ROOT"
 DEPLOY_DIR="/tmp/timeline-deploy-$(date +%s)"
 mkdir -p "$DEPLOY_DIR"
 
-# Copy backend
+# Copy backend (excluding .env to preserve server configuration)
 cp -r backend "$DEPLOY_DIR/"
 rm -rf "$DEPLOY_DIR/backend/node_modules"
+rm -f "$DEPLOY_DIR/backend/.env"
 
 # Copy frontend build
 mkdir -p "$DEPLOY_DIR/frontend"
@@ -75,7 +76,7 @@ ssh "$SERVER_USER@$SERVER_IP" "cd $SERVER_PATH/backend && npm install --producti
 
 echo -e "${GREEN}✅ Dependencies installed${NC}"
 
-echo -e "${YELLOW}⚙️ Setting up environment file...${NC}"
+echo -e "${YELLOW}⚙️ Checking environment file...${NC}"
 ssh "$SERVER_USER@$SERVER_IP" << 'ENDSSH'
 cd /var/www/timeline/backend
 
@@ -84,6 +85,8 @@ if [ ! -f .env ]; then
     cp .env.example .env
     echo "⚠️  Created .env file from example. Please edit with your values:"
     echo "   nano /var/www/timeline/backend/.env"
+else
+    echo "✅ Using existing .env file (not overwritten by deployment)"
 fi
 ENDSSH
 
