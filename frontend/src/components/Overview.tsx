@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings, Edit2, Save, X } from 'lucide-react';
 import { Timeline } from '@/types';
 import { useAuthStore } from '@/store/authStore';
@@ -13,6 +14,7 @@ interface OverviewProps {
 }
 
 export default function Overview({ timeline }: OverviewProps) {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const { updateOverview } = useTimelineStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -39,6 +41,8 @@ export default function Overview({ timeline }: OverviewProps) {
     plannerContact: timeline.contacts?.plannerContact || '',
     ceremonyLocation: timeline.locations?.ceremony || '',
     receptionLocation: timeline.locations?.reception || '',
+    location: timeline.location || '',
+    locationUrl: timeline.locationUrl || '',
     guestAttire: timeline.guestAttire || '',
     generalNotes: timeline.generalNotes || '',
   });
@@ -60,6 +64,8 @@ export default function Overview({ timeline }: OverviewProps) {
       plannerContact: timeline.contacts?.plannerContact || '',
       ceremonyLocation: timeline.locations?.ceremony || '',
       receptionLocation: timeline.locations?.reception || '',
+      location: timeline.location || '',
+      locationUrl: timeline.locationUrl || '',
       guestAttire: timeline.guestAttire || '',
       generalNotes: timeline.generalNotes || '',
     });
@@ -75,7 +81,7 @@ export default function Overview({ timeline }: OverviewProps) {
       console.log('Saving date from form:', formData.weddingDate);
       
       if (!formData.weddingDate) {
-        toast.error('Please select a wedding date');
+        toast.error(t('overview.dateRequired'));
         return;
       }
       
@@ -90,6 +96,8 @@ export default function Overview({ timeline }: OverviewProps) {
         weddingDate: weddingDate.toISOString(),
         startTime: formData.startTime,
         endTime: formData.endTime,
+        location: formData.location,
+        locationUrl: formData.locationUrl,
         contacts: {
           partner1Phone: formData.partner1Phone,
           partner2Phone: formData.partner2Phone,
@@ -103,10 +111,10 @@ export default function Overview({ timeline }: OverviewProps) {
         generalNotes: formData.generalNotes,
       });
       setIsEditing(false);
-      toast.success('Overview updated successfully');
+      toast.success(t('overview.updateSuccess'));
     } catch (error) {
       console.error('Error saving overview:', error);
-      toast.error('Failed to update overview');
+      toast.error(t('overview.updateFailed'));
     }
   };
 
@@ -122,6 +130,8 @@ export default function Overview({ timeline }: OverviewProps) {
       plannerContact: timeline.contacts?.plannerContact || '',
       ceremonyLocation: timeline.locations?.ceremony || '',
       receptionLocation: timeline.locations?.reception || '',
+      location: timeline.location || '',
+      locationUrl: timeline.locationUrl || '',
       guestAttire: timeline.guestAttire || '',
       generalNotes: timeline.generalNotes || '',
     });
@@ -133,25 +143,25 @@ export default function Overview({ timeline }: OverviewProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Overview</h2>
-          <p className="text-gray-600 mt-1">Essential project details</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('timelineView.overview')}</h2>
+          <p className="text-gray-600 mt-1">{t('overview.essentialDetails')}</p>
         </div>
         {canEdit && (
           <div className="flex gap-2">
             {!isEditing ? (
               <Button onClick={() => setIsEditing(true)} variant="outline" className="flex items-center gap-2">
                 <Edit2 size={16} />
-                Edit
+                {t('common.edit')}
               </Button>
             ) : (
               <>
                 <Button onClick={handleCancel} variant="outline" className="flex items-center gap-2">
                   <X size={16} />
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button onClick={handleSave} className="flex items-center gap-2">
                   <Save size={16} />
-                  Save
+                  {t('common.save')}
                 </Button>
               </>
             )}
@@ -167,14 +177,14 @@ export default function Overview({ timeline }: OverviewProps) {
               <Settings className="text-blue-600" size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
-              <p className="text-sm text-gray-600">Essential project details</p>
+              <h3 className="text-lg font-semibold text-gray-900">{t('overview.basicInformation')}</h3>
+              <p className="text-sm text-gray-600">{t('overview.essentialDetails')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Project Title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.projectTitle')}</label>
               {isEditing ? (
                 <Input
                   value={formData.title}
@@ -186,7 +196,7 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Wedding Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.eventDate')}</label>
               {isEditing ? (
                 <Input
                   type="date"
@@ -199,7 +209,7 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.startTime')}</label>
               {isEditing ? (
                 <Input
                   type="time"
@@ -212,7 +222,7 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.endTime')}</label>
               {isEditing ? (
                 <Input
                   type="time"
@@ -225,7 +235,7 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.description')}</label>
               {isEditing ? (
                 <textarea
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black min-h-[80px] resize-y"
@@ -234,6 +244,38 @@ export default function Overview({ timeline }: OverviewProps) {
                 />
               ) : (
                 <p className="text-gray-900">{timeline.description || '-'}</p>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Locación</label>
+              {isEditing ? (
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Nombre de la locación"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  />
+                  <Input
+                    placeholder="Link de Google Maps (https://maps.google.com/...)"
+                    value={formData.locationUrl}
+                    onChange={(e) => setFormData({ ...formData, locationUrl: e.target.value })}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-900">{timeline.location || '-'}</p>
+                  {timeline.locationUrl && (
+                    <a
+                      href={timeline.locationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 underline text-sm mt-1 inline-block"
+                    >
+                      Ver en Google Maps
+                    </a>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -248,20 +290,20 @@ export default function Overview({ timeline }: OverviewProps) {
               <Settings className="text-green-600" size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">General Information</h3>
-              <p className="text-sm text-gray-600">Wedding party and contact details</p>
+              <h3 className="text-lg font-semibold text-gray-900">{t('overview.generalInformation')}</h3>
+              <p className="text-sm text-gray-600">{t('overview.contactDetails')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {timeline.couple?.partner1 ? `${timeline.couple.partner1}'s Phone` : 'Partner 1 Phone'}
+                {timeline.couple?.partner1 ? `${timeline.couple.partner1}'s ${t('overview.phone')}` : t('overview.partner1Phone')}
               </label>
               {isEditing ? (
                 <Input
                   type="tel"
-                  placeholder="Enter phone number"
+                  placeholder={t('overview.enterPhone')}
                   value={formData.partner1Phone}
                   onChange={(e) => setFormData({ ...formData, partner1Phone: e.target.value })}
                 />
@@ -272,12 +314,12 @@ export default function Overview({ timeline }: OverviewProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {timeline.couple?.partner2 ? `${timeline.couple.partner2}'s Phone` : 'Partner 2 Phone'}
+                {timeline.couple?.partner2 ? `${timeline.couple.partner2}'s ${t('overview.phone')}` : t('overview.partner2Phone')}
               </label>
               {isEditing ? (
                 <Input
                   type="tel"
-                  placeholder="Enter phone number"
+                  placeholder={t('overview.enterPhone')}
                   value={formData.partner2Phone}
                   onChange={(e) => setFormData({ ...formData, partner2Phone: e.target.value })}
                 />
@@ -287,10 +329,10 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ceremony Location</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.ceremonyLocation')}</label>
               {isEditing ? (
                 <Input
-                  placeholder="Enter ceremony location"
+                  placeholder={t('overview.enterCeremonyLocation')}
                   value={formData.ceremonyLocation}
                   onChange={(e) => setFormData({ ...formData, ceremonyLocation: e.target.value })}
                 />
@@ -300,10 +342,10 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Reception Location</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.receptionLocation')}</label>
               {isEditing ? (
                 <Input
-                  placeholder="Enter reception location"
+                  placeholder={t('overview.enterReceptionLocation')}
                   value={formData.receptionLocation}
                   onChange={(e) => setFormData({ ...formData, receptionLocation: e.target.value })}
                 />
@@ -313,10 +355,10 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Planner Contact</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.plannerContact')}</label>
               {isEditing ? (
                 <Input
-                  placeholder="Enter planner contact"
+                  placeholder={t('overview.enterPlannerContact')}
                   value={formData.plannerContact}
                   onChange={(e) => setFormData({ ...formData, plannerContact: e.target.value })}
                 />
@@ -326,10 +368,10 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Guest Attire</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.guestAttire')}</label>
               {isEditing ? (
                 <Input
-                  placeholder="e.g., formal, casual"
+                  placeholder={t('overview.guestAttirePlaceholder')}
                   value={formData.guestAttire}
                   onChange={(e) => setFormData({ ...formData, guestAttire: e.target.value })}
                 />
@@ -339,11 +381,11 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">General Notes</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overview.generalNotes')}</label>
               {isEditing ? (
                 <textarea
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black min-h-[120px] resize-y"
-                  placeholder="Enter general notes"
+                  placeholder={t('overview.enterGeneralNotes')}
                   value={formData.generalNotes}
                   onChange={(e) => setFormData({ ...formData, generalNotes: e.target.value })}
                 />

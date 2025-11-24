@@ -44,7 +44,7 @@ const shotSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['preparation', 'details', 'ceremony', 'first_look', 'family', 'couple', 'reception', 'venue', 'other'],
+    enum: ['preparation', 'details', 'ceremony', 'first_look', 'family', 'couple', 'cocktail', 'reception', 'venue', 'other'],
     default: 'other'
   },
   description: String,

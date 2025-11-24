@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './store/authStore';
 import { MobileMenuProvider } from './context/MobileMenuContext';
 import NotificationHandler from './components/NotificationHandler';
@@ -10,15 +11,16 @@ import Dashboard from './pages/Dashboard';
 import TimelineView from './pages/TimelineView';
 import Messages from './pages/Messages';
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+function PrivateRoute({ children }: { children: React.ReactNode}) {
   const { isAuthenticated, isLoading } = useAuthStore();
+  const { t } = useTranslation();
   
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Verifying session...</p>
+          <p className="mt-2 text-gray-600">{t('auth.verifyingSession')}</p>
         </div>
       </div>
     );
@@ -54,6 +56,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { checkAuth, isLoading: isAuthLoading } = useAuthStore();
+  const { t } = useTranslation();
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Check auth status on app load
@@ -78,7 +81,7 @@ function App() {
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading application...</p>
+          <p className="mt-2 text-gray-600">{t('auth.loadingApp')}</p>
         </div>
       </div>
     );

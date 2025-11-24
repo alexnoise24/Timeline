@@ -34,7 +34,7 @@ export interface ChangeLog {
 export interface Shot {
   _id: string;
   title: string;
-  category: 'preparation' | 'details' | 'ceremony' | 'first_look' | 'family' | 'couple' | 'reception' | 'venue' | 'other';
+  category: 'preparation' | 'details' | 'ceremony' | 'first_look' | 'family' | 'couple' | 'cocktail' | 'reception' | 'venue' | 'other';
   description?: string;
   isCompleted: boolean;
   completedBy?: User;
@@ -73,6 +73,7 @@ export interface Timeline {
   title: string;
   weddingDate: string;
   location?: string;
+  locationUrl?: string;
   couple?: {
     partner1?: string;
     partner2?: string;

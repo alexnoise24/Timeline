@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -10,6 +11,7 @@ interface PasswordRequirement {
 }
 
 const Register: React.FC = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get('invite');
   
@@ -107,16 +109,16 @@ const Register: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-white px-4">
       <div className="w-full max-w-md bg-white border border-gray-200 rounded-xl shadow-sm p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-black mb-1">Wedding Timeline</h1>
-          <p className="text-sm text-primary-500">Plan your perfect wedding</p>
+          <h1 className="text-2xl font-bold text-black mb-1">{t('app.name')}</h1>
+          <p className="text-sm text-primary-500">{t('app.tagline')}</p>
         </div>
 
-        <h2 className="text-xl font-semibold text-black mb-6 text-center">Create Account</h2>
+        <h2 className="text-xl font-semibold text-black mb-6 text-center">{t('auth.registerButton')}</h2>
 
         {inviteToken && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 text-sm">
-            <p className="font-semibold mb-1">📨 You've been invited!</p>
-            <p className="text-xs">Create your account to access the shared wedding timeline.</p>
+            <p className="font-semibold mb-1">📨 {t('auth.inviteReceived')}</p>
+            <p className="text-xs">{t('auth.inviteMessage')}</p>
           </div>
         )}
 
@@ -128,10 +130,10 @@ const Register: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-primary-700 mb-1">Full name</label>
+            <label className="block text-sm font-medium text-primary-700 mb-1">{t('auth.name')}</label>
             <input
               type="text"
-              placeholder="Your name"
+              placeholder={t('auth.namePlaceholder')}
               value={formData.name}
               onChange={(e) => updateFormData('name', e.target.value)}
               required
@@ -140,10 +142,10 @@ const Register: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-primary-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-primary-700 mb-1">{t('auth.email')}</label>
             <input
               type="email"
-              placeholder="you@example.com"
+              placeholder={t('auth.emailPlaceholder')}
               value={formData.email}
               onChange={(e) => updateFormData('email', e.target.value)}
               required
@@ -152,10 +154,10 @@ const Register: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-primary-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-primary-700 mb-1">{t('auth.password')}</label>
             <input
               type="password"
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               value={formData.password}
               onChange={(e) => updateFormData('password', e.target.value)}
               onFocus={() => setShowPasswordRequirements(true)}
@@ -167,7 +169,7 @@ const Register: React.FC = () => {
             {/* Password requirements box */}
             {showPasswordRequirements && (
               <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs font-semibold text-blue-900 mb-2">Password must contain:</p>
+                <p className="text-xs font-semibold text-blue-900 mb-2">{t('auth.passwordRequirements')}</p>
                 <ul className="space-y-1">
                   {passwordRequirements.map((req, index) => (
                     <li key={index} className="flex items-center gap-2 text-xs">
@@ -187,7 +189,7 @@ const Register: React.FC = () => {
           </div>
 
           <div className="bg-primary-50 p-5 rounded-lg border border-gray-200">
-            <label className="block text-sm font-semibold text-primary-700 mb-4">Choose your account type:</label>
+            <label className="block text-sm font-semibold text-primary-700 mb-4">{t('auth.chooseAccountType')}</label>
 
             <label className={
               `flex items-center p-4 rounded-lg cursor-pointer mb-2 transition border ${formData.role === 'photographer' ? 'border-black bg-white' : 'border-gray-300 bg-white'}`
@@ -202,8 +204,8 @@ const Register: React.FC = () => {
               />
               <span className="mr-2">📷</span>
               <div>
-                <div className="font-medium text-black">Photographer</div>
-                <div className="text-xs text-primary-500">Create and manage wedding timelines</div>
+                <div className="font-medium text-black">{t('auth.photographer')}</div>
+                <div className="text-xs text-primary-500">{t('auth.photographerDesc')}</div>
               </div>
             </label>
 
@@ -220,8 +222,8 @@ const Register: React.FC = () => {
               />
               <span className="mr-2">👥</span>
               <div>
-                <div className="font-medium text-black">Guest</div>
-                <div className="text-xs text-primary-500">Access shared wedding timelines</div>
+                <div className="font-medium text-black">{t('auth.guest')}</div>
+                <div className="text-xs text-primary-500">{t('auth.guestDesc')}</div>
               </div>
             </label>
           </div>
@@ -231,13 +233,13 @@ const Register: React.FC = () => {
             disabled={isLoading}
             className={`w-full px-4 py-2 rounded-lg font-medium text-white ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-primary-800'}`}
           >
-            {isLoading ? 'Creating account...' : 'Create account'}
+            {isLoading ? t('auth.creatingAccount') : t('auth.registerButton')}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-primary-600">
-          Already have an account?{' '}
-          <Link to="/login" className="text-black font-medium hover:underline">Sign in here</Link>
+          {t('auth.hasAccount')}{' '}
+          <Link to="/login" className="text-black font-medium hover:underline">{t('auth.login')}</Link>
         </p>
       </div>
     </div>

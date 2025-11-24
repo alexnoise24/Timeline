@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell, Trash2 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import Navbar from '@/components/Navbar';
@@ -22,6 +23,7 @@ interface NewProjectForm {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { timelines, createTimeline, fetchTimelines, deleteTimeline, isLoading } = useTimelineStore();
@@ -159,19 +161,19 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8 p-4 sm:p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-black mb-1">Dashboard</h1>
-            <p className="text-sm sm:text-base text-primary-600">Welcome back, {user?.name}!</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-black mb-1">{t('dashboard.title')}</h1>
+            <p className="text-sm sm:text-base text-primary-600">{t('dashboard.welcome', { name: user?.name })}</p>
           </div>
           <div className="flex gap-2 sm:gap-3">
             {user?.role === 'photographer' && (
               <Button onClick={() => setIsCreateModalOpen(true)} className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center">
                 <Plus size={18} />
-                <span className="hidden xs:inline">New Project</span>
+                <span className="hidden xs:inline">{t('dashboard.newProject')}</span>
               </Button>
             )}
             <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center">
               <LogOut size={18} />
-              <span className="hidden xs:inline">Logout</span>
+              <span className="hidden xs:inline">{t('auth.logout')}</span>
             </Button>
           </div>
         </div>
@@ -182,7 +184,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 mb-3">
               <Bell size={18} className="text-blue-600" />
               <h3 className="text-base sm:text-lg font-semibold text-blue-900">
-                {pendingInvitations.length} Pending Invitation{pendingInvitations.length > 1 ? 's' : ''}
+                {t('dashboard.pendingInvitations', { count: pendingInvitations.length })}
               </h3>
             </div>
             <div className="space-y-2">
@@ -192,13 +194,13 @@ export default function Dashboard() {
                     <div className="flex-1">
                       <div className="font-semibold text-sm sm:text-base text-black">{inv.timelineTitle}</div>
                       <div className="text-xs sm:text-sm text-primary-600 mt-1">
-                        {inv.invitedBy?.name} invited you
+                        {t('dashboard.invitedBy', { name: inv.invitedBy?.name })}
                         {inv.weddingDate && ` • ${new Date(inv.weddingDate).toLocaleDateString()}`}
                       </div>
                     </div>
                     <div className="flex gap-2 sm:flex-shrink-0">
-                      <Button onClick={() => handleAcceptInvitation(inv.timelineId)} size="sm" className="flex-1 sm:flex-none">Accept</Button>
-                      <Button onClick={() => handleDeclineInvitation(inv.timelineId)} size="sm" variant="outline" className="flex-1 sm:flex-none">Decline</Button>
+                      <Button onClick={() => handleAcceptInvitation(inv.timelineId)} size="sm" className="flex-1 sm:flex-none">{t('dashboard.accept')}</Button>
+                      <Button onClick={() => handleDeclineInvitation(inv.timelineId)} size="sm" variant="outline" className="flex-1 sm:flex-none">{t('dashboard.decline')}</Button>
                     </div>
                   </div>
                 </div>
@@ -210,7 +212,7 @@ export default function Dashboard() {
         {/* My Projects */}
         {user?.role === 'photographer' && ownedTimelines.length > 0 && (
           <div className="mb-6 sm:mb-8">
-            <h2 className="text-lg sm:text-xl font-bold text-black mb-4">My Projects</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-black mb-4">{t('dashboard.myProjects')}</h2>
             <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {ownedTimelines.map((timeline) => (
                 <Card key={timeline._id} className="group relative">
@@ -229,7 +231,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Users size={16} className="text-primary-600" />
-                          <span>{timeline.collaborators?.length || 0} collaborators</span>
+                          <span>{t('dashboard.collaboratorsCount', { count: timeline.collaborators?.length || 0 })}</span>
                         </div>
                       </div>
                       {timeline.weddingDate && (
@@ -249,7 +251,7 @@ export default function Dashboard() {
                         className="w-full flex items-center justify-center gap-2"
                       >
                         <UserPlus size={16} />
-                        Invite Collaborators
+                        {t('dashboard.inviteCollaborators')}
                       </Button>
                       <Button
                         onClick={(e) => {
@@ -261,7 +263,7 @@ export default function Dashboard() {
                         className="w-full flex items-center justify-center gap-2 text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400"
                       >
                         <Trash2 size={16} />
-                        Delete Timeline
+                        {t('dashboard.deleteTimeline')}
                       </Button>
                     </div>
                   </CardContent>
@@ -276,7 +278,7 @@ export default function Dashboard() {
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Share2 size={20} className="text-primary-600" />
-              <h2 className="text-lg sm:text-xl font-bold text-black">Shared Timelines</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-black">{t('dashboard.sharedTimelines')}</h2>
             </div>
             <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {sharedTimelines.map((timeline) => (
@@ -287,7 +289,7 @@ export default function Dashboard() {
                         <h3 className="text-lg font-semibold text-black mb-2">{timeline.title || 'Untitled'}</h3>
                         <p className="text-sm text-primary-600 leading-6">{timeline.description || ''}</p>
                         <p className="text-xs text-primary-500 mt-2">
-                          Owned by {timeline.owner?.name || 'Unknown'}
+                          {t('dashboard.ownedBy', { name: timeline.owner?.name || t('common.unknown') })}
                         </p>
                       </div>
                     </div>
@@ -307,7 +309,7 @@ export default function Dashboard() {
                       </div>
                     )}
                     <div className="p-3 bg-green-50 rounded-lg border border-green-200 text-xs text-green-700">
-                      Shared with you • Click to view →
+                      {t('dashboard.sharedWithYou')}
                     </div>
                   </CardContent>
                 </Card>
@@ -320,16 +322,16 @@ export default function Dashboard() {
         {ownedTimelines.length === 0 && sharedTimelines.length === 0 && !isLoading && (
           <div className="text-center p-6 sm:p-12 bg-white border border-gray-200 rounded-xl shadow-sm">
             <Calendar size={48} className="sm:w-16 sm:h-16 text-primary-300 mx-auto mb-4 sm:mb-6" />
-            <h3 className="text-xl sm:text-2xl font-semibold text-black mb-3">No projects yet</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold text-black mb-3">{t('dashboard.noProjects')}</h3>
             <p className="text-sm sm:text-base text-primary-600 mb-6 sm:mb-8 max-w-md mx-auto">
               {user?.role === 'photographer' 
-                ? "Start by creating your first wedding project. You can manage timelines, add events, and invite collaborators."
-                : "You don't have any shared timelines yet. Ask a photographer to invite you to their project."}
+                ? t('dashboard.photographerEmptyState')
+                : t('dashboard.guestEmptyState')}
             </p>
             {user?.role === 'photographer' && (
               <Button onClick={() => setIsCreateModalOpen(true)} className="text-sm sm:text-base font-medium inline-flex items-center gap-2">
                 <Plus size={20} />
-                Create Your First Project
+                {t('dashboard.createFirstProject')}
               </Button>
             )}
           </div>
@@ -338,22 +340,22 @@ export default function Dashboard() {
         {/* Create Project Modal */}
         <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-black mb-6">Create New Project</h2>
+            <h2 className="text-xl font-semibold text-black mb-6">{t('dashboard.createNewProject')}</h2>
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-primary-700 mb-1">Project Title</label>
+                <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.projectTitle')}</label>
                 <Input
                   type="text"
-                  placeholder="e.g., Sarah & John's Wedding"
+                  placeholder={t('dashboard.projectTitlePlaceholder')}
                   value={newProject.title}
                   onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.description')}</label>
                 <textarea
-                  placeholder="Brief description of the wedding project"
+                  placeholder={t('dashboard.descriptionPlaceholder')}
                   value={newProject.description}
                   onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
                   required
@@ -361,7 +363,7 @@ export default function Dashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary-700 mb-1">Wedding Date</label>
+                <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.eventDate')}</label>
                 <Input
   type="date"
   value={newProject.date}
@@ -373,10 +375,10 @@ export default function Dashboard() {
               </div>
               <div className="flex gap-3 mt-2">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setIsCreateModalOpen(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" className="flex-1">
-                  Create Project
+                  {t('dashboard.createProject')}
                 </Button>
               </div>
             </form>
@@ -401,20 +403,20 @@ export default function Dashboard() {
                 <Trash2 size={24} className="text-red-600" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-black">Delete Timeline</h2>
-                <p className="text-sm text-primary-600">This action cannot be undone</p>
+                <h2 className="text-xl font-semibold text-black">{t('dashboard.deleteTimeline')}</h2>
+                <p className="text-sm text-primary-600">{t('dashboard.deleteWarning')}</p>
               </div>
             </div>
             
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-900 mb-2">
-                You are about to permanently delete:
+                {t('dashboard.deleteConfirmation')}
               </p>
               <p className="font-semibold text-red-900">
                 "{selectedTimelineForDelete?.title}"
               </p>
               <p className="text-xs text-red-700 mt-2">
-                All events, notes, and data associated with this timeline will be permanently deleted.
+                {t('dashboard.deleteConsequence')}
               </p>
             </div>
 
@@ -425,13 +427,13 @@ export default function Dashboard() {
                 className="flex-1" 
                 onClick={handleCloseDeleteModal}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button 
                 onClick={handleConfirmDelete}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
               >
-                Delete Permanently
+                {t('dashboard.deletePermanently')}
               </Button>
             </div>
           </div>

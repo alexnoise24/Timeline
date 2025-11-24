@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Calendar, LogOut, Plus, Users, Camera, Menu } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useMobileMenu } from '@/context/MobileMenuContext';
 import Button from './ui/Button';
+import LanguageSelector from './LanguageSelector';
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const { user, logout } = useAuthStore();
   const { toggleSidebar } = useMobileMenu();
 
@@ -23,7 +26,7 @@ export default function Navbar() {
             
             <Link to="/" className="flex items-center space-x-2">
               <Calendar className="text-primary-600" size={28} />
-              <span className="text-lg sm:text-xl font-bold text-gray-900 hidden xs:inline">Wedding Timeline</span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900 hidden xs:inline">{t('app.name')}</span>
             </Link>
           </div>
 
@@ -35,15 +38,18 @@ export default function Navbar() {
                   <Link to="/create-timeline" className="hidden sm:block">
                     <Button size="sm" className="bg-primary-600 hover:bg-primary-700">
                       <Plus size={18} className="sm:mr-2" />
-                      <span className="hidden sm:inline">Create Timeline</span>
+                      <span className="hidden sm:inline">{t('dashboard.createNew')}</span>
                     </Button>
                   </Link>
                 ) : (
                   <div className="hidden md:flex items-center space-x-2">
                     <Users size={20} className="text-gray-600" />
-                    <span className="text-sm text-gray-700">Guest Access</span>
+                    <span className="text-sm text-gray-700">{t('auth.guestAccess')}</span>
                   </div>
                 )}
+
+                {/* Language selector */}
+                <LanguageSelector />
 
                 {/* User info - condensed on mobile */}
                 <div className="flex items-center space-x-2">
@@ -65,7 +71,7 @@ export default function Navbar() {
                 {/* Logout button - icon only on mobile */}
                 <Button variant="ghost" size="sm" onClick={logout}>
                   <LogOut size={18} className="sm:mr-2" />
-                  <span className="hidden sm:inline">Sign out</span>
+                  <span className="hidden sm:inline">{t('auth.logout')}</span>
                 </Button>
               </>
             )}

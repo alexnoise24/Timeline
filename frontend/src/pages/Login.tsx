@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Calendar } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
 export default function Login() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -45,23 +47,23 @@ export default function Login() {
           <div className="flex justify-center mb-4">
             <Calendar className="text-primary-600" size={48} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Wedding Timeline</h1>
-          <p className="text-gray-600 mt-2">Plan your perfect wedding</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('app.name')}</h1>
+          <p className="text-gray-600 mt-2">{t('app.tagline')}</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-            {showWelcome ? 'Welcome!' : 'Sign in'}
+            {showWelcome ? t('auth.welcome') : t('auth.login')}
           </h2>
           {showWelcome ? (
             <p className="mt-2 text-lg text-gray-600">
-              Please log in to start creating awesome wedding timelines
+              {t('auth.welcomeMessage')}
             </p>
           ) : (
             <p className="mt-2 text-sm text-gray-600">
-              Don't have an account?{' '}
+              {t('auth.noAccount')}{' '}
               <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
-                Sign up here
+                {t('auth.register')}
               </Link>
             </p>
           )}
@@ -73,7 +75,7 @@ export default function Login() {
                   <Calendar className="h-5 w-5 text-green-400" aria-hidden="true" />
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-green-700">Registration successful! Please log in to continue.</p>
+                  <p className="text-sm text-green-700">{t('auth.registrationSuccess')}</p>
                 </div>
               </div>
             </div>
@@ -95,8 +97,8 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="email"
-              label="Email"
-              placeholder="you@example.com"
+              label={t('auth.email')}
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -104,22 +106,22 @@ export default function Login() {
 
             <Input
               type="password"
-              label="Password"
-              placeholder="••••••••"
+              label={t('auth.password')}
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? t('auth.signingIn') : t('auth.loginButton')}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?{' '}
+            {t('auth.noAccount')}{' '}
             <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
-              Sign up here
+              {t('auth.register')}
             </Link>
           </p>
         </div>
