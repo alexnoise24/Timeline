@@ -11,10 +11,10 @@ import { Card, CardContent } from '@/components/ui/Card';
 import InviteModal from '@/components/InviteModal';
 import Sidebar from '@/components/Sidebar';
 import CountdownTimer from '@/components/CountdownTimer';
-import NotificationSettings from '@/components/NotificationSettings';
 import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
+import { requestNotificationPermission, isNotificationSupported } from '@/lib/notifications';
 
 // Local helper interface for form only
 interface NewProjectForm {
@@ -53,6 +53,27 @@ export default function Dashboard() {
       fetchMyInvitations(); // Fetch for all users
     }
   }, [user, fetchTimelines, fetchMyInvitations]);
+
+  // Request notification permission automatically on first visit
+  useEffect(() => {
+    const requestNotifications = async () => {
+      // Check if we've already asked before
+      const hasAskedBefore = localStorage.getItem('notification-permission-requested');
+      
+      if (!hasAskedBefore && isNotificationSupported() && Notification.permission === 'default') {
+        // Wait a bit so user sees the dashboard first
+        setTimeout(async () => {
+          await requestNotificationPermission();
+          // Mark that we've asked, regardless of the result
+          localStorage.setItem('notification-permission-requested', 'true');
+        }, 2000); // Wait 2 seconds after dashboard loads
+      }
+    };
+
+    if (user) {
+      requestNotifications();
+    }
+  }, [user]);
 
   const handleOpenInviteModal = (timelineId: string, timelineTitle: string) => {
     setSelectedTimelineForInvite({ id: timelineId, title: timelineTitle });
@@ -177,11 +198,6 @@ export default function Dashboard() {
               <span className="hidden xs:inline">{t('auth.logout')}</span>
             </Button>
           </div>
-        </div>
-
-        {/* Notification Settings */}
-        <div className="mb-8 sm:mb-12">
-          <NotificationSettings />
         </div>
 
         {/* Pending Invitations Notification */}

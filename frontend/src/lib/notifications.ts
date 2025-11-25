@@ -1,7 +1,16 @@
 // Native Web Push Notifications (No Firebase)
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
+// Use window.location.origin to build absolute URL
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // For production, use same origin with /api prefix
+  return `${window.location.origin}/api`;
+};
+
+const API_URL = getApiUrl();
 
 /**
  * Convert base64 VAPID key to Uint8Array
@@ -77,8 +86,16 @@ export async function requestNotificationPermission(): Promise<PushSubscription 
     await navigator.serviceWorker.ready;
 
     // 3. Get VAPID public key from backend
-    const { data } = await axios.get(`${API_URL}/push/vapid-key`);
-    const vapidPublicKey = data.publicKey;
+    const vapidUrl = `${API_URL}/push/vapid-key`;
+    console.log('🔑 Fetching VAPID key from:', vapidUrl);
+    const { data } = await axios.get(vapidUrl);
+    console.log('📥 VAPID key response:', data);
+    
+    const vapidPublicKey = data?.publicKey;
+    if (!vapidPublicKey) {
+      throw new Error('VAPID public key not found in response');
+    }
+    console.log('🔑 VAPID key:', vapidPublicKey);
 
     // 4. Subscribe to push notifications
     const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
