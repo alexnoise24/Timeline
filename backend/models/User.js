@@ -66,6 +66,18 @@ const userSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  pushSubscriptions: [{
+    endpoint: String,
+    expirationTime: Date,
+    keys: {
+      p256dh: String,
+      auth: String
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

@@ -3,9 +3,10 @@
   "short_name": "Lenzu",
   "description": "Plan your perfect event with collaborative timelines",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#d946ef",
+  "background_color": "#F2F1F0",
+  "theme_color": "#CDD973",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -32,5 +33,6 @@
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "gcm_sender_id": "103953800507"
 }

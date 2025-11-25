@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import InviteModal from '@/components/InviteModal';
 import Sidebar from '@/components/Sidebar';
 import CountdownTimer from '@/components/CountdownTimer';
+import NotificationSettings from '@/components/NotificationSettings';
 import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -176,6 +177,11 @@ export default function Dashboard() {
               <span className="hidden xs:inline">{t('auth.logout')}</span>
             </Button>
           </div>
+        </div>
+
+        {/* Notification Settings */}
+        <div className="mb-8 sm:mb-12">
+          <NotificationSettings />
         </div>
 
         {/* Pending Invitations Notification */}

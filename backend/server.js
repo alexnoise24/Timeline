@@ -11,6 +11,7 @@ import timelineRoutes from './routes/timeline.js';
 import userRoutes from './routes/user.js';
 import invitationRoutes from './routes/invitations.js';
 import messageRoutes from './routes/messages.js';
+import pushRoutes from './routes/push.js';
 import { setupSocketHandlers } from './socket/handlers.js';
 import { initializeFirebase } from './services/firebase.js';
 
@@ -97,6 +98,7 @@ app.use('/api/timelines', timelineRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/push', pushRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
