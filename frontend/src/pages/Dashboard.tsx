@@ -90,6 +90,47 @@ export default function Dashboard() {
   const sharedTimelines = timelines.filter(t => t && t.owner && user && t.owner._id !== user._id);
   const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
 
+  // Group timelines by month
+  const groupTimelinesByMonth = (timelineList: typeof timelines) => {
+    const grouped: { [key: string]: typeof timelines } = {};
+    
+    timelineList.forEach(timeline => {
+      if (timeline.weddingDate) {
+        const date = new Date(timeline.weddingDate);
+        const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!grouped[monthYear]) {
+          grouped[monthYear] = [];
+        }
+        grouped[monthYear].push(timeline);
+      }
+    });
+
+    // Sort by date within each month
+    Object.keys(grouped).forEach(key => {
+      grouped[key].sort((a, b) => 
+        new Date(a.weddingDate!).getTime() - new Date(b.weddingDate!).getTime()
+      );
+    });
+
+    // Sort months chronologically
+    const sortedKeys = Object.keys(grouped).sort();
+    const sortedGrouped: { [key: string]: typeof timelines } = {};
+    sortedKeys.forEach(key => {
+      sortedGrouped[key] = grouped[key];
+    });
+
+    return sortedGrouped;
+  };
+
+  const getMonthLabel = (monthYearKey: string) => {
+    const [year, month] = monthYearKey.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  };
+
+  const groupedOwnedTimelines = groupTimelinesByMonth(ownedTimelines);
+  const groupedSharedTimelines = groupTimelinesByMonth(sharedTimelines);
+
   const handleAcceptInvitation = async (timelineId: string) => {
     try {
       await acceptInvitation(timelineId);
@@ -235,8 +276,13 @@ export default function Dashboard() {
         {user?.role === 'photographer' && ownedTimelines.length > 0 && (
           <div className="mb-8 sm:mb-12">
             <h2 className="text-2xl sm:text-3xl font-heading text-text mb-6 sm:mb-8">{t('dashboard.myProjects')}</h2>
-            <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {ownedTimelines.map((timeline) => (
+            {Object.entries(groupedOwnedTimelines).map(([monthKey, timelinesInMonth]) => (
+              <div key={monthKey} className="mb-8">
+                <h3 className="text-xl font-heading text-text opacity-60 mb-4 capitalize">
+                  {getMonthLabel(monthKey)}
+                </h3>
+                <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  {timelinesInMonth.map((timeline) => (
                 <Card key={timeline._id} className="group relative">
                   <CardContent className="p-6">
                     <div className="cursor-pointer" onClick={() => navigate(`/timeline/${timeline._id}`)}>
@@ -290,8 +336,10 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -302,8 +350,13 @@ export default function Dashboard() {
               <Share2 size={24} className="text-accent" />
               <h2 className="text-2xl sm:text-3xl font-heading text-text">{t('dashboard.sharedTimelines')}</h2>
             </div>
-            <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {sharedTimelines.map((timeline) => (
+            {Object.entries(groupedSharedTimelines).map(([monthKey, timelinesInMonth]) => (
+              <div key={monthKey} className="mb-8">
+                <h3 className="text-xl font-heading text-text opacity-60 mb-4 capitalize">
+                  {getMonthLabel(monthKey)}
+                </h3>
+                <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  {timelinesInMonth.map((timeline) => (
                 <Card key={timeline._id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/timeline/${timeline._id}`)}>
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
@@ -335,8 +388,10 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
