@@ -1,5 +1,5 @@
 import express from 'express';
-import { authMiddleware } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 import { getVapidPublicKey, sendPushNotification } from '../services/webPush.js';
 import User from '../models/User.js';
 
@@ -18,7 +18,7 @@ router.get('/vapid-key', (req, res) => {
  * POST /api/push/subscribe
  * Save push subscription for the authenticated user
  */
-router.post('/subscribe', authMiddleware, async (req, res) => {
+router.post('/subscribe', authenticate, async (req, res) => {
   try {
     const { subscription } = req.body;
     const userId = req.user._id;
@@ -71,7 +71,7 @@ router.post('/subscribe', authMiddleware, async (req, res) => {
  * POST /api/push/unsubscribe
  * Remove push subscription for the authenticated user
  */
-router.post('/unsubscribe', authMiddleware, async (req, res) => {
+router.post('/unsubscribe', authenticate, async (req, res) => {
   try {
     const { endpoint } = req.body;
     const userId = req.user._id;
@@ -115,7 +115,7 @@ router.post('/unsubscribe', authMiddleware, async (req, res) => {
  * POST /api/push/test
  * Send a test notification to the authenticated user
  */
-router.post('/test', authMiddleware, async (req, res) => {
+router.post('/test', authenticate, async (req, res) => {
   try {
     const userId = req.user._id;
     const user = await User.findById(userId);
