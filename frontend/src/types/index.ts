@@ -2,7 +2,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'photographer' | 'guest';
+  role: 'master' | 'creator' | 'photographer' | 'guest';
   avatar?: string;
   invitedTimelines?: Array<{
     timelineId: string;

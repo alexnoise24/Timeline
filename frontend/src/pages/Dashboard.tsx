@@ -228,7 +228,7 @@ export default function Dashboard() {
             <p className="text-base sm:text-lg text-text opacity-70">{t('dashboard.welcome', { name: user?.name })}</p>
           </div>
           <div className="flex gap-2 sm:gap-3">
-            {user?.role === 'photographer' && (
+            {(user?.role === 'photographer' || user?.role === 'creator' || user?.role === 'master') && (
               <Button onClick={() => setIsCreateModalOpen(true)} className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center">
                 <Plus size={18} />
                 <span className="hidden xs:inline">{t('dashboard.newProject')}</span>
@@ -273,7 +273,7 @@ export default function Dashboard() {
         )}
 
         {/* My Projects */}
-        {user?.role === 'photographer' && ownedTimelines.length > 0 && (
+        {(user?.role === 'photographer' || user?.role === 'creator' || user?.role === 'master') && ownedTimelines.length > 0 && (
           <div className="mb-8 sm:mb-12">
             <h2 className="text-2xl sm:text-3xl font-heading text-text mb-6 sm:mb-8">{t('dashboard.myProjects')}</h2>
             {Object.entries(groupedOwnedTimelines).map(([monthKey, timelinesInMonth]) => (
@@ -401,11 +401,11 @@ export default function Dashboard() {
             <Calendar size={48} className="sm:w-16 sm:h-16 text-primary-300 mx-auto mb-4 sm:mb-6" />
             <h3 className="text-xl sm:text-2xl font-semibold text-black mb-3">{t('dashboard.noProjects')}</h3>
             <p className="text-sm sm:text-base text-primary-600 mb-6 sm:mb-8 max-w-md mx-auto">
-              {user?.role === 'photographer' 
+              {(user?.role === 'photographer' || user?.role === 'creator' || user?.role === 'master')
                 ? t('dashboard.photographerEmptyState')
                 : t('dashboard.guestEmptyState')}
             </p>
-            {user?.role === 'photographer' && (
+            {(user?.role === 'photographer' || user?.role === 'creator' || user?.role === 'master') && (
               <Button onClick={() => setIsCreateModalOpen(true)} className="text-sm sm:text-base font-medium inline-flex items-center gap-2">
                 <Plus size={20} />
                 {t('dashboard.createFirstProject')}

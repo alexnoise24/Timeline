@@ -34,7 +34,7 @@ export default function Navbar() {
             {user && (
               <>
                 {/* Show different options based on user role */}
-                {user.role === 'photographer' ? (
+                {(user.role === 'photographer' || user.role === 'creator' || user.role === 'master') ? (
                   <Link to="/create-timeline" className="hidden sm:block">
                     <Button size="sm" className="bg-primary-600 hover:bg-primary-700">
                       <Plus size={18} className="sm:mr-2" />
@@ -53,7 +53,7 @@ export default function Navbar() {
 
                 {/* User info - condensed on mobile */}
                 <div className="flex items-center space-x-2">
-                  {user.role === 'photographer' ? (
+                  {(user.role === 'photographer' || user.role === 'creator' || user.role === 'master') ? (
                     <Camera size={20} className="text-primary-600" />
                   ) : (
                     <Users size={20} className="text-primary-600" />
