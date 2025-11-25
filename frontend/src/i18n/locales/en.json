@@ -187,7 +187,12 @@
     "shotUpdateFailed": "Failed to update shot",
     "deleteShotConfirm": "Are you sure you want to delete this shot?",
     "shotDeleted": "Shot deleted successfully",
-    "shotDeleteFailed": "Failed to delete shot"
+    "shotDeleteFailed": "Failed to delete shot",
+    "editShot": "Edit Shot",
+    "updateShot": "Update Shot",
+    "shotUpdated": "Shot updated successfully",
+    "completed": "Completed",
+    "noCompletedShots": "No completed shots yet"
   },
   "messages": {
     "title": "Messages",

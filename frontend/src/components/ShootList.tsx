@@ -106,9 +106,17 @@ export default function ShootList({ timeline }: ShootListProps) {
   };
 
   const shotList = timeline.shotList || [];
+  
+  // Separate completed and incomplete shots
+  const incompleteShotList = shotList.filter(s => !s.isCompleted);
+  const completedShotList = shotList.filter(s => s.isCompleted);
+  
+  // Show shots based on selected category
   const filteredShots = selectedCategory === 'all'
-    ? shotList
-    : shotList.filter(shot => shot.category === selectedCategory);
+    ? incompleteShotList
+    : selectedCategory === 'completed'
+    ? completedShotList
+    : incompleteShotList.filter(shot => shot.category === selectedCategory);
 
   const completedCount = shotList.filter(s => s.isCompleted).length;
   const totalCount = shotList.length;
@@ -118,8 +126,14 @@ export default function ShootList({ timeline }: ShootListProps) {
   const shotsByCategory = SHOT_CATEGORIES.sort((a, b) => a.order - b.order).map(cat => ({
     ...cat,
     shots: filteredShots.filter(s => s.category === cat.value),
-    count: shotList.filter(s => s.category === cat.value).length,
+    count: incompleteShotList.filter(s => s.category === cat.value).length,
   })).filter(cat => selectedCategory === 'all' || cat.value === selectedCategory);
+  
+  // Completed shots grouped by category
+  const completedShotsByCategory = SHOT_CATEGORIES.sort((a, b) => a.order - b.order).map(cat => ({
+    ...cat,
+    shots: completedShotList.filter(s => s.category === cat.value),
+  })).filter(cat => cat.shots.length > 0);
 
   return (
     <div className="space-y-6">
@@ -159,10 +173,10 @@ export default function ShootList({ timeline }: ShootListProps) {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          {t('shotList.all', { count: totalCount })}
+          {t('shotList.all', { count: incompleteShotList.length })}
         </button>
         {SHOT_CATEGORIES.sort((a, b) => a.order - b.order).map(cat => {
-          const count = shotList.filter(s => s.category === cat.value).length;
+          const count = incompleteShotList.filter(s => s.category === cat.value).length;
           if (count === 0) return null;
           return (
             <button
@@ -178,6 +192,18 @@ export default function ShootList({ timeline }: ShootListProps) {
             </button>
           );
         })}
+        {completedShotList.length > 0 && (
+          <button
+            onClick={() => setSelectedCategory('completed')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              selectedCategory === 'completed'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {t('shotList.completed')} ({completedShotList.length})
+          </button>
+        )}
       </div>
 
       {/* Shot List */}
@@ -188,6 +214,8 @@ export default function ShootList({ timeline }: ShootListProps) {
             <p className="text-gray-600 mb-4">
               {selectedCategory === 'all'
                 ? t('shotList.noShots')
+                : selectedCategory === 'completed'
+                ? t('shotList.noCompletedShots')
                 : t('shotList.noCategoryShots', { category: t(`shotList.category${SHOT_CATEGORIES.find(c => c.value === selectedCategory)?.label.replace(/\s/g, '')}`) })}
             </p>
             {canEdit && selectedCategory === 'all' && (
@@ -196,23 +224,26 @@ export default function ShootList({ timeline }: ShootListProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {shotsByCategory.map(category => {
-            if (category.shots.length === 0) return null;
-            return (
-              <div key={category.value}>
-                {selectedCategory === 'all' && (
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-lg text-sm ${category.color}`}>
-                      {category.label}
-                    </span>
-                    <span className="text-gray-600 text-sm">
-                      {category.shots.filter(s => s.isCompleted).length}/{category.shots.length}
-                    </span>
-                  </h3>
-                )}
-                <div className="space-y-2">
-                  {category.shots.map(shot => (
+        <div className="space-y-6">
+          {/* Incomplete Shots */}
+          {selectedCategory !== 'completed' && (
+            <div className="space-y-4">
+              {shotsByCategory.map(category => {
+                if (category.shots.length === 0) return null;
+                return (
+                  <div key={category.value}>
+                    {selectedCategory === 'all' && (
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-lg text-sm ${category.color}`}>
+                          {category.label}
+                        </span>
+                        <span className="text-gray-600 text-sm">
+                          {category.count - category.shots.length}/{category.count}
+                        </span>
+                      </h3>
+                    )}
+                    <div className="space-y-2">
+                      {category.shots.map(shot => (
                     <Card
                       key={shot._id}
                       className={`transition-all ${shot.isCompleted ? 'opacity-60' : ''}`}
@@ -267,11 +298,159 @@ export default function ShootList({ timeline }: ShootListProps) {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Completed Shots Section */}
+          {selectedCategory === 'all' && completedShotList.length > 0 && (
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="px-3 py-1 rounded-lg text-sm bg-green-100 text-green-700">
+                  {t('shotList.completed')}
+                </span>
+                <span className="text-gray-600 text-sm">
+                  {completedShotList.length}
+                </span>
+              </h2>
+              <div className="space-y-4">
+                {completedShotsByCategory.map(category => (
+                  <div key={category.value}>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-lg text-sm ${category.color}`}>
+                        {category.label}
+                      </span>
+                      <span className="text-gray-600 text-sm">
+                        {category.shots.length}
+                      </span>
+                    </h3>
+                    <div className="space-y-2">
+                      {category.shots.map(shot => (
+                        <Card
+                          key={shot._id}
+                          className="transition-all opacity-60"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 mt-1">
+                                <button
+                                  onClick={() => handleToggleComplete(shot)}
+                                  className="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors bg-green-600 border-green-600"
+                                >
+                                  <Check size={16} className="text-white" />
+                                </button>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium line-through text-gray-500">
+                                  {shot.title}
+                                </h4>
+                                {shot.description && (
+                                  <p className="text-sm text-gray-600 mt-1">{shot.description}</p>
+                                )}
+                                {shot.completedBy && (
+                                  <p className="text-xs text-gray-500 mt-2">
+                                    {t('shotList.completedBy', { name: shot.completedBy.name })}
+                                  </p>
+                                )}
+                              </div>
+                              {canEdit && (
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleEditShot(shot)}
+                                    className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteShot(shot._id)}
+                                    className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            );
-          })}
+            </div>
+          )}
+          
+          {/* Completed View (when filter is set to completed) */}
+          {selectedCategory === 'completed' && (
+            <div className="space-y-4">
+              {completedShotsByCategory.map(category => (
+                <div key={category.value}>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-lg text-sm ${category.color}`}>
+                      {category.label}
+                    </span>
+                    <span className="text-gray-600 text-sm">
+                      {category.shots.length}
+                    </span>
+                  </h3>
+                  <div className="space-y-2">
+                    {category.shots.map(shot => (
+                      <Card
+                        key={shot._id}
+                        className="transition-all opacity-60"
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-1">
+                              <button
+                                onClick={() => handleToggleComplete(shot)}
+                                className="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors bg-green-600 border-green-600"
+                              >
+                                <Check size={16} className="text-white" />
+                              </button>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium line-through text-gray-500">
+                                {shot.title}
+                              </h4>
+                              {shot.description && (
+                                <p className="text-sm text-gray-600 mt-1">{shot.description}</p>
+                              )}
+                              {shot.completedBy && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  {t('shotList.completedBy', { name: shot.completedBy.name })}
+                                </p>
+                              )}
+                            </div>
+                            {canEdit && (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleEditShot(shot)}
+                                  className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteShot(shot._id)}
+                                  className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

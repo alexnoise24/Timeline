@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Calendar, Clock, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { Plus, Calendar, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useAuthStore } from '@/store/authStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -288,13 +288,13 @@ export default function TimelineView() {
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center gap-1 sm:gap-3 border-b border-gray-200 overflow-x-auto">
+          <div className="flex items-center gap-1 sm:gap-3 overflow-x-auto pb-4">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-colors border-b-2 -mb-px whitespace-nowrap ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-all rounded-lg whitespace-nowrap ${
                 activeTab === 'overview'
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'bg-black text-white'
+                  : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <Clipboard size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -302,10 +302,10 @@ export default function TimelineView() {
             </button>
             <button
               onClick={() => setActiveTab('timeline')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-colors border-b-2 -mb-px whitespace-nowrap ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-all rounded-lg whitespace-nowrap ${
                 activeTab === 'timeline'
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'bg-black text-white'
+                  : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <Calendar size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -313,10 +313,10 @@ export default function TimelineView() {
             </button>
             <button
               onClick={() => setActiveTab('shotlist')}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-colors border-b-2 -mb-px whitespace-nowrap ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 font-medium text-xs sm:text-sm transition-all rounded-lg whitespace-nowrap ${
                 activeTab === 'shotlist'
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'bg-black text-white'
+                  : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <Camera size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -356,11 +356,23 @@ export default function TimelineView() {
             sortedEvents.map((event, index) => (
               <Card key={event._id} className={`relative ${event.isCompleted ? 'opacity-75 bg-gray-50' : ''}`}>
                 {index !== sortedEvents.length - 1 && (
-                  <div className="absolute left-8 top-full h-6 w-0.5 bg-gray-200" />
+                  <div className="absolute left-[90px] top-full h-6 w-0.5 bg-gray-200" />
                 )}
                 <CardContent className="p-4 sm:p-6">
-                  <div className="flex">
-                    <div className="flex-shrink-0 mr-3 sm:mr-4">
+                  <div className="flex gap-4 sm:gap-6">
+                    {/* Time Display on the Left */}
+                    <div className="flex-shrink-0 flex flex-col items-center">
+                      {event.time ? (
+                        <div className="text-3xl sm:text-4xl font-bold text-accent">
+                          {event.time}
+                        </div>
+                      ) : (
+                        <div className="text-2xl sm:text-3xl font-medium text-gray-400">--:--</div>
+                      )}
+                    </div>
+
+                    {/* Checkbox */}
+                    <div className="flex-shrink-0">
                       <button
                         onClick={() => handleToggleCompletion(event._id)}
                         className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors ${
@@ -373,6 +385,8 @@ export default function TimelineView() {
                         {event.isCompleted ? <CheckCircle2 size={20} /> : <Circle size={20} />}
                       </button>
                     </div>
+
+                    {/* Event Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
                         <div className="flex-1 min-w-0">
@@ -425,20 +439,12 @@ export default function TimelineView() {
                         }`}>{event.description}</p>
                       )}
 
-                      <div className="flex flex-wrap gap-3 sm:gap-4 mt-2 text-xs sm:text-sm text-gray-600">
-                        {event.time && (
-                          <div className="flex items-center">
-                            <Clock size={14} className="mr-1" />
-                            <span>{event.time}</span>
-                          </div>
-                        )}
-                        {event.location && (
-                          <div className="flex items-center">
-                            <MapPin size={16} className="mr-2" />
-                            {event.location}
-                          </div>
-                        )}
-                      </div>
+                      {event.location && (
+                        <div className="flex items-center mt-2 text-xs sm:text-sm text-gray-600">
+                          <MapPin size={16} className="mr-2" />
+                          {event.location}
+                        </div>
+                      )}
 
                       {/* Countdown Timer */}
                       {!event.isCompleted && event.date && event.time && (

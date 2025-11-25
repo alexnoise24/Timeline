@@ -11,7 +11,7 @@ export default {
       },
       fontFamily: {
         sans: ['Sofia Pro', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        heading: ['Recoleta', 'Georgia', 'serif'],
+        heading: ['Sofia Pro', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
         background: '#F2F1F0',

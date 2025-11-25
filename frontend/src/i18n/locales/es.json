@@ -187,7 +187,12 @@
     "shotUpdateFailed": "Error al actualizar foto",
     "deleteShotConfirm": "¿Estás seguro de que quieres eliminar esta foto?",
     "shotDeleted": "Foto eliminada exitosamente",
-    "shotDeleteFailed": "Error al eliminar foto"
+    "shotDeleteFailed": "Error al eliminar foto",
+    "editShot": "Editar Foto",
+    "updateShot": "Actualizar Foto",
+    "shotUpdated": "Foto actualizada exitosamente",
+    "completed": "Completadas",
+    "noCompletedShots": "Aún no hay fotos completadas"
   },
   "messages": {
     "title": "Mensajes",

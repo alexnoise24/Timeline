@@ -21,9 +21,39 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['photographer', 'guest'],
+    enum: ['master', 'creator', 'photographer', 'guest'],
     default: 'guest',
     required: true
+  },
+  // Trial and Plan fields
+  trial_start_date: {
+    type: Date,
+    default: null
+  },
+  trial_end_date: {
+    type: Date,
+    default: null
+  },
+  is_trial_active: {
+    type: Boolean,
+    default: false
+  },
+  current_plan: {
+    type: String,
+    enum: ['none', 'trial', 'free', 'starter', 'pro', 'studio', 'master'],
+    default: 'none'
+  },
+  is_payment_required: {
+    type: Boolean,
+    default: false
+  },
+  plan_start_date: {
+    type: Date,
+    default: null
+  },
+  plan_expiration_date: {
+    type: Date,
+    default: null
   },
   invitedTimelines: [{
     timelineId: {

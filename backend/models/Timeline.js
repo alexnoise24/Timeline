@@ -128,6 +128,10 @@ const timelineSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  locationUrl: {
+    type: String,
+    default: ''
+  },
   couple: {
     partner1: String,
     partner2: String
