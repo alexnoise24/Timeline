@@ -30,8 +30,10 @@ export const authenticate = async (req, res, next) => {
 };
 
 export const requirePhotographer = (req, res, next) => {
-  if (req.user.role !== 'photographer') {
-    return res.status(403).json({ message: 'Access denied. Photographer role required.' });
+  // Allow master, creator, and photographer roles
+  const allowedRoles = ['master', 'creator', 'photographer'];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ message: 'Access denied. Creator role required.' });
   }
   next();
 };
