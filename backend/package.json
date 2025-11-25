@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "migrate:users": "node scripts/migrate-users.js",
-    "fix:master": "node scripts/fix-master-user.js"
+    "fix:master": "node scripts/fix-master-user.js",
+    "debug:timelines": "node scripts/debug-timelines.js"
   },
   "keywords": [],
   "author": "",
