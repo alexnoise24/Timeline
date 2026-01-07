@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
 import { MobileMenuProvider } from './context/MobileMenuContext';
+import { BrandingProvider } from './context/BrandingContext';
 import NotificationHandler from './components/NotificationHandler';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import InviteAccept from './pages/InviteAccept';
 import Dashboard from './pages/Dashboard';
 import TimelineView from './pages/TimelineView';
 import Messages from './pages/Messages';
+import Pricing from './pages/Pricing';
+import BrandingSettings from './pages/BrandingSettings';
+import MyPlan from './pages/MyPlan';
+import Community from './pages/Community';
 
 function PrivateRoute({ children }: { children: React.ReactNode}) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -89,7 +97,9 @@ function App() {
 
   return (
     <MobileMenuProvider>
+    <BrandingProvider>
       <BrowserRouter>
+        <Toaster position="top-center" />
         <NotificationHandler />
         <Routes>
           <Route path="/invite/:token" element={<InviteAccept />} />
@@ -106,6 +116,22 @@ function App() {
             element={
               <PublicRoute>
                 <Register />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPassword />
               </PublicRoute>
             }
           />
@@ -133,6 +159,31 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route
+            path="/my-plan"
+            element={
+              <PrivateRoute>
+                <MyPlan />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/community"
+            element={
+              <PrivateRoute>
+                <Community />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/branding"
+            element={
+              <PrivateRoute>
+                <BrandingSettings />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/"
             element={
@@ -145,6 +196,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+    </BrandingProvider>
     </MobileMenuProvider>
   );
 }

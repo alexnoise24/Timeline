@@ -1,0 +1,15 @@
+[Unit]
+Description=Cloudflared Tunnel - Timeline
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=alexobregon
+ExecStart=/usr/local/bin/cloudflared tunnel run --token eyJhIjoiNzRiM2I0OTEwZDJiNzA4NmEzODdhMzE1YjM2ZjVjM2IiLCJ0IjoiZGY2ZjNmNzgtODAxNS00MDU5LTljOGItNDY0MTc1YzY4MGJlIiwicyI6Ik9UZGxPREV5WkdZdFpqWTFNQzAwT0RRNExXSmtZelF0Wm1JMlltVTJNREZsWVRoaiJ9
+Restart=always
+RestartSec=5
+Environment="HOME=/home/alexobregon"
+
+[Install]
+WantedBy=multi-user.target

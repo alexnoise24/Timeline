@@ -1,0 +1,15 @@
+[Unit]
+Description=Cloudflared Tunnel - Flujo Estable
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=alexobregon
+ExecStart=/usr/local/bin/cloudflared tunnel --config /home/alexobregon/.cloudflared/config.yml run flujo-estable
+Restart=always
+RestartSec=5
+Environment="HOME=/home/alexobregon"
+
+[Install]
+WantedBy=multi-user.target

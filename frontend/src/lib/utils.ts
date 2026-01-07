@@ -5,8 +5,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date) {
-  return new Date(date).toLocaleDateString('es-ES', {
+export function formatDate(date: string | Date, locale: string = 'es') {
+  const localeMap: Record<string, string> = { en: 'en-US', es: 'es-ES' };
+  return new Date(date).toLocaleDateString(localeMap[locale] || 'es-ES', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -17,8 +18,9 @@ export function formatTime(time: string) {
   return time;
 }
 
-export function formatDateTime(date: string | Date) {
-  return new Date(date).toLocaleString('es-ES', {
+export function formatDateTime(date: string | Date, locale: string = 'es') {
+  const localeMap: Record<string, string> = { en: 'en-US', es: 'es-ES' };
+  return new Date(date).toLocaleString(localeMap[locale] || 'es-ES', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

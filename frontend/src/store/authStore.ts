@@ -9,7 +9,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role?: 'photographer' | 'guest') => Promise<void>;
+  register: (name: string, email: string, password: string, role?: 'photographer' | 'planner' | 'guest') => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }

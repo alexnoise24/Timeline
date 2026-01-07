@@ -2,7 +2,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'master' | 'creator' | 'photographer' | 'guest';
+  role: 'master' | 'creator' | 'photographer' | 'planner' | 'guest';
   avatar?: string;
   invitedTimelines?: Array<{
     timelineId: string;
@@ -10,6 +10,22 @@ export interface User {
     invitedAt: string;
     status: 'pending' | 'accepted' | 'declined';
   }>;
+  // Trial and Plan fields
+  trial_start_date?: string;
+  trial_end_date?: string;
+  is_trial_active?: boolean;
+  current_plan?: 'none' | 'trial' | 'free' | 'starter' | 'pro' | 'studio' | 'master';
+  plan_expiration_date?: string;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  branding?: {
+    enabled: boolean;
+    studioName?: string;
+    logo?: string;
+    accentColor?: string;
+    subdomain?: string;
+    emailFooter?: string;
+  };
   createdAt: string;
 }
 
@@ -68,6 +84,24 @@ export interface Collaborator {
   addedAt: string;
 }
 
+export interface Day {
+  _id: string;
+  date: string;
+  label?: string;
+  events: Event[];
+  order: number;
+  createdAt: string;
+}
+
+export interface Photographer {
+  _id: string;
+  name: string;
+  role: string;
+  imageUrl: string;
+  order: number;
+  createdAt: string;
+}
+
 export interface Timeline {
   _id: string;
   title: string;
@@ -95,8 +129,10 @@ export interface Timeline {
   generalNotes?: string;
   owner: User;
   collaborators: Collaborator[];
-  events: Event[];
+  days: Day[];  // Multi-day support
+  events: Event[];  // Deprecated - kept for backward compatibility
   shotList: Shot[];
+  photographersTeam: Photographer[];
   changeLogs: ChangeLog[];
   isPublic: boolean;
   createdAt: string;

@@ -250,16 +250,16 @@ export default function ShootList({ timeline }: ShootListProps) {
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 mt-1">
+                          <div className="flex-shrink-0">
                             <button
                               onClick={() => handleToggleComplete(shot)}
-                              className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                              className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg sm:rounded border-2 flex items-center justify-center transition-colors touch-manipulation ${
                                 shot.isCompleted
                                   ? 'bg-green-600 border-green-600'
-                                  : 'border-gray-300 hover:border-green-600'
+                                  : 'border-gray-300 hover:border-green-600 active:bg-green-50'
                               }`}
                             >
-                              {shot.isCompleted && <Check size={16} className="text-white" />}
+                              {shot.isCompleted && <Check size={18} className="text-white sm:w-4 sm:h-4" />}
                             </button>
                           </div>
                           <div className="flex-1 min-w-0">
@@ -283,15 +283,15 @@ export default function ShootList({ timeline }: ShootListProps) {
                             <div className="flex gap-1">
                               <button
                                 onClick={() => handleEditShot(shot)}
-                                className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="flex-shrink-0 p-3 sm:p-2 text-blue-600 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-colors touch-manipulation"
                               >
-                                <Edit2 size={16} />
+                                <Edit2 size={18} className="sm:w-4 sm:h-4" />
                               </button>
                               <button
                                 onClick={() => handleDeleteShot(shot._id)}
-                                className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="flex-shrink-0 p-3 sm:p-2 text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors touch-manipulation"
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={18} className="sm:w-4 sm:h-4" />
                               </button>
                             </div>
                           )}
@@ -336,12 +336,12 @@ export default function ShootList({ timeline }: ShootListProps) {
                         >
                           <CardContent className="p-4">
                             <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0 mt-1">
+                              <div className="flex-shrink-0">
                                 <button
                                   onClick={() => handleToggleComplete(shot)}
-                                  className="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors bg-green-600 border-green-600"
+                                  className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg sm:rounded border-2 flex items-center justify-center transition-colors touch-manipulation bg-green-600 border-green-600 active:bg-green-700"
                                 >
-                                  <Check size={16} className="text-white" />
+                                  <Check size={18} className="text-white sm:w-4 sm:h-4" />
                                 </button>
                               </div>
                               <div className="flex-1 min-w-0">
@@ -361,15 +361,15 @@ export default function ShootList({ timeline }: ShootListProps) {
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => handleEditShot(shot)}
-                                    className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    className="flex-shrink-0 p-3 sm:p-2 text-blue-600 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-colors touch-manipulation"
                                   >
-                                    <Edit2 size={16} />
+                                    <Edit2 size={18} className="sm:w-4 sm:h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteShot(shot._id)}
-                                    className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="flex-shrink-0 p-3 sm:p-2 text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors touch-manipulation"
                                   >
-                                    <Trash2 size={16} />
+                                    <Trash2 size={18} className="sm:w-4 sm:h-4" />
                                   </button>
                                 </div>
                               )}
@@ -405,12 +405,12 @@ export default function ShootList({ timeline }: ShootListProps) {
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-1">
+                            <div className="flex-shrink-0">
                               <button
                                 onClick={() => handleToggleComplete(shot)}
-                                className="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors bg-green-600 border-green-600"
+                                className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg sm:rounded border-2 flex items-center justify-center transition-colors touch-manipulation bg-green-600 border-green-600 active:bg-green-700"
                               >
-                                <Check size={16} className="text-white" />
+                                <Check size={18} className="text-white sm:w-4 sm:h-4" />
                               </button>
                             </div>
                             <div className="flex-1 min-w-0">

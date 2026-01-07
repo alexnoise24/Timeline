@@ -37,6 +37,29 @@ const changeLogSchema = new mongoose.Schema({
   description: String
 });
 
+const photographerSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  role: {
+    type: String,
+    required: true
+  },
+  imageUrl: {
+    type: String,
+    required: true
+  },
+  order: {
+    type: Number,
+    default: 0
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const shotSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -80,7 +103,7 @@ const eventSchema = new mongoose.Schema({
   description: String,
   date: {
     type: Date,
-    required: true
+    required: false  // No longer required - inherited from Day
   },
   time: String,
   location: String,
@@ -110,6 +133,27 @@ const eventSchema = new mongoose.Schema({
     default: Date.now
   },
   updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+// Day schema - contains events for a specific date
+const daySchema = new mongoose.Schema({
+  date: {
+    type: Date,
+    required: true
+  },
+  label: {
+    type: String,
+    default: ''  // e.g., "Welcome Party", "Rehearsal", "Wedding Day"
+  },
+  events: [eventSchema],
+  order: {
+    type: Number,
+    default: 0
+  },
+  createdAt: {
     type: Date,
     default: Date.now
   }
@@ -171,8 +215,10 @@ const timelineSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  events: [eventSchema],
+  days: [daySchema],  // NEW: Multi-day support
+  events: [eventSchema],  // DEPRECATED: Kept for backward compatibility during migration
   shotList: [shotSchema],
+  photographersTeam: [photographerSchema],
   changeLogs: [changeLogSchema],
   isPublic: {
     type: Boolean,

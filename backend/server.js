@@ -12,6 +12,9 @@ import userRoutes from './routes/user.js';
 import invitationRoutes from './routes/invitations.js';
 import messageRoutes from './routes/messages.js';
 import pushRoutes from './routes/push.js';
+import stripeRoutes from './routes/stripe.js';
+import brandingRoutes from './routes/branding.js';
+import communityRoutes from './routes/community.js';
 import { setupSocketHandlers } from './socket/handlers.js';
 import { initializeFirebase } from './services/firebase.js';
 
@@ -79,6 +82,10 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
+
+// Stripe webhook needs raw body - must be before express.json()
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -99,6 +106,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/branding', brandingRoutes);
+app.use('/api/community', communityRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -108,11 +118,14 @@ app.get('/api/health', (req, res) => {
 // Socket.io setup
 setupSocketHandlers(io);
 
-// Serve static files from frontend/dist
+// Serve uploaded files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const frontendPath = path.join(__dirname, '../frontend/dist');
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsPath));
 
+// Frontend deployment
+const frontendPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendPath));
 
 // SPA fallback - serve index.html for all non-API routes

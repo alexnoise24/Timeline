@@ -19,7 +19,7 @@ const Register: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    role: 'guest' as 'photographer' | 'guest'
+    role: 'guest' as 'photographer' | 'planner' | 'guest'
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -199,13 +199,41 @@ const Register: React.FC = () => {
                 name="role"
                 value="photographer"
                 checked={formData.role === 'photographer'}
-                onChange={(e) => updateFormData('role', e.target.value as 'photographer' | 'guest')}
+                onChange={(e) => updateFormData('role', e.target.value as 'photographer' | 'planner' | 'guest')}
                 className="mr-3 w-4 h-4"
               />
               <span className="mr-2">📷</span>
-              <div>
-                <div className="font-medium text-black">{t('auth.photographer')}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-black">{t('auth.photographer')}</span>
+                  <span className="text-xs bg-accent text-text px-2 py-0.5 rounded-full font-medium">
+                    {t('auth.trialBadge')}
+                  </span>
+                </div>
                 <div className="text-xs text-primary-500">{t('auth.photographerDesc')}</div>
+              </div>
+            </label>
+
+            <label className={
+              `flex items-center p-4 rounded-lg cursor-pointer mb-2 transition border ${formData.role === 'planner' ? 'border-black bg-white' : 'border-gray-300 bg-white'}`
+            }>
+              <input
+                type="radio"
+                name="role"
+                value="planner"
+                checked={formData.role === 'planner'}
+                onChange={(e) => updateFormData('role', e.target.value as 'photographer' | 'planner' | 'guest')}
+                className="mr-3 w-4 h-4"
+              />
+              <span className="mr-2">📋</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-black">{t('auth.planner')}</span>
+                  <span className="text-xs bg-accent text-text px-2 py-0.5 rounded-full font-medium">
+                    {t('auth.trialBadge')}
+                  </span>
+                </div>
+                <div className="text-xs text-primary-500">{t('auth.plannerDesc')}</div>
               </div>
             </label>
 
@@ -217,7 +245,7 @@ const Register: React.FC = () => {
                 name="role"
                 value="guest"
                 checked={formData.role === 'guest'}
-                onChange={(e) => updateFormData('role', e.target.value as 'photographer' | 'guest')}
+                onChange={(e) => updateFormData('role', e.target.value as 'photographer' | 'planner' | 'guest')}
                 className="mr-3 w-4 h-4"
               />
               <span className="mr-2">👥</span>

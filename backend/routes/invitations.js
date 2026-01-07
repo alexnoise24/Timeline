@@ -101,11 +101,11 @@ router.post('/accept-invite-token',
       if (!alreadyCollaborator) {
         timeline.collaborators.push({
           user: req.user._id,
-          role: 'editor',
+          role: 'editor', // Invited users can edit everything
           addedAt: new Date()
         });
         await timeline.save();
-        console.log('Added user to timeline collaborators');
+        console.log('Added user to timeline collaborators as editor');
       } else {
         console.log('User already a collaborator');
       }
@@ -225,7 +225,7 @@ router.post('/accept-invitation/:timelineId',
       if (!alreadyCollaborator) {
         timeline.collaborators.push({
           user: userId,
-          role: 'editor',
+          role: 'editor', // Invited users can edit everything
           addedAt: new Date()
         });
         await timeline.save();

@@ -17,6 +17,16 @@ interface TimelineState {
   deleteEvent: (timelineId: string, eventId: string) => Promise<void>;
   toggleEventCompletion: (timelineId: string, eventId: string) => Promise<void>;
   addNote: (timelineId: string, eventId: string, content: string) => Promise<void>;
+  // Day management
+  addDay: (timelineId: string, day: { date: string; label?: string }) => Promise<void>;
+  updateDay: (timelineId: string, dayId: string, data: { date?: string; label?: string }) => Promise<void>;
+  deleteDay: (timelineId: string, dayId: string) => Promise<void>;
+  // Day event management
+  addDayEvent: (timelineId: string, dayId: string, event: Partial<Event>) => Promise<void>;
+  updateDayEvent: (timelineId: string, dayId: string, eventId: string, data: Partial<Event>) => Promise<void>;
+  deleteDayEvent: (timelineId: string, dayId: string, eventId: string) => Promise<void>;
+  toggleDayEventCompletion: (timelineId: string, dayId: string, eventId: string) => Promise<void>;
+  addDayEventNote: (timelineId: string, dayId: string, eventId: string, content: string) => Promise<void>;
   addCollaborator: (timelineId: string, userId: string, role: string) => Promise<void>;
   removeCollaborator: (timelineId: string, userId: string) => Promise<void>;
   addShot: (timelineId: string, shot: Partial<Shot>) => Promise<void>;
@@ -238,5 +248,140 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
   leaveTimelineRoom: (timelineId) => {
     const socket = getSocket();
     socket?.emit('leave-timeline', timelineId);
+  },
+
+  // Day management
+  addDay: async (timelineId, dayData) => {
+    const { data } = await api.post(`/timelines/${timelineId}/days`, dayData);
+    set((state) => ({
+      currentTimeline: state.currentTimeline
+        ? { ...state.currentTimeline, days: data.days }
+        : null,
+    }));
+
+    const socket = getSocket();
+    socket?.emit('timeline-update', { timelineId, days: data.days });
+  },
+
+  updateDay: async (timelineId, dayId, dayData) => {
+    const { data } = await api.put(`/timelines/${timelineId}/days/${dayId}`, dayData);
+    set((state) => ({
+      currentTimeline: state.currentTimeline
+        ? { ...state.currentTimeline, days: data.days }
+        : null,
+    }));
+
+    const socket = getSocket();
+    socket?.emit('timeline-update', { timelineId, days: data.days });
+  },
+
+  deleteDay: async (timelineId, dayId) => {
+    const { data } = await api.delete(`/timelines/${timelineId}/days/${dayId}`);
+    set((state) => ({
+      currentTimeline: state.currentTimeline
+        ? { ...state.currentTimeline, days: data.days }
+        : null,
+    }));
+
+    const socket = getSocket();
+    socket?.emit('timeline-update', { timelineId, days: data.days });
+  },
+
+  // Day event management
+  addDayEvent: async (timelineId, dayId, eventData) => {
+    const { data } = await api.post(`/timelines/${timelineId}/days/${dayId}/events`, eventData);
+    set((state) => {
+      if (!state.currentTimeline) return { currentTimeline: null };
+      return {
+        currentTimeline: {
+          ...state.currentTimeline,
+          days: state.currentTimeline.days.map((d) =>
+            d._id === dayId ? data.day : d
+          ),
+        },
+      };
+    });
+
+    const socket = getSocket();
+    socket?.emit('event-added', { timelineId, dayId, event: data.event });
+  },
+
+  updateDayEvent: async (timelineId, dayId, eventId, eventData) => {
+    const { data } = await api.put(`/timelines/${timelineId}/days/${dayId}/events/${eventId}`, eventData);
+    set((state) => {
+      if (!state.currentTimeline) return { currentTimeline: null };
+      return {
+        currentTimeline: {
+          ...state.currentTimeline,
+          days: state.currentTimeline.days.map((d) =>
+            d._id === dayId ? data.day : d
+          ),
+        },
+      };
+    });
+
+    const socket = getSocket();
+    socket?.emit('event-updated', { timelineId, dayId, event: data.event });
+  },
+
+  deleteDayEvent: async (timelineId, dayId, eventId) => {
+    const { data } = await api.delete(`/timelines/${timelineId}/days/${dayId}/events/${eventId}`);
+    set((state) => {
+      if (!state.currentTimeline) return { currentTimeline: null };
+      return {
+        currentTimeline: {
+          ...state.currentTimeline,
+          days: state.currentTimeline.days.map((d) =>
+            d._id === dayId ? data.day : d
+          ),
+        },
+      };
+    });
+
+    const socket = getSocket();
+    socket?.emit('event-deleted', { timelineId, dayId, eventId });
+  },
+
+  toggleDayEventCompletion: async (timelineId, dayId, eventId) => {
+    const { data } = await api.patch(`/timelines/${timelineId}/days/${dayId}/events/${eventId}/complete`);
+    set((state) => {
+      if (!state.currentTimeline) return { currentTimeline: null };
+      return {
+        currentTimeline: {
+          ...state.currentTimeline,
+          days: state.currentTimeline.days.map((d) =>
+            d._id === dayId ? data.day : d
+          ),
+        },
+      };
+    });
+
+    const socket = getSocket();
+    socket?.emit('event-updated', { timelineId, dayId, event: data.event });
+  },
+
+  addDayEventNote: async (timelineId, dayId, eventId, content) => {
+    const { data } = await api.post(`/timelines/${timelineId}/days/${dayId}/events/${eventId}/notes`, { content });
+    set((state) => {
+      if (!state.currentTimeline) return { currentTimeline: null };
+      return {
+        currentTimeline: {
+          ...state.currentTimeline,
+          days: state.currentTimeline.days.map((d) =>
+            d._id === dayId
+              ? {
+                  ...d,
+                  events: d.events.map((e) =>
+                    e._id === eventId ? { ...e, notes: [...e.notes, data.note] } : e
+                  ),
+                }
+              : d
+          ),
+        },
+      };
+    });
+
+    const socket = getSocket();
+    socket?.emit('note-added', { timelineId, dayId, eventId, note: data.note });
   },
 }));

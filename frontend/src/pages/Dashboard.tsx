@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell, Trash2, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import TrialBanner from '@/components/TrialBanner';
+import TrialExpiredModal from '@/components/TrialExpiredModal';
+import Onboarding from '@/components/Onboarding';
 import { Toaster, toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Button from '@/components/ui/Button';
@@ -24,7 +27,7 @@ interface NewProjectForm {
 }
 
 export default function Dashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { timelines, createTimeline, fetchTimelines, deleteTimeline, isLoading } = useTimelineStore();
@@ -39,6 +42,59 @@ export default function Dashboard() {
     description: '',
     date: ''
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+  const [isTrialExpiredModalOpen, setIsTrialExpiredModalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if user needs onboarding (first time)
+  useEffect(() => {
+    if (user) {
+      const onboardingKey = `onboarding-completed-${user._id}`;
+      const hasCompletedOnboarding = localStorage.getItem(onboardingKey);
+      if (!hasCompletedOnboarding) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [user]);
+
+  const handleOnboardingComplete = () => {
+    if (user) {
+      const onboardingKey = `onboarding-completed-${user._id}`;
+      localStorage.setItem(onboardingKey, 'true');
+    }
+    setShowOnboarding(false);
+  };
+
+  // Determine user role for onboarding
+  const getOnboardingRole = (): 'creator' | 'guest' => {
+    if (user?.role === 'guest') return 'guest';
+    return 'creator';
+  };
+
+  // Check if trial has expired (for non-master users)
+  const isTrialExpired = user && 
+    user.role !== 'master' && 
+    user.is_trial_active === false && 
+    user.current_plan === 'none' &&
+    (user.role === 'photographer' || user.role === 'creator');
+
+  // Check if user has active trial (for showing banner)
+  const hasActiveTrial = user && 
+    user.role !== 'master' && 
+    user.is_trial_active === true && 
+    user.trial_end_date;
+
+  // Show trial expired modal on mount if trial has expired
+  useEffect(() => {
+    if (isTrialExpired) {
+      // Small delay so user sees the dashboard first
+      const timer = setTimeout(() => {
+        setIsTrialExpiredModalOpen(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isTrialExpired]);
 
   const showError = (message: string) => {
     toast.error(message, {
@@ -125,11 +181,47 @@ export default function Dashboard() {
   const getMonthLabel = (monthYearKey: string) => {
     const [year, month] = monthYearKey.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    const locale = i18n.language === 'es' ? 'es-ES' : 'en-US';
+    return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   };
 
-  const groupedOwnedTimelines = groupTimelinesByMonth(ownedTimelines);
-  const groupedSharedTimelines = groupTimelinesByMonth(sharedTimelines);
+  // Filter timelines by search query
+  const filterTimelines = (timelineList: typeof timelines) => {
+    if (!searchQuery.trim()) return timelineList;
+    const query = searchQuery.toLowerCase();
+    return timelineList.filter(timeline => 
+      timeline.title?.toLowerCase().includes(query) ||
+      timeline.description?.toLowerCase().includes(query)
+    );
+  };
+
+  const filteredOwnedTimelines = filterTimelines(ownedTimelines);
+  const filteredSharedTimelines = filterTimelines(sharedTimelines);
+
+  const groupedOwnedTimelines = groupTimelinesByMonth(filteredOwnedTimelines);
+  const groupedSharedTimelines = groupTimelinesByMonth(filteredSharedTimelines);
+
+  // Initialize all months as collapsed on first load
+  useEffect(() => {
+    if (ownedTimelines.length > 0 || sharedTimelines.length > 0) {
+      const allMonthKeys = new Set<string>();
+      Object.keys(groupTimelinesByMonth(ownedTimelines)).forEach(key => allMonthKeys.add(key));
+      Object.keys(groupTimelinesByMonth(sharedTimelines)).forEach(key => allMonthKeys.add(key));
+      setCollapsedMonths(allMonthKeys);
+    }
+  }, [ownedTimelines.length, sharedTimelines.length]);
+
+  const toggleMonth = (monthKey: string) => {
+    setCollapsedMonths(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(monthKey)) {
+        newSet.delete(monthKey);
+      } else {
+        newSet.add(monthKey);
+      }
+      return newSet;
+    });
+  };
 
   const handleAcceptInvitation = async (timelineId: string) => {
     try {
@@ -214,6 +306,16 @@ export default function Dashboard() {
 
   // Status fields are not in backend model; omit status badge
 
+  // Show onboarding if needed
+  if (showOnboarding) {
+    return (
+      <Onboarding
+        userRole={getOnboardingRole()}
+        onComplete={handleOnboardingComplete}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <Toaster position="top-center" />
@@ -221,6 +323,14 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
         <div className="flex-1 overflow-y-auto px-6 sm:px-8 max-w-7xl mx-auto w-full py-8 sm:py-12">
+        {/* Trial Banner - only for photographers/creators with active trial */}
+        {hasActiveTrial && user && (
+          <TrialBanner 
+            user={user} 
+            onViewPlans={() => navigate('/pricing')} 
+          />
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8 sm:mb-12 p-8 sm:p-10 bg-white rounded-2xl shadow-sm">
           <div>
@@ -228,7 +338,7 @@ export default function Dashboard() {
             <p className="text-base sm:text-lg text-text opacity-70">{t('dashboard.welcome', { name: user?.name })}</p>
           </div>
           <div className="flex gap-2 sm:gap-3">
-            {(user?.role === 'photographer' || user?.role === 'creator' || user?.role === 'master') && (
+            {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master') && (
               <Button onClick={() => setIsCreateModalOpen(true)} className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center">
                 <Plus size={18} />
                 <span className="hidden xs:inline">{t('dashboard.newProject')}</span>
@@ -273,14 +383,44 @@ export default function Dashboard() {
         )}
 
         {/* My Projects */}
-        {(user?.role === 'photographer' || user?.role === 'creator' || user?.role === 'master') && ownedTimelines.length > 0 && (
+        {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master') && ownedTimelines.length > 0 && (
           <div className="mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-heading text-text mb-6 sm:mb-8">{t('dashboard.myProjects')}</h2>
+            <h2 className="text-2xl sm:text-3xl font-heading text-text mb-4">{t('dashboard.myProjects')}</h2>
+            
+            {/* Search Bar */}
+            <div className="relative mb-6 sm:mb-8">
+              <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder={t('dashboard.searchProjects')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+              />
+            </div>
+
             {Object.entries(groupedOwnedTimelines).map(([monthKey, timelinesInMonth]) => (
-              <div key={monthKey} className="mb-8">
-                <h3 className="text-xl font-heading text-text opacity-60 mb-4 capitalize">
-                  {getMonthLabel(monthKey)}
-                </h3>
+              <div key={monthKey} className="mb-6">
+                {/* Collapsible Month Header */}
+                <button
+                  onClick={() => toggleMonth(monthKey)}
+                  className="w-full flex items-center gap-2 text-left mb-4 group hover:opacity-80 transition-opacity"
+                >
+                  {collapsedMonths.has(monthKey) ? (
+                    <ChevronRight size={20} className="text-gray-500" />
+                  ) : (
+                    <ChevronDown size={20} className="text-gray-500" />
+                  )}
+                  <h3 className="text-xl font-heading text-text opacity-60 capitalize">
+                    {getMonthLabel(monthKey)}
+                  </h3>
+                  <span className="text-sm text-gray-400 ml-2">
+                    ({timelinesInMonth.length} {timelinesInMonth.length === 1 ? t('dashboard.project') : t('dashboard.projects')})
+                  </span>
+                </button>
+                
+                {/* Projects Grid - Only show if not collapsed */}
+                {!collapsedMonths.has(monthKey) && (
                 <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {timelinesInMonth.map((timeline) => (
                 <Card key={timeline._id} className="group relative">
@@ -338,6 +478,7 @@ export default function Dashboard() {
                 </Card>
                   ))}
                 </div>
+                )}
               </div>
             ))}
           </div>
@@ -401,11 +542,11 @@ export default function Dashboard() {
             <Calendar size={48} className="sm:w-16 sm:h-16 text-primary-300 mx-auto mb-4 sm:mb-6" />
             <h3 className="text-xl sm:text-2xl font-semibold text-black mb-3">{t('dashboard.noProjects')}</h3>
             <p className="text-sm sm:text-base text-primary-600 mb-6 sm:mb-8 max-w-md mx-auto">
-              {(user?.role === 'photographer' || user?.role === 'creator' || user?.role === 'master')
+              {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master')
                 ? t('dashboard.photographerEmptyState')
                 : t('dashboard.guestEmptyState')}
             </p>
-            {(user?.role === 'photographer' || user?.role === 'creator' || user?.role === 'master') && (
+            {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master') && (
               <Button onClick={() => setIsCreateModalOpen(true)} className="text-sm sm:text-base font-medium inline-flex items-center gap-2">
                 <Plus size={20} />
                 {t('dashboard.createFirstProject')}
@@ -416,50 +557,48 @@ export default function Dashboard() {
 
         {/* Create Project Modal */}
         <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-black mb-6">{t('dashboard.createNewProject')}</h2>
-            <form onSubmit={handleCreateProject} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.projectTitle')}</label>
-                <Input
-                  type="text"
-                  placeholder={t('dashboard.projectTitlePlaceholder')}
-                  value={newProject.title}
-                  onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.description')}</label>
-                <textarea
-                  placeholder={t('dashboard.descriptionPlaceholder')}
-                  value={newProject.description}
-                  onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black min-h-[80px] resize-y"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.eventDate')}</label>
-                <Input
-  type="date"
-  value={newProject.date}
-  onChange={(e) => setNewProject(prev => ({ ...prev, date: e.target.value }))}
-  required
-  min={new Date().toISOString().split('T')[0]} // Prevent selecting past dates
-  className="w-full" // Make it full width
-/>
-              </div>
-              <div className="flex gap-3 mt-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => setIsCreateModalOpen(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" className="flex-1">
-                  {t('dashboard.createProject')}
-                </Button>
-              </div>
-            </form>
-          </div>
+          <h2 className="text-xl font-semibold text-black mb-4">{t('dashboard.createNewProject')}</h2>
+          <form onSubmit={handleCreateProject} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.projectTitle')}</label>
+              <Input
+                type="text"
+                placeholder={t('dashboard.projectTitlePlaceholder')}
+                value={newProject.title}
+                onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.description')}</label>
+              <textarea
+                placeholder={t('dashboard.descriptionPlaceholder')}
+                value={newProject.description}
+                onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black min-h-[60px] resize-y"
+              />
+            </div>
+            <div className="overflow-hidden">
+              <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.eventDate')}</label>
+              <input
+                type="date"
+                value={newProject.date}
+                onChange={(e) => setNewProject(prev => ({ ...prev, date: e.target.value }))}
+                required
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black box-border"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setIsCreateModalOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" className="flex-1">
+                {t('dashboard.createProject')}
+              </Button>
+            </div>
+          </form>
         </Modal>
 
         {/* Invite Modal */}
@@ -515,6 +654,13 @@ export default function Dashboard() {
             </div>
           </div>
         </Modal>
+
+        {/* Trial Expired Modal */}
+        <TrialExpiredModal
+          isOpen={isTrialExpiredModalOpen}
+          onClose={() => setIsTrialExpiredModalOpen(false)}
+          onViewPlans={() => navigate('/pricing')}
+        />
         </div>
       </div>
     </div>

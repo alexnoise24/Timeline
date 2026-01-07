@@ -2,6 +2,39 @@ import User from '../models/User.js';
 import { isMaster, canCreateTimelines, hasValidAccess, ROLES } from '../config/constants.js';
 
 /**
+ * Helper function to check and auto-expire trial if needed
+ * Returns true if trial was expired, false otherwise
+ * Masters are NEVER affected by this function
+ */
+const checkAndExpireTrial = async (user) => {
+  // Master users are never affected
+  if (isMaster(user)) return false;
+  
+  // Only check users with active trial
+  if (!user.is_trial_active || !user.trial_end_date) return false;
+  
+  const now = new Date();
+  const trialEnd = new Date(user.trial_end_date);
+  
+  // If trial has expired, update the user
+  if (now > trialEnd) {
+    await User.findByIdAndUpdate(user._id, {
+      is_trial_active: false,
+      current_plan: 'none'
+    });
+    
+    // Update the user object in memory too
+    user.is_trial_active = false;
+    user.current_plan = 'none';
+    
+    console.log(`Trial auto-expired for user: ${user.email}`);
+    return true;
+  }
+  
+  return false;
+};
+
+/**
  * Middleware to check if user has premium features access
  * Masters always bypass this check
  */
@@ -19,6 +52,9 @@ export const requirePremiumAccess = async (req, res, next) => {
       req.isMaster = true;
       return next();
     }
+
+    // Auto-expire trial if needed
+    await checkAndExpireTrial(user);
 
     // Check if user has valid access (trial or plan)
     if (!hasValidAccess(user)) {
@@ -57,6 +93,9 @@ export const requireCanCreateTimelines = async (req, res, next) => {
       req.isMaster = true;
       return next();
     }
+
+    // Auto-expire trial if needed
+    await checkAndExpireTrial(user);
 
     // Check if user can create timelines
     if (!canCreateTimelines(user)) {

@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['master', 'creator', 'photographer', 'guest'],
+    enum: ['master', 'creator', 'photographer', 'planner', 'guest'],
     default: 'guest',
     required: true
   },
@@ -54,6 +54,44 @@ const userSchema = new mongoose.Schema({
   plan_expiration_date: {
     type: Date,
     default: null
+  },
+  // Stripe fields
+  stripe_customer_id: {
+    type: String,
+    default: null
+  },
+  stripe_subscription_id: {
+    type: String,
+    default: null
+  },
+  // Custom Branding (Studio plan + Master)
+  branding: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    studioName: {
+      type: String,
+      default: null
+    },
+    logo: {
+      type: String, // URL to uploaded logo
+      default: null
+    },
+    accentColor: {
+      type: String, // Hex color like #D4E157
+      default: null
+    },
+    subdomain: {
+      type: String, // e.g., "miestudio" for miestudio.lenzu.app
+      unique: true,
+      sparse: true, // Allows multiple nulls
+      default: null
+    },
+    emailFooter: {
+      type: String, // Custom footer text for emails
+      default: null
+    }
   },
   invitedTimelines: [{
     timelineId: {
@@ -108,6 +146,15 @@ const userSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  // Password reset fields
+  resetPasswordToken: {
+    type: String,
+    default: null
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

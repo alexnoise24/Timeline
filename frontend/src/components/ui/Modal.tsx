@@ -39,7 +39,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
       />
       <div
         className={cn(
-          'relative bg-white rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto',
+          'relative bg-white rounded-lg shadow-xl w-full max-h-[85vh] overflow-y-auto overflow-x-hidden',
           sizes[size]
         )}
       >

@@ -113,6 +113,12 @@ export default function Login() {
               required
             />
 
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                {t('auth.forgotPassword')}
+              </Link>
+            </div>
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? t('auth.signingIn') : t('auth.loginButton')}
             </Button>

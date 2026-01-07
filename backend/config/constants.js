@@ -33,6 +33,24 @@ export const ROLES = {
 // Trial duration in days
 export const TRIAL_DURATION_DAYS = 7;
 
+// Plan limits
+export const PLAN_LIMITS = {
+  none: { timelines: 0, collaborators: 0 },
+  trial: { timelines: 3, collaborators: 5 },
+  free: { timelines: 1, collaborators: 2 },
+  starter: { timelines: 5, collaborators: 10 },
+  pro: { timelines: 20, collaborators: 50 },
+  studio: { timelines: Infinity, collaborators: Infinity },
+  master: { timelines: Infinity, collaborators: Infinity }
+};
+
+// Get timeline limit for user
+export const getTimelineLimit = (user) => {
+  if (isMaster(user)) return Infinity;
+  const plan = user.current_plan || 'none';
+  return PLAN_LIMITS[plan]?.timelines || 0;
+};
+
 // Check if user can create timelines
 export const canCreateTimelines = (user) => {
   if (isMaster(user)) return true;

@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import Timeline from '../models/Timeline.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -27,6 +28,35 @@ router.get('/search', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error buscando usuarios:', error);
     res.status(500).json({ message: 'Error al buscar usuarios' });
+  }
+});
+
+// Get user usage stats - MUST be before /:userId route
+router.get('/usage', authenticate, async (req, res) => {
+  try {
+    // Count timelines owned by user
+    const timelinesCount = await Timeline.countDocuments({ createdBy: req.userId });
+    
+    // Count unique collaborators across all user's timelines
+    const timelines = await Timeline.find({ createdBy: req.userId }).select('collaborators');
+    const uniqueCollaborators = new Set();
+    timelines.forEach(timeline => {
+      if (timeline.collaborators && timeline.collaborators.length > 0) {
+        timeline.collaborators.forEach(collab => {
+          if (collab.user) {
+            uniqueCollaborators.add(collab.user.toString());
+          }
+        });
+      }
+    });
+
+    res.json({
+      timelines: timelinesCount,
+      collaborators: uniqueCollaborators.size
+    });
+  } catch (error) {
+    console.error('Error getting usage:', error);
+    res.status(500).json({ message: 'Error al obtener uso' });
   }
 });
 

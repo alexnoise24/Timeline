@@ -1,14 +1,23 @@
-import { Calendar, MessageCircle, X } from 'lucide-react';
+import { Calendar, MessageCircle, Users, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMobileMenu } from '@/context/MobileMenuContext';
+import { useAuthStore } from '@/store/authStore';
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isSidebarOpen, closeSidebar } = useMobileMenu();
+  const { user } = useAuthStore();
 
   const isProjectsActive = location.pathname === '/dashboard';
   const isMessagesActive = location.pathname === '/messages';
+  const isCommunityActive = location.pathname === '/community';
+
+  // Check if user can access community (not guest, and has starter+ plan or is master)
+  const canAccessCommunity = user?.role !== 'guest' && (
+    user?.role === 'master' || 
+    ['starter', 'pro', 'studio', 'trial'].includes(user?.current_plan || '')
+  );
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -70,6 +79,20 @@ export default function Sidebar() {
           <MessageCircle size={20} />
           <span className="font-medium">Messages</span>
         </button>
+
+        {canAccessCommunity && (
+          <button
+            onClick={() => handleNavigate('/community')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isCommunityActive
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <Users size={20} />
+            <span className="font-medium">Community</span>
+          </button>
+        )}
       </nav>
     </div>
     </>
