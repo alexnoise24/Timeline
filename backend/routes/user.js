@@ -1,7 +1,12 @@
 import express from 'express';
 import User from '../models/User.js';
 import Timeline from '../models/Timeline.js';
+import CommunityMessage from '../models/CommunityMessage.js';
 import { authenticate } from '../middleware/auth.js';
+import { isMaster } from '../config/constants.js';
+import Stripe from 'stripe';
+
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 const router = express.Router();
 
@@ -147,6 +152,78 @@ router.delete('/fcm-token', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error removing FCM token:', error);
     res.status(500).json({ message: 'Failed to remove FCM token' });
+  }
+});
+
+// Delete user account (required for App Store)
+router.delete('/account', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent Master user from being deleted
+    if (isMaster(user)) {
+      return res.status(403).json({ message: 'Master account cannot be deleted' });
+    }
+
+    const { password } = req.body;
+
+    // Verify password before deletion
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required to delete account' });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password' });
+    }
+
+    // 1. Cancel Stripe subscription if exists
+    if (stripe && user.stripe_subscription_id) {
+      try {
+        await stripe.subscriptions.cancel(user.stripe_subscription_id);
+      } catch (stripeError) {
+        console.error('Error canceling Stripe subscription:', stripeError);
+        // Continue with deletion even if Stripe fails
+      }
+    }
+
+    // 2. Delete all timelines owned by user
+    const userTimelines = await Timeline.find({ createdBy: req.userId });
+    for (const timeline of userTimelines) {
+      // Remove this timeline from all invited users
+      await User.updateMany(
+        { 'invitedTimelines.timelineId': timeline._id },
+        { $pull: { invitedTimelines: { timelineId: timeline._id } } }
+      );
+    }
+    await Timeline.deleteMany({ createdBy: req.userId });
+
+    // 3. Remove user from collaborators in other timelines
+    await Timeline.updateMany(
+      { 'collaborators.user': req.userId },
+      { $pull: { collaborators: { user: req.userId } } }
+    );
+
+    // 4. Remove user's invited timelines references
+    await User.updateMany(
+      { 'invitedTimelines.invitedBy': req.userId },
+      { $pull: { invitedTimelines: { invitedBy: req.userId } } }
+    );
+
+    // 5. Delete user's community messages
+    await CommunityMessage.deleteMany({ user: req.userId });
+
+    // 6. Delete the user
+    await User.findByIdAndDelete(req.userId);
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ message: 'Failed to delete account' });
   }
 });
 

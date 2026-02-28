@@ -11,16 +11,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-base font-medium text-text mb-2">
+          <label className="block text-base font-medium text-text-primary mb-2">
             {label}
           </label>
         )}
         <input
           ref={ref}
           className={cn(
-            'w-full px-5 py-3 border border-gray-300 rounded-xl text-base',
-            'focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent',
-            'transition-all duration-300',
+            'w-full px-5 py-3 rounded-[14px] text-base text-text-primary',
+            'bg-white/60 backdrop-blur-sm',
+            'border border-border-soft',
+            'focus:outline-none focus:border-olive-primary focus:ring-2 focus:ring-olive-primary/15',
+            'transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            'placeholder:text-text-muted',
             'disabled:bg-gray-100 disabled:cursor-not-allowed',
             error && 'border-red-500',
             className

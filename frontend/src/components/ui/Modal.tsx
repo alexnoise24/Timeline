@@ -34,21 +34,21 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black bg-opacity-50"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
         className={cn(
-          'relative bg-white rounded-lg shadow-xl w-full max-h-[85vh] overflow-y-auto overflow-x-hidden',
+          'relative glass-card w-full max-h-[85vh] overflow-y-auto overflow-x-hidden',
           sizes[size]
         )}
       >
         {title && (
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white z-10">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{title}</h2>
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border-soft sticky top-0 glass z-10 rounded-t-[20px]">
+            <h2 className="text-lg sm:text-xl font-heading font-medium text-text-primary">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              className="text-text-muted hover:text-text-primary transition-colors duration-200 p-1"
             >
               <X size={20} className="sm:w-6 sm:h-6" />
             </button>

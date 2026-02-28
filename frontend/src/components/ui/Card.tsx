@@ -6,7 +6,12 @@ const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     return (
       <div
         ref={ref}
-        className={cn('bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300', className)}
+        className={cn(
+          'glass-card',
+          'hover:shadow-lg hover:-translate-y-1',
+          'transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          className
+        )}
         {...props}
       />
     );
@@ -28,7 +33,7 @@ const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingEleme
     return (
       <h3
         ref={ref}
-        className={cn('text-2xl font-heading text-text', className)}
+        className={cn('text-2xl font-heading font-medium text-text-primary tracking-tight', className)}
         {...props}
       />
     );

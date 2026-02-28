@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Timeline, Event, Shot } from '@/types';
+import { Timeline, Event, Shot, InspirationImage } from '@/types';
 import api from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 
@@ -32,6 +32,9 @@ interface TimelineState {
   addShot: (timelineId: string, shot: Partial<Shot>) => Promise<void>;
   updateShot: (timelineId: string, shotId: string, data: Partial<Shot>) => Promise<void>;
   deleteShot: (timelineId: string, shotId: string) => Promise<void>;
+  uploadInspiration: (timelineId: string, file: File) => Promise<InspirationImage>;
+  updateInspirationNotes: (timelineId: string, imageId: string, notes: string) => Promise<void>;
+  deleteInspiration: (timelineId: string, imageId: string) => Promise<void>;
   updateOverview: (timelineId: string, data: Partial<Timeline>) => Promise<void>;
   joinTimelineRoom: (timelineId: string) => void;
   leaveTimelineRoom: (timelineId: string) => void;
@@ -227,6 +230,58 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
 
     const socket = getSocket();
     socket?.emit('shot-deleted', { timelineId, shotId });
+  },
+
+  uploadInspiration: async (timelineId, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const { data } = await api.post(`/timelines/${timelineId}/inspiration/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    set((state) => ({
+      currentTimeline: state.currentTimeline
+        ? { 
+            ...state.currentTimeline, 
+            inspiration: [...(state.currentTimeline.inspiration || []), data.image] 
+          }
+        : null,
+    }));
+
+    const socket = getSocket();
+    socket?.emit('inspiration-added', { timelineId, image: data.image });
+    return data.image;
+  },
+
+  updateInspirationNotes: async (timelineId, imageId, notes) => {
+    const { data } = await api.put(`/timelines/${timelineId}/inspiration/${imageId}`, { notes });
+    set((state) => ({
+      currentTimeline: state.currentTimeline
+        ? {
+            ...state.currentTimeline,
+            inspiration: (state.currentTimeline.inspiration || []).map((i) =>
+              i._id === imageId ? data.image : i
+            ),
+          }
+        : null,
+    }));
+
+    const socket = getSocket();
+    socket?.emit('inspiration-updated', { timelineId, image: data.image });
+  },
+
+  deleteInspiration: async (timelineId, imageId) => {
+    await api.delete(`/timelines/${timelineId}/inspiration/${imageId}`);
+    set((state) => ({
+      currentTimeline: state.currentTimeline
+        ? {
+            ...state.currentTimeline,
+            inspiration: (state.currentTimeline.inspiration || []).filter((i) => i._id !== imageId),
+          }
+        : null,
+    }));
+
+    const socket = getSocket();
+    socket?.emit('inspiration-deleted', { timelineId, imageId });
   },
 
   updateOverview: async (timelineId, overviewData) => {

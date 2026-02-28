@@ -9,10 +9,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
     const variants = {
-      primary: 'bg-button text-white hover:bg-opacity-90 focus:ring-button shadow-sm',
-      secondary: 'bg-accent text-text hover:bg-opacity-90 focus:ring-accent',
-      outline: 'border-2 border-button text-text hover:bg-button hover:bg-opacity-10',
-      ghost: 'text-text hover:bg-button hover:bg-opacity-10',
+      primary: 'bg-olive-primary text-white hover:bg-olive-dark focus:ring-olive-primary shadow-sm',
+      secondary: 'bg-olive-muted text-olive-dark hover:bg-olive-light focus:ring-olive-light',
+      outline: 'border border-olive-primary text-olive-primary bg-transparent hover:bg-olive-primary hover:text-white',
+      ghost: 'text-text-secondary hover:bg-olive-primary/8',
       danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
     };
 
@@ -26,7 +26,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded-xl font-medium transition-all duration-300',
+          'inline-flex items-center justify-center rounded-xl font-medium',
+          'transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]',
           'focus:outline-none focus:ring-2 focus:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           'tracking-wide touch-manipulation active:scale-[0.98]',

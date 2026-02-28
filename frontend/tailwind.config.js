@@ -31,6 +31,16 @@ export default {
           900: '#171717',
           DEFAULT: '#3B3B3B'
         },
+        'bg-base': '#F5F4F1',
+        'bg-surface': '#EFEEE9',
+        'text-primary': '#1C1C1A',
+        'text-secondary': '#6B6A65',
+        'text-muted': '#A8A79F',
+        'olive-primary': '#7A8C5E',
+        'olive-light': '#A3B082',
+        'olive-muted': '#CDD4BC',
+        'olive-dark': '#4E5C3A',
+        'border-soft': 'rgba(28, 28, 26, 0.08)',
       },
       spacing: {
         '18': '4.5rem',
@@ -42,6 +52,9 @@ export default {
         'xl': '1rem',
         '2xl': '1.5rem',
         '3xl': '2rem',
+      },
+      backdropBlur: {
+        'glass': '20px',
       },
     },
   },

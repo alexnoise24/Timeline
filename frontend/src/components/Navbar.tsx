@@ -5,6 +5,7 @@ import { Calendar, LogOut, Users, Camera, Menu, KeyRound, ChevronDown, CreditCar
 import { useAuthStore } from '@/store/authStore';
 import { useMobileMenu } from '@/context/MobileMenuContext';
 import { useBranding } from '@/context/BrandingContext';
+import { usePlatform } from '@/hooks/usePlatform';
 import LanguageSelector from './LanguageSelector';
 import ChangePasswordModal from './ChangePasswordModal';
 
@@ -14,6 +15,7 @@ export default function Navbar() {
   const { user, logout } = useAuthStore();
   const { toggleSidebar } = useMobileMenu();
   const { branding } = useBranding();
+  const { isIOS } = usePlatform();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -53,16 +55,16 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-white shadow-sm border-b border-gray-100 pt-[env(safe-area-inset-top)]">
+      <nav className={`glass-subtle border-b border-border-soft pt-[env(safe-area-inset-top)] ${isIOS ? 'ios-navbar' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className={`flex justify-between items-center ${isIOS ? 'h-14' : 'h-20'}`}>
             <div className="flex items-center gap-3">
               {/* Mobile menu button */}
               <button
                 onClick={toggleSidebar}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="lg:hidden p-2 hover:bg-olive-primary/10 rounded-lg transition-colors"
               >
-                <Menu size={24} className="text-gray-700" />
+                <Menu size={24} className="text-text-primary" />
               </button>
               
               <Link to="/" className="flex items-center space-x-3">
@@ -73,9 +75,9 @@ export default function Navbar() {
                     className="h-8 w-auto object-contain"
                   />
                 ) : (
-                  <Calendar className="text-accent" size={32} />
+                  <Calendar className="text-olive-primary" size={32} />
                 )}
-                <span className="text-xl sm:text-2xl font-heading text-text hidden xs:inline">
+                <span className="text-xl sm:text-2xl font-heading text-text-primary hidden xs:inline">
                   {branding?.enabled && branding.studioName ? branding.studioName : t('app.name')}
                 </span>
               </Link>
@@ -91,54 +93,54 @@ export default function Navbar() {
                   <div className="relative" ref={userMenuRef}>
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-olive-primary/10 transition-colors"
                     >
                       {(user.role === 'photographer' || user.role === 'planner' || user.role === 'creator' || user.role === 'master') ? (
-                        <Camera size={20} className="text-primary-600" />
+                        <Camera size={20} className="text-olive-primary" />
                       ) : (
-                        <Users size={20} className="text-primary-600" />
+                        <Users size={20} className="text-olive-primary" />
                       )}
-                      <span className="text-sm text-gray-700 hidden md:inline">{user.name}</span>
+                      <span className="text-sm text-text-primary hidden md:inline">{user.name}</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium hidden sm:inline ${
                         user.role === 'photographer'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-green-100 text-green-800'
+                          ? 'bg-olive-muted text-olive-dark'
+                          : 'bg-olive-light/30 text-olive-dark'
                       }`}>
                         {user.role}
                       </span>
-                      <ChevronDown size={16} className="text-gray-500" />
+                      <ChevronDown size={16} className="text-text-muted" />
                     </button>
 
                     {/* Dropdown menu */}
                     {isUserMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      <div className="absolute right-0 mt-2 w-48 glass-card rounded-[16px] py-1 z-50">
                         <button
                           onClick={handleViewPlan}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-olive-primary/10 transition-colors"
                         >
-                          <CreditCard size={16} />
+                          <CreditCard size={16} className="text-olive-primary" />
                           {t('nav.myPlan')}
                         </button>
                         {canUseBranding && (
                           <button
                             onClick={handleBranding}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-olive-primary/10 transition-colors"
                           >
-                            <Palette size={16} />
+                            <Palette size={16} className="text-olive-primary" />
                             {t('nav.branding')}
                           </button>
                         )}
                         <button
                           onClick={handleChangePassword}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-olive-primary/10 transition-colors"
                         >
-                          <KeyRound size={16} />
+                          <KeyRound size={16} className="text-olive-primary" />
                           {t('auth.changePassword')}
                         </button>
-                        <hr className="my-1 border-gray-200" />
+                        <hr className="my-1 border-border-soft" />
                         <button
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400/80 hover:bg-red-50 transition-colors"
                         >
                           <LogOut size={16} />
                           {t('auth.logout')}

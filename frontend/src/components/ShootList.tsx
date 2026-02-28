@@ -136,11 +136,11 @@ export default function ShootList({ timeline }: ShootListProps) {
   })).filter(cat => cat.shots.length > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('shotList.title')}</h2>
+          <h2 className="text-2xl font-heading font-medium text-text-primary">{t('shotList.title')}</h2>
           <p className="text-gray-600 mt-1">
             {t('shotList.shotsCompleted', { completed: completedCount, total: totalCount, percentage: completionPercentage })}
           </p>
@@ -271,7 +271,7 @@ export default function ShootList({ timeline }: ShootListProps) {
                               {shot.title}
                             </h4>
                             {shot.description && (
-                              <p className="text-sm text-gray-600 mt-1">{shot.description}</p>
+                              <p className="text-sm text-text-secondary mt-1 break-words">{shot.description}</p>
                             )}
                             {shot.isCompleted && shot.completedBy && (
                               <p className="text-xs text-gray-500 mt-2">
@@ -345,11 +345,11 @@ export default function ShootList({ timeline }: ShootListProps) {
                                 </button>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-medium line-through text-gray-500">
+                                <h4 className="font-medium line-through text-text-muted">
                                   {shot.title}
                                 </h4>
                                 {shot.description && (
-                                  <p className="text-sm text-gray-600 mt-1">{shot.description}</p>
+                                  <p className="text-sm text-text-secondary mt-1 break-words">{shot.description}</p>
                                 )}
                                 {shot.completedBy && (
                                   <p className="text-xs text-gray-500 mt-2">

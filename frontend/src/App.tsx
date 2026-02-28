@@ -5,7 +5,9 @@ import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
 import { MobileMenuProvider } from './context/MobileMenuContext';
 import { BrandingProvider } from './context/BrandingContext';
+import { OfflineProvider } from './context/OfflineContext';
 import NotificationHandler from './components/NotificationHandler';
+import OfflineIndicator from './components/OfflineIndicator';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -18,6 +20,10 @@ import Pricing from './pages/Pricing';
 import BrandingSettings from './pages/BrandingSettings';
 import MyPlan from './pages/MyPlan';
 import Community from './pages/Community';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import AccountSettings from './pages/AccountSettings';
+import Support from './pages/Support';
 
 function PrivateRoute({ children }: { children: React.ReactNode}) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -98,9 +104,11 @@ function App() {
   return (
     <MobileMenuProvider>
     <BrandingProvider>
+    <OfflineProvider>
       <BrowserRouter>
         <Toaster position="top-center" />
         <NotificationHandler />
+        <OfflineIndicator />
         <Routes>
           <Route path="/invite/:token" element={<InviteAccept />} />
           <Route
@@ -160,6 +168,9 @@ function App() {
             }
           />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/support" element={<Support />} />
           <Route
             path="/my-plan"
             element={
@@ -185,6 +196,14 @@ function App() {
             }
           />
           <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <AccountSettings />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/"
             element={
               <PrivateRoute>
@@ -196,6 +215,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+    </OfflineProvider>
     </BrandingProvider>
     </MobileMenuProvider>
   );

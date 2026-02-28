@@ -1,9 +1,16 @@
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import Timeline from '../models/Timeline.js';
 import { authenticate, requirePhotographer, requireTimelineAccess, requireTimelineOwner } from '../middleware/auth.js';
 import { io } from '../server.js';
 import upload from '../middleware/upload.js';
+import { uploadInspiration, processInspirationImage } from '../middleware/uploadInspiration.js';
 import { getTimelineLimit, isMaster } from '../config/constants.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -1122,6 +1129,133 @@ router.put('/:id/photographers/reorder', authenticate, requireTimelineAccess, as
   } catch (error) {
     console.error('Error reordering photographers:', error);
     res.status(500).json({ message: 'Failed to reorder photographers' });
+  }
+});
+
+// =====================
+// INSPIRATION ROUTES
+// =====================
+
+// Upload inspiration image
+router.post('/:id/inspiration/upload', 
+  authenticate, 
+  requireTimelineAccess, 
+  uploadInspiration.single('image'), 
+  processInspirationImage,
+  async (req, res) => {
+    try {
+      const timeline = await Timeline.findById(req.params.id);
+      if (!timeline) {
+        return res.status(404).json({ message: 'Timeline not found' });
+      }
+
+      const canEdit = timeline.owner.equals(req.userId) ||
+        timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+        req.userTimelineRole === 'invited';
+
+      if (!canEdit) {
+        return res.status(403).json({ message: 'No permission to upload' });
+      }
+
+      const newImage = {
+        imageUrl: req.processedImage.imageUrl,
+        thumbnailUrl: req.processedImage.thumbnailUrl,
+        originalName: req.processedImage.originalName,
+        uploadedBy: req.userId
+      };
+
+      timeline.inspiration.push(newImage);
+      await timeline.save();
+
+      const addedImage = timeline.inspiration[timeline.inspiration.length - 1];
+      await timeline.populate('inspiration.uploadedBy', 'name email avatar');
+
+      const populatedImage = timeline.inspiration.id(addedImage._id);
+      res.status(201).json({ image: populatedImage });
+    } catch (error) {
+      console.error('Error uploading inspiration:', error);
+      res.status(500).json({ message: 'Failed to upload image' });
+    }
+  }
+);
+
+// Update inspiration image notes
+router.put('/:id/inspiration/:imageId', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    const canEdit = timeline.owner.equals(req.userId) ||
+      timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+      req.userTimelineRole === 'invited';
+
+    if (!canEdit) {
+      return res.status(403).json({ message: 'No permission to edit' });
+    }
+
+    const image = timeline.inspiration.id(req.params.imageId);
+    if (!image) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
+
+    const { notes } = req.body;
+    if (notes !== undefined) {
+      image.notes = notes;
+    }
+
+    await timeline.save();
+    await timeline.populate('inspiration.uploadedBy', 'name email avatar');
+
+    const updatedImage = timeline.inspiration.id(req.params.imageId);
+    res.json({ image: updatedImage });
+  } catch (error) {
+    console.error('Error updating inspiration:', error);
+    res.status(500).json({ message: 'Failed to update image' });
+  }
+});
+
+// Delete inspiration image
+router.delete('/:id/inspiration/:imageId', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    const canEdit = timeline.owner.equals(req.userId) ||
+      timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+      req.userTimelineRole === 'invited';
+
+    if (!canEdit) {
+      return res.status(403).json({ message: 'No permission to delete' });
+    }
+
+    const image = timeline.inspiration.id(req.params.imageId);
+    if (!image) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
+
+    // Delete files from disk
+    const basePath = path.join(__dirname, '..');
+    const imagePath = path.join(basePath, image.imageUrl);
+    const thumbPath = path.join(basePath, image.thumbnailUrl);
+    
+    try {
+      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+    } catch (fileError) {
+      console.error('Error deleting files:', fileError);
+    }
+
+    timeline.inspiration.pull(req.params.imageId);
+    await timeline.save();
+
+    res.json({ message: 'Image deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting inspiration:', error);
+    res.status(500).json({ message: 'Failed to delete image' });
   }
 });
 

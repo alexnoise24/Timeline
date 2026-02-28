@@ -95,6 +95,31 @@ const shotSchema = new mongoose.Schema({
   }
 });
 
+const inspirationSchema = new mongoose.Schema({
+  imageUrl: {
+    type: String,
+    required: true
+  },
+  thumbnailUrl: {
+    type: String,
+    required: true
+  },
+  originalName: String,
+  notes: {
+    type: String,
+    default: ''
+  },
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const eventSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -218,6 +243,7 @@ const timelineSchema = new mongoose.Schema({
   days: [daySchema],  // NEW: Multi-day support
   events: [eventSchema],  // DEPRECATED: Kept for backward compatibility during migration
   shotList: [shotSchema],
+  inspiration: [inspirationSchema],
   photographersTeam: [photographerSchema],
   changeLogs: [changeLogSchema],
   isPublic: {

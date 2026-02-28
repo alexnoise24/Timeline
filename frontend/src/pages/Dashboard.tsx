@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell, Trash2, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell, Trash2, Search, ChevronRight } from 'lucide-react';
 import TrialBanner from '@/components/TrialBanner';
 import TrialExpiredModal from '@/components/TrialExpiredModal';
 import Onboarding from '@/components/Onboarding';
@@ -18,6 +18,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
 import { requestNotificationPermission, isNotificationSupported } from '@/lib/notifications';
+import { usePlatform } from '@/hooks/usePlatform';
 
 // Local helper interface for form only
 interface NewProjectForm {
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const { user, logout } = useAuthStore();
   const { timelines, createTimeline, fetchTimelines, deleteTimeline, isLoading } = useTimelineStore();
   const { invitations, fetchMyInvitations, acceptInvitation, declineInvitation } = useInvitationsStore();
+  const { isIOS } = usePlatform();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -317,12 +319,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen">
       <Toaster position="top-center" />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        <div className="flex-1 overflow-y-auto px-6 sm:px-8 max-w-7xl mx-auto w-full py-8 sm:py-12">
+        <div className={`flex-1 overflow-y-auto px-6 sm:px-8 max-w-7xl mx-auto w-full py-8 sm:py-12 ${isIOS ? 'pb-24' : ''}`}>
         {/* Trial Banner - only for photographers/creators with active trial */}
         {hasActiveTrial && user && (
           <TrialBanner 
@@ -332,10 +334,10 @@ export default function Dashboard() {
         )}
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8 sm:mb-12 p-8 sm:p-10 bg-white rounded-2xl shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8 sm:mb-12 p-8 sm:p-10 glass-card" style={{ background: 'linear-gradient(135deg, rgba(205,212,188,0.3), rgba(245,244,241,0.8))' }}>
           <div>
-            <h1 className="text-3xl sm:text-4xl font-heading text-text mb-2">{t('dashboard.title')}</h1>
-            <p className="text-base sm:text-lg text-text opacity-70">{t('dashboard.welcome', { name: user?.name })}</p>
+            <h1 className="text-3xl sm:text-4xl font-heading font-medium text-text-primary tracking-tight mb-2">{t('dashboard.title')}</h1>
+            <p className="text-base sm:text-lg text-text-secondary">{t('dashboard.welcome', { name: user?.name })}</p>
           </div>
           <div className="flex gap-2 sm:gap-3">
             {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master') && (
@@ -344,7 +346,7 @@ export default function Dashboard() {
                 <span className="hidden xs:inline">{t('dashboard.newProject')}</span>
               </Button>
             )}
-            <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center">
+            <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center border-border-soft text-text-secondary bg-transparent hover:bg-olive-primary/8 hover:text-text-primary">
               <LogOut size={18} />
               <span className="hidden xs:inline">{t('auth.logout')}</span>
             </Button>
@@ -385,17 +387,17 @@ export default function Dashboard() {
         {/* My Projects */}
         {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master') && ownedTimelines.length > 0 && (
           <div className="mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-heading text-text mb-4">{t('dashboard.myProjects')}</h2>
+            <h2 className="text-2xl sm:text-3xl font-heading font-medium text-text-primary mb-4">{t('dashboard.myProjects')}</h2>
             
             {/* Search Bar */}
             <div className="relative mb-6 sm:mb-8">
-              <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
               <input
                 type="text"
                 placeholder={t('dashboard.searchProjects')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                className="w-full pl-12 pr-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-olive-primary focus:ring-2 focus:ring-olive-primary/15 placeholder:text-text-muted text-text-primary transition-all duration-200"
               />
             </div>
 
@@ -404,18 +406,16 @@ export default function Dashboard() {
                 {/* Collapsible Month Header */}
                 <button
                   onClick={() => toggleMonth(monthKey)}
-                  className="w-full flex items-center gap-2 text-left mb-4 group hover:opacity-80 transition-opacity"
+                  className="w-full flex items-center gap-2 text-left mb-4 group hover:opacity-80 transition-all duration-200"
                 >
-                  {collapsedMonths.has(monthKey) ? (
-                    <ChevronRight size={20} className="text-gray-500" />
-                  ) : (
-                    <ChevronDown size={20} className="text-gray-500" />
-                  )}
-                  <h3 className="text-xl font-heading text-text opacity-60 capitalize">
+                  <span className={`text-text-muted transition-transform duration-200 ${collapsedMonths.has(monthKey) ? '' : 'rotate-90'}`}>
+                    <ChevronRight size={20} />
+                  </span>
+                  <h3 className="text-xl font-heading font-medium text-text-primary capitalize">
                     {getMonthLabel(monthKey)}
                   </h3>
-                  <span className="text-sm text-gray-400 ml-2">
-                    ({timelinesInMonth.length} {timelinesInMonth.length === 1 ? t('dashboard.project') : t('dashboard.projects')})
+                  <span className="px-3 py-0.5 bg-olive-muted text-olive-dark text-sm font-medium rounded-full">
+                    {timelinesInMonth.length}
                   </span>
                 </button>
                 
@@ -423,32 +423,47 @@ export default function Dashboard() {
                 {!collapsedMonths.has(monthKey) && (
                 <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {timelinesInMonth.map((timeline) => (
-                <Card key={timeline._id} className="group relative">
+                <Card key={timeline._id} className="group relative overflow-hidden">
+                  {/* Decorative stripe */}
+                  <div className="h-1 bg-olive-muted" />
                   <CardContent className="p-6">
+                    {/* Context menu button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDeleteModal(timeline._id, timeline.title);
+                      }}
+                      className="absolute top-4 right-4 p-2 rounded-full opacity-0 group-hover:opacity-100 text-text-muted hover:text-red-400/70 hover:bg-red-50 transition-all duration-200"
+                      title={t('dashboard.deleteTimeline')}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                     <div className="cursor-pointer" onClick={() => navigate(`/timeline/${timeline._id}`)}>
                       <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="text-xl font-heading text-text mb-3">{timeline.title || 'Untitled'}</h3>
-                          <p className="text-base text-text opacity-75 leading-relaxed">{timeline.description || ''}</p>
+                        <div className="pr-8">
+                          <h3 className="text-xl font-heading font-medium text-text-primary mb-3">{timeline.title || 'Untitled'}</h3>
+                          <p className="text-base text-text-secondary leading-relaxed">{timeline.description || ''}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 mb-3 text-sm text-primary-600">
+                      <div className="flex items-center gap-4 mb-3 text-sm text-text-secondary">
                         <div className="flex items-center gap-2">
-                          <Calendar size={16} className="text-primary-600" />
+                          <Calendar size={16} className="text-olive-primary" />
                           <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Users size={16} className="text-primary-600" />
+                          <Users size={16} className="text-olive-primary" />
                           <span>{t('dashboard.collaboratorsCount', { count: timeline.collaborators?.length || 0 })}</span>
                         </div>
                       </div>
                       {timeline.weddingDate && (
                         <div className="mb-4">
-                          <CountdownTimer targetDate={timeline.weddingDate} compact />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-olive-muted text-olive-dark text-sm font-medium rounded-full">
+                            <CountdownTimer targetDate={timeline.weddingDate} compact showIcon={false} className="!p-0 !bg-transparent !text-olive-dark" />
+                          </span>
                         </div>
                       )}
                     </div>
-                    <div className="space-y-2">
+                    <div className="pt-2">
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -460,18 +475,6 @@ export default function Dashboard() {
                       >
                         <UserPlus size={16} />
                         {t('dashboard.inviteCollaborators')}
-                      </Button>
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenDeleteModal(timeline._id, timeline.title);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="w-full flex items-center justify-center gap-2 text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400"
-                      >
-                        <Trash2 size={16} />
-                        {t('dashboard.deleteTimeline')}
                       </Button>
                     </div>
                   </CardContent>
@@ -488,34 +491,35 @@ export default function Dashboard() {
         {sharedTimelines.length > 0 && (
           <div className="mb-8 sm:mb-12">
             <div className="flex items-center gap-3 mb-6 sm:mb-8">
-              <Share2 size={24} className="text-accent" />
-              <h2 className="text-2xl sm:text-3xl font-heading text-text">{t('dashboard.sharedTimelines')}</h2>
+              <Share2 size={24} className="text-olive-primary" />
+              <h2 className="text-2xl sm:text-3xl font-heading font-medium text-text-primary">{t('dashboard.sharedTimelines')}</h2>
             </div>
             {Object.entries(groupedSharedTimelines).map(([monthKey, timelinesInMonth]) => (
               <div key={monthKey} className="mb-8">
-                <h3 className="text-xl font-heading text-text opacity-60 mb-4 capitalize">
+                <h3 className="text-xl font-heading font-medium text-text-primary mb-4 capitalize">
                   {getMonthLabel(monthKey)}
                 </h3>
                 <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {timelinesInMonth.map((timeline) => (
-                <Card key={timeline._id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/timeline/${timeline._id}`)}>
+                <Card key={timeline._id} className="cursor-pointer overflow-hidden" onClick={() => navigate(`/timeline/${timeline._id}`)}>
+                  <div className="h-1 bg-olive-light" />
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-black mb-2">{timeline.title || 'Untitled'}</h3>
-                        <p className="text-sm text-primary-600 leading-6">{timeline.description || ''}</p>
-                        <p className="text-xs text-primary-500 mt-2">
+                        <h3 className="text-lg font-heading font-medium text-text-primary mb-2">{timeline.title || 'Untitled'}</h3>
+                        <p className="text-sm text-text-secondary leading-6">{timeline.description || ''}</p>
+                        <p className="text-xs text-text-muted mt-2">
                           {t('dashboard.ownedBy', { name: timeline.owner?.name || t('common.unknown') })}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 mb-3 text-sm text-primary-600">
+                    <div className="flex items-center gap-4 mb-3 text-sm text-text-secondary">
                       <div className="flex items-center gap-2">
-                        <Calendar size={16} className="text-primary-600" />
+                        <Calendar size={16} className="text-olive-primary" />
                         <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Users size={16} className="text-primary-600" />
+                        <Users size={16} className="text-olive-primary" />
                         <span>{timeline.collaborators?.length || 0} collaborators</span>
                       </div>
                     </div>
@@ -524,7 +528,7 @@ export default function Dashboard() {
                         <CountdownTimer targetDate={timeline.weddingDate} compact />
                       </div>
                     )}
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200 text-xs text-green-700">
+                    <div className="p-3 bg-olive-muted/30 rounded-lg border border-olive-muted text-xs text-olive-dark">
                       {t('dashboard.sharedWithYou')}
                     </div>
                   </CardContent>
@@ -538,10 +542,10 @@ export default function Dashboard() {
 
         {/* Empty State */}
         {ownedTimelines.length === 0 && sharedTimelines.length === 0 && !isLoading && (
-          <div className="text-center p-6 sm:p-12 bg-white border border-gray-200 rounded-xl shadow-sm">
-            <Calendar size={48} className="sm:w-16 sm:h-16 text-primary-300 mx-auto mb-4 sm:mb-6" />
-            <h3 className="text-xl sm:text-2xl font-semibold text-black mb-3">{t('dashboard.noProjects')}</h3>
-            <p className="text-sm sm:text-base text-primary-600 mb-6 sm:mb-8 max-w-md mx-auto">
+          <div className="text-center p-6 sm:p-12 glass-card">
+            <Calendar size={48} className="sm:w-16 sm:h-16 text-olive-light mx-auto mb-4 sm:mb-6" />
+            <h3 className="text-xl sm:text-2xl font-heading font-medium text-text-primary mb-3">{t('dashboard.noProjects')}</h3>
+            <p className="text-sm sm:text-base text-text-secondary mb-6 sm:mb-8 max-w-md mx-auto">
               {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master')
                 ? t('dashboard.photographerEmptyState')
                 : t('dashboard.guestEmptyState')}
@@ -557,10 +561,10 @@ export default function Dashboard() {
 
         {/* Create Project Modal */}
         <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
-          <h2 className="text-xl font-semibold text-black mb-4">{t('dashboard.createNewProject')}</h2>
+          <h2 className="text-xl font-heading font-medium text-text-primary mb-4">{t('dashboard.createNewProject')}</h2>
           <form onSubmit={handleCreateProject} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.projectTitle')}</label>
+              <label className="block text-sm font-medium text-text-primary mb-1">{t('dashboard.projectTitle')}</label>
               <Input
                 type="text"
                 placeholder={t('dashboard.projectTitlePlaceholder')}
@@ -570,24 +574,24 @@ export default function Dashboard() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.description')}</label>
+              <label className="block text-sm font-medium text-text-primary mb-1">{t('dashboard.description')}</label>
               <textarea
                 placeholder={t('dashboard.descriptionPlaceholder')}
                 value={newProject.description}
                 onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black min-h-[60px] resize-y"
+                className="w-full px-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-olive-primary focus:ring-2 focus:ring-olive-primary/15 placeholder:text-text-muted text-text-primary transition-all duration-200 min-h-[80px] resize-y"
               />
             </div>
             <div className="overflow-hidden">
-              <label className="block text-sm font-medium text-primary-700 mb-1">{t('dashboard.eventDate')}</label>
+              <label className="block text-sm font-medium text-text-primary mb-1">{t('dashboard.eventDate')}</label>
               <input
                 type="date"
                 value={newProject.date}
                 onChange={(e) => setNewProject(prev => ({ ...prev, date: e.target.value }))}
                 required
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black box-border"
+                className="w-full px-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-olive-primary focus:ring-2 focus:ring-olive-primary/15 text-text-primary transition-all duration-200 box-border"
               />
             </div>
             <div className="flex gap-3 pt-2">

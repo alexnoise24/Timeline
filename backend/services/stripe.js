@@ -3,7 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Stripe is optional for local development
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
 
 // Plan price IDs - these will be created in Stripe Dashboard
 // For now using placeholder IDs that will be replaced with real ones
@@ -23,6 +26,7 @@ export const getPlanFromPriceId = (priceId) => {
 
 // Create a checkout session for subscription
 export const createCheckoutSession = async ({ userId, userEmail, priceId, successUrl, cancelUrl }) => {
+  if (!stripe) throw new Error('Stripe not configured');
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     payment_method_types: ['card'],
@@ -50,6 +54,7 @@ export const createCheckoutSession = async ({ userId, userEmail, priceId, succes
 
 // Create a billing portal session for managing subscription
 export const createBillingPortalSession = async ({ customerId, returnUrl }) => {
+  if (!stripe) throw new Error('Stripe not configured');
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl,
@@ -60,16 +65,19 @@ export const createBillingPortalSession = async ({ customerId, returnUrl }) => {
 
 // Get subscription details
 export const getSubscription = async (subscriptionId) => {
+  if (!stripe) throw new Error('Stripe not configured');
   return await stripe.subscriptions.retrieve(subscriptionId);
 };
 
 // Cancel subscription
 export const cancelSubscription = async (subscriptionId) => {
+  if (!stripe) throw new Error('Stripe not configured');
   return await stripe.subscriptions.cancel(subscriptionId);
 };
 
 // Construct webhook event
 export const constructWebhookEvent = (payload, signature) => {
+  if (!stripe) throw new Error('Stripe not configured');
   return stripe.webhooks.constructEvent(
     payload,
     signature,

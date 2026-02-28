@@ -130,6 +130,16 @@ export default function Login() {
               {t('auth.register')}
             </Link>
           </p>
+
+          <div className="mt-6 pt-4 border-t border-gray-200 flex justify-center gap-4 text-xs text-gray-500">
+            <Link to="/privacy" className="hover:text-gray-700">
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <Link to="/terms" className="hover:text-gray-700">
+              Terms of Service
+            </Link>
+          </div>
         </div>
       </div>
     </div>

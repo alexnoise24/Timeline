@@ -60,6 +60,7 @@ export default function MyPlan() {
   const [usage, setUsage] = useState<UsageData>({ timelines: 0, collaborators: 0 });
   const [loading, setLoading] = useState(true);
   const [managingSubscription, setManagingSubscription] = useState(false);
+  const [cancelingSubscription, setCancelingSubscription] = useState(false);
 
   const currentPlan = user?.current_plan || 'free';
   const limits = planLimits[currentPlan] || planLimits.free;
@@ -95,6 +96,32 @@ export default function MyPlan() {
       toast.error(t('pricing.portalError'));
     } finally {
       setManagingSubscription(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!user?.stripe_subscription_id) {
+      toast.error(t('pricing.noSubscription'));
+      return;
+    }
+
+    // Confirm cancellation
+    if (!window.confirm(t('myPlan.cancelConfirm'))) {
+      return;
+    }
+
+    setCancelingSubscription(true);
+
+    try {
+      await api.post('/stripe/cancel-subscription');
+      toast.success(t('myPlan.cancelSuccess'));
+      // Refresh user data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(t('myPlan.cancelError'));
+    } finally {
+      setCancelingSubscription(false);
     }
   };
 
@@ -287,6 +314,22 @@ export default function MyPlan() {
                 <Settings2 size={18} />
               )}
               {t('myPlan.manageSubscription')}
+            </Button>
+          )}
+
+          {user?.stripe_subscription_id && (
+            <Button 
+              variant="outline"
+              onClick={handleCancelSubscription}
+              disabled={cancelingSubscription}
+              className="flex-1 inline-flex items-center justify-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+            >
+              {cancelingSubscription ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <X size={18} />
+              )}
+              {t('myPlan.cancelPlan')}
             </Button>
           )}
         </div>

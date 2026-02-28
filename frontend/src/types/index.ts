@@ -102,6 +102,16 @@ export interface Photographer {
   createdAt: string;
 }
 
+export interface InspirationImage {
+  _id: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  originalName?: string;
+  notes?: string;
+  uploadedBy: User;
+  createdAt: string;
+}
+
 export interface Timeline {
   _id: string;
   title: string;
@@ -132,6 +142,7 @@ export interface Timeline {
   days: Day[];  // Multi-day support
   events: Event[];  // Deprecated - kept for backward compatibility
   shotList: Shot[];
+  inspiration: InspirationImage[];
   photographersTeam: Photographer[];
   changeLogs: ChangeLog[];
   isPublic: boolean;

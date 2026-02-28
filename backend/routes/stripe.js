@@ -5,6 +5,7 @@ import { isMaster } from '../config/constants.js';
 import stripe, {
   createCheckoutSession,
   createBillingPortalSession,
+  cancelSubscription,
   constructWebhookEvent,
   getPlanFromPriceId,
   STRIPE_PRICES,
@@ -104,6 +105,38 @@ router.post('/create-portal-session', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error creating portal session:', error);
     res.status(500).json({ message: 'Error al crear sesión del portal' });
+  }
+});
+
+// Cancel subscription
+router.post('/cancel-subscription', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    if (!user.stripe_subscription_id) {
+      return res.status(400).json({ message: 'No tienes una suscripción activa' });
+    }
+
+    // Cancel the subscription in Stripe
+    await cancelSubscription(user.stripe_subscription_id);
+
+    // Update user to free plan
+    await User.findByIdAndUpdate(user._id, {
+      current_plan: 'none',
+      stripe_subscription_id: null,
+      plan_expiration_date: null,
+      is_trial_active: false,
+    });
+
+    console.log(`Subscription canceled for user ${user._id}`);
+    res.json({ success: true, message: 'Suscripción cancelada exitosamente' });
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    res.status(500).json({ message: 'Error al cancelar la suscripción' });
   }
 });
 

@@ -1,4 +1,4 @@
-import { Calendar, MessageCircle, Users, X } from 'lucide-react';
+import { Calendar, MessageCircle, Users, X, Settings } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMobileMenu } from '@/context/MobileMenuContext';
 import { useAuthStore } from '@/store/authStore';
@@ -12,6 +12,7 @@ export default function Sidebar() {
   const isProjectsActive = location.pathname === '/dashboard';
   const isMessagesActive = location.pathname === '/messages';
   const isCommunityActive = location.pathname === '/community';
+  const isSettingsActive = location.pathname === '/settings';
 
   // Check if user can access community (not guest, and has starter+ plan or is master)
   const canAccessCommunity = user?.role !== 'guest' && (
@@ -29,7 +30,7 @@ export default function Sidebar() {
       {/* Mobile overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={closeSidebar}
         />
       )}
@@ -37,7 +38,7 @@ export default function Sidebar() {
       {/* Sidebar */}
       <div className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-60 bg-gray-900 text-white flex flex-col
+        w-60 glass-subtle border-r border-border-soft flex flex-col
         transform transition-transform duration-300 ease-in-out
         lg:transform-none
         ${
@@ -48,9 +49,9 @@ export default function Sidebar() {
       <div className="lg:hidden flex justify-end p-4">
         <button
           onClick={closeSidebar}
-          className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+          className="p-2 hover:bg-olive-primary/10 rounded-lg transition-colors duration-200 text-text-secondary"
         >
-          <X size={24} />
+          <X size={24} strokeWidth={1.5} />
         </button>
       </div>
 
@@ -58,41 +59,55 @@ export default function Sidebar() {
       <nav className="flex-1 pt-2 lg:pt-6 px-3">
         <button
           onClick={() => handleNavigate('/dashboard')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 ${
             isProjectsActive
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              ? 'bg-olive-primary text-white'
+              : 'text-text-secondary hover:bg-olive-primary/8'
           }`}
         >
-          <Calendar size={20} />
+          <Calendar size={20} strokeWidth={1.5} />
           <span className="font-medium">Projects</span>
         </button>
 
         <button
           onClick={() => handleNavigate('/messages')}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 ${
             isMessagesActive
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              ? 'bg-olive-primary text-white'
+              : 'text-text-secondary hover:bg-olive-primary/8'
           }`}
         >
-          <MessageCircle size={20} />
+          <MessageCircle size={20} strokeWidth={1.5} />
           <span className="font-medium">Messages</span>
         </button>
 
         {canAccessCommunity && (
           <button
             onClick={() => handleNavigate('/community')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 ${
               isCommunityActive
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                ? 'bg-olive-primary text-white'
+                : 'text-text-secondary hover:bg-olive-primary/8'
             }`}
           >
-            <Users size={20} />
+            <Users size={20} strokeWidth={1.5} />
             <span className="font-medium">Community</span>
           </button>
         )}
+
+        <div className="mt-auto pt-4 border-t border-border-soft">
+          <button
+            onClick={() => handleNavigate('/settings')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200 ${
+              isSettingsActive
+                ? 'bg-olive-primary text-white'
+                : 'text-text-secondary hover:bg-olive-primary/8'
+            }`}
+          >
+            <Settings size={20} strokeWidth={1.5} />
+            <span className="font-medium">Settings</span>
+          </button>
+        </div>
       </nav>
     </div>
     </>
