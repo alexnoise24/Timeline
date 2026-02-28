@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Calendar, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle, ChevronRight, Sparkles } from 'lucide-react';
@@ -19,6 +19,7 @@ import ShootList from '@/components/ShootList';
 import Inspiration from '@/components/Inspiration';
 import Sidebar from '@/components/Sidebar';
 import CollaboratorsModal from '@/components/CollaboratorsModal';
+import WeddingSwipeView from '@/components/WeddingSwipeView';
 
 type TabType = 'overview' | 'timeline' | 'shotlist' | 'inspiration';
 
@@ -69,12 +70,110 @@ export default function TimelineView() {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isCollaboratorsModalOpen, setIsCollaboratorsModalOpen] = useState(false);
+  
+  // Field mode (wedding day) state
+  const [fieldModeActive, setFieldModeActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  // Handle resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Toggle field-mode class on document root
+  useEffect(() => {
+    if (fieldModeActive) {
+      document.documentElement.classList.add('field-mode');
+    } else {
+      document.documentElement.classList.remove('field-mode');
+    }
+    return () => document.documentElement.classList.remove('field-mode');
+  }, [fieldModeActive]);
+
+  // Active event detection state
+  const [activeEventId, setActiveEventId] = useState<string | null>(null);
+  const activeEventRef = useRef<HTMLDivElement>(null);
+  const hasScrolledToActive = useRef(false);
 
   useEffect(() => {
     if (id) {
       fetchTimeline(id);
     }
   }, [id, fetchTimeline]);
+
+  // Detect active event based on current time
+  const detectActiveEvent = useCallback(() => {
+    if (!currentTimeline?.days) return null;
+    
+    const now = new Date();
+    let lastPassedEvent: { eventId: string; dateTime: Date } | null = null;
+    
+    for (const day of currentTimeline.days) {
+      const dayDate = new Date(day.date).toISOString().split('T')[0];
+      
+      for (const event of day.events) {
+        if (!event.time) continue;
+        
+        const eventDateTime = new Date(`${dayDate}T${event.time}`);
+        
+        if (eventDateTime <= now) {
+          if (!lastPassedEvent || eventDateTime > lastPassedEvent.dateTime) {
+            lastPassedEvent = { eventId: event._id, dateTime: eventDateTime };
+          }
+        }
+      }
+    }
+    
+    // Check if there's a next event (to confirm we're "between" events)
+    if (lastPassedEvent) {
+      let hasNextEvent = false;
+      for (const day of currentTimeline.days) {
+        const dayDate = new Date(day.date).toISOString().split('T')[0];
+        for (const event of day.events) {
+          if (!event.time) continue;
+          const eventDateTime = new Date(`${dayDate}T${event.time}`);
+          if (eventDateTime > now) {
+            hasNextEvent = true;
+            break;
+          }
+        }
+        if (hasNextEvent) break;
+      }
+      
+      // Only show active if there's a next event (we're between events)
+      if (hasNextEvent) {
+        return lastPassedEvent.eventId;
+      }
+    }
+    
+    return null;
+  }, [currentTimeline?.days]);
+
+  // Update active event every 60 seconds
+  useEffect(() => {
+    const updateActiveEvent = () => {
+      const newActiveId = detectActiveEvent();
+      setActiveEventId(newActiveId);
+    };
+    
+    updateActiveEvent();
+    const interval = setInterval(updateActiveEvent, 60000);
+    
+    return () => clearInterval(interval);
+  }, [detectActiveEvent]);
+
+  // Scroll to active event once on mount
+  useEffect(() => {
+    if (activeEventId && activeEventRef.current && !hasScrolledToActive.current && activeTab === 'timeline') {
+      hasScrolledToActive.current = true;
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        activeEventRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 500);
+    }
+  }, [activeEventId, activeTab]);
 
   // Collapse all days by default when timeline loads
   useEffect(() => {
@@ -325,8 +424,61 @@ export default function TimelineView() {
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
+  // Mobile field mode - render WeddingSwipeView
+  if (fieldModeActive && isMobile) {
+    return (
+      <WeddingSwipeView
+        timeline={currentTimeline}
+        activeEventId={activeEventId}
+        timelineContent={
+          <div className="space-y-4">
+            {sortedDays.map((day) => (
+              <div key={day._id} className="bg-field-surface rounded-xl p-4">
+                <h3 className="text-field-text font-medium mb-3">
+                  {formatDate(day.date, i18n.language)}
+                  {day.label && <span className="text-field-accent ml-2">— {day.label}</span>}
+                </h3>
+                <div className="space-y-3">
+                  {day.events.map((event) => (
+                    <div
+                      key={event._id}
+                      className={`p-3 rounded-lg ${
+                        activeEventId === event._id
+                          ? 'bg-field-highlight/20 border-l-[3px] border-field-highlight'
+                          : 'bg-field-bg'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-field-highlight font-medium text-sm w-12">
+                          {event.time || '--:--'}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-field-text font-medium">{event.title}</div>
+                          {event.location && (
+                            <div className="text-field-accent text-sm mt-1">{event.location}</div>
+                          )}
+                        </div>
+                        {activeEventId === event._id && (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-field-highlight text-field-bg animate-pulse">
+                            {t('timelineView.now', 'AHORA')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        }
+        shotListContent={<ShootList timeline={currentTimeline} />}
+        inspirationContent={<Inspiration timeline={currentTimeline} />}
+      />
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className={`flex h-screen ${fieldModeActive ? 'bg-field-bg' : 'bg-gray-50'}`}>
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
@@ -371,6 +523,18 @@ export default function TimelineView() {
                     {t('dashboard.collaboratorsCount', { count: currentTimeline.collaborators.length + 1 })}
                   </span>
                 </button>
+                {/* Wedding Day Mode Button */}
+                <button
+                  onClick={() => setFieldModeActive(!fieldModeActive)}
+                  className={`ml-auto flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-xl text-sm font-medium border transition-all duration-200 ${
+                    fieldModeActive
+                      ? 'border-field-accent text-field-accent bg-transparent hover:bg-field-accent hover:text-field-bg'
+                      : 'border-ink-primary text-ink-primary bg-transparent hover:bg-ink-primary hover:text-white'
+                  }`}
+                >
+                  <Camera size={16} />
+                  {fieldModeActive ? t('timelineView.endWeddingDay', 'Finalizar día de boda') : t('timelineView.startWeddingDay', 'Iniciar día de boda')}
+                </button>
               </div>
             </div>
             {canInvite && activeTab === 'timeline' && (
@@ -402,7 +566,7 @@ export default function TimelineView() {
               onClick={() => setActiveTab('overview')}
               className={`flex items-center gap-1 sm:gap-2 ${isIOS ? 'px-3 py-2' : 'px-4 sm:px-5 py-2.5 sm:py-3'} font-medium text-xs sm:text-sm transition-all duration-200 rounded-full whitespace-nowrap ${
                 activeTab === 'overview'
-                  ? 'border border-olive-primary text-olive-dark bg-olive-muted/30'
+                  ? 'border border-ink-primary text-ink-primary bg-ink-ghost'
                   : 'bg-transparent text-text-muted hover:text-text-secondary'
               }`}
             >
@@ -413,7 +577,7 @@ export default function TimelineView() {
               onClick={() => setActiveTab('timeline')}
               className={`flex items-center gap-1 sm:gap-2 ${isIOS ? 'px-3 py-2' : 'px-4 sm:px-5 py-2.5 sm:py-3'} font-medium text-xs sm:text-sm transition-all duration-200 rounded-full whitespace-nowrap ${
                 activeTab === 'timeline'
-                  ? 'border border-olive-primary text-olive-dark bg-olive-muted/30'
+                  ? 'border border-ink-primary text-ink-primary bg-ink-ghost'
                   : 'bg-transparent text-text-muted hover:text-text-secondary'
               }`}
             >
@@ -424,7 +588,7 @@ export default function TimelineView() {
               onClick={() => setActiveTab('shotlist')}
               className={`flex items-center gap-1 sm:gap-2 ${isIOS ? 'px-3 py-2' : 'px-4 sm:px-5 py-2.5 sm:py-3'} font-medium text-xs sm:text-sm transition-all duration-200 rounded-full whitespace-nowrap ${
                 activeTab === 'shotlist'
-                  ? 'border border-olive-primary text-olive-dark bg-olive-muted/30'
+                  ? 'border border-ink-primary text-ink-primary bg-ink-ghost'
                   : 'bg-transparent text-text-muted hover:text-text-secondary'
               }`}
             >
@@ -435,7 +599,7 @@ export default function TimelineView() {
               onClick={() => setActiveTab('inspiration')}
               className={`flex items-center gap-1 sm:gap-2 ${isIOS ? 'px-3 py-2' : 'px-4 sm:px-5 py-2.5 sm:py-3'} font-medium text-xs sm:text-sm transition-all duration-200 rounded-full whitespace-nowrap ${
                 activeTab === 'inspiration'
-                  ? 'border border-olive-primary text-olive-dark bg-olive-muted/30'
+                  ? 'border border-ink-primary text-ink-primary bg-ink-ghost'
                   : 'bg-transparent text-text-muted hover:text-text-secondary'
               }`}
             >
@@ -490,7 +654,7 @@ export default function TimelineView() {
                   <div key={day._id} className="glass-card overflow-hidden">
                     {/* Day Header */}
                     <div 
-                      className="flex items-center justify-between p-4 bg-olive-muted/20 border-b border-border-soft cursor-pointer hover:bg-olive-muted/30 transition-colors duration-200"
+                      className="flex items-center justify-between p-4 bg-ink-ghost border-b border-border-soft cursor-pointer hover:bg-ink-muted/30 transition-colors duration-200"
                       onClick={() => toggleDayCollapse(day._id)}
                     >
                       <div className="flex items-center gap-3">
@@ -499,7 +663,7 @@ export default function TimelineView() {
                         </span>
                         <div>
                           <div className="flex items-center gap-2">
-                            <Calendar size={18} className="text-olive-primary" />
+                            <Calendar size={18} className="text-ink-primary" />
                             <h3 className="font-heading text-lg font-medium text-text-primary">
                               {formatDate(day.date, i18n.language)}
                             </h3>
@@ -510,7 +674,7 @@ export default function TimelineView() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <span className="px-3 py-0.5 bg-olive-muted text-olive-dark text-sm font-medium rounded-full">
+                        <span className="px-3 py-0.5 bg-ink-muted text-ink-primary text-sm font-medium rounded-full">
                           {day.events.length}
                         </span>
                         <Button
@@ -540,7 +704,7 @@ export default function TimelineView() {
                         <Button 
                           onClick={() => openAddEventModal(day._id)} 
                           variant="outline" 
-                          className="w-full flex items-center justify-center gap-2 border-dashed border-olive-muted text-olive-primary hover:bg-olive-primary/6"
+                          className="w-full flex items-center justify-center gap-2 border-dashed border-ink-muted text-ink-primary hover:bg-ink-primary/6"
                         >
                           <Plus size={16} />
                           {t('timelineView.addEventToDay')}
@@ -549,8 +713,20 @@ export default function TimelineView() {
                         {sortedEvents.length === 0 ? (
                           <p className="text-center text-text-muted py-4">{t('timelineView.noEventsInDay')}</p>
                         ) : (
-                          sortedEvents.map((event, index) => (
-                            <div key={event._id} className={`group relative glass rounded-[16px] p-4 sm:p-5 ${event.isCompleted ? 'opacity-75' : ''}`}>
+                          sortedEvents.map((event, index) => {
+                            const isActiveEvent = activeEventId === event._id;
+                            return (
+                            <div 
+                              key={event._id} 
+                              ref={isActiveEvent ? activeEventRef : undefined}
+                              className={`group relative glass rounded-[16px] p-4 sm:p-5 transition-all duration-300 ${
+                                event.isCompleted ? 'opacity-75' : ''
+                              } ${
+                                isActiveEvent 
+                                  ? 'border-l-[3px] mobile:border-l-field-highlight mobile:bg-field-surface desktop:border-l-ink-primary tablet:border-l-ink-primary desktop:bg-ink-ghost tablet:bg-ink-ghost' 
+                                  : ''
+                              }`}
+                            >
                               {index !== sortedEvents.length - 1 && (
                                 <div className="absolute left-[70px] top-full h-3 timeline-line" />
                               )}
@@ -558,8 +734,20 @@ export default function TimelineView() {
                                 {/* Time Display */}
                                 <div className="flex-shrink-0 flex flex-col items-center w-14">
                                   {event.time ? (
-                                    <div className="text-xl sm:text-2xl font-light text-olive-primary tracking-wide">
-                                      {event.time}
+                                    <div className="flex flex-col items-center gap-1">
+                                      <div className={`text-xl sm:text-2xl font-light tracking-wide ${
+                                        isActiveEvent ? 'mobile:text-field-highlight desktop:text-ink-primary tablet:text-ink-primary' : 'text-ink-primary'
+                                      }`}>
+                                        {event.time}
+                                      </div>
+                                      {isActiveEvent && (
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full animate-pulse ${
+                                          'mobile:bg-field-highlight mobile:text-field-bg desktop:bg-ink-primary desktop:text-white tablet:bg-ink-primary tablet:text-white'
+                                        }`}>
+                                          <span className="w-1.5 h-1.5 bg-current rounded-full"></span>
+                                          {t('timelineView.now', 'AHORA')}
+                                        </span>
+                                      )}
                                     </div>
                                   ) : (
                                     <div className="text-lg sm:text-xl font-light text-text-muted">--:--</div>
@@ -572,12 +760,12 @@ export default function TimelineView() {
                                     onClick={() => handleToggleCompletion(day._id, event._id)}
                                     className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
                                       event.isCompleted
-                                        ? 'bg-olive-primary text-white'
-                                        : 'border-2 border-olive-light bg-transparent hover:border-olive-primary'
+                                        ? 'bg-ink-primary text-white'
+                                        : 'border-2 border-ink-light bg-transparent hover:border-ink-primary'
                                     }`}
                                     title={event.isCompleted ? t('timelineView.markIncomplete') : t('timelineView.markComplete')}
                                   >
-                                    {event.isCompleted ? <CheckCircle2 size={16} /> : <Circle size={16} className="text-olive-light" />}
+                                    {event.isCompleted ? <CheckCircle2 size={16} /> : <Circle size={16} className="text-ink-light" />}
                                   </button>
                                 </div>
 
@@ -589,11 +777,11 @@ export default function TimelineView() {
                                         event.isCompleted ? 'line-through text-text-muted' : ''
                                       }`}>{event.title}</h4>
                                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                        <span className="inline-block px-3 py-0.5 rounded-full text-xs font-medium bg-olive-muted text-olive-dark">
+                                        <span className="inline-block px-3 py-0.5 rounded-full text-xs font-medium bg-ink-muted text-ink-primary">
                                           {getCategoryLabel(event.category)}
                                         </span>
                                         {event.isCompleted && (
-                                          <span className="inline-block px-3 py-0.5 rounded-full text-xs font-medium bg-olive-primary/20 text-olive-dark">
+                                          <span className="inline-block px-3 py-0.5 rounded-full text-xs font-medium bg-ink-primary/20 text-ink-primary">
                                             ✓ {t('timelineView.completed')}
                                           </span>
                                         )}
@@ -602,7 +790,7 @@ export default function TimelineView() {
                                     <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                       <button
                                         onClick={() => openEditEventModal(event, day._id)}
-                                        className="p-2 rounded-lg text-text-secondary hover:bg-olive-primary/10 transition-colors"
+                                        className="p-2 rounded-lg text-text-secondary hover:bg-ink-primary/10 transition-colors"
                                         title={t('timelineView.editEvent')}
                                       >
                                         <Edit2 size={14} />
@@ -616,7 +804,7 @@ export default function TimelineView() {
                                       </button>
                                       <button
                                         onClick={() => openNoteModal(event, day._id)}
-                                        className="p-2 rounded-lg text-text-secondary hover:bg-olive-primary/10 transition-colors"
+                                        className="p-2 rounded-lg text-text-secondary hover:bg-ink-primary/10 transition-colors"
                                         title={t('timelineView.addNote')}
                                       >
                                         <MessageSquare size={14} />
@@ -632,7 +820,7 @@ export default function TimelineView() {
 
                                   {event.location && (
                                     <div className="flex items-center mt-2 text-xs text-text-secondary">
-                                      <MapPin size={14} className="mr-1 text-olive-primary" />
+                                      <MapPin size={14} className="mr-1 text-ink-primary" />
                                       {event.location}
                                     </div>
                                   )}
@@ -655,9 +843,9 @@ export default function TimelineView() {
                                         {t('timelineView.notes', { count: event.notes.length })}
                                       </h5>
                                       {event.notes.map((note) => (
-                                        <div key={note._id} className="bg-olive-muted/20 rounded-lg p-2">
+                                        <div key={note._id} className="bg-ink-ghost rounded-lg p-2">
                                           <div className="flex items-start space-x-2">
-                                            <div className="w-6 h-6 rounded-full bg-olive-muted flex items-center justify-center text-xs font-medium text-olive-dark">
+                                            <div className="w-6 h-6 rounded-full bg-ink-muted flex items-center justify-center text-xs font-medium text-ink-primary">
                                               {getInitials(note.author?.name || '')}
                                             </div>
                                             <div className="flex-1">
@@ -700,7 +888,8 @@ export default function TimelineView() {
                                 </div>
                               </div>
                             </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     )}

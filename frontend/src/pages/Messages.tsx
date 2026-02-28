@@ -109,7 +109,7 @@ export default function Messages() {
           `}>
             <div className="p-4 border-b border-border-soft flex items-center justify-between">
               <h2 className="text-xl font-heading font-medium text-text-primary">Messages</h2>
-              <button className="p-2 hover:bg-olive-primary/10 rounded-lg transition-colors text-text-secondary">
+              <button className="p-2 hover:bg-ink-primary/10 rounded-lg transition-colors text-text-secondary">
                 <UserPlus size={20} />
               </button>
             </div>
@@ -126,11 +126,11 @@ export default function Messages() {
                   <button
                     key={conv.timeline._id}
                     onClick={() => setActiveConversation(conv.timeline._id)}
-                    className={`w-full p-4 flex items-start gap-3 hover:bg-olive-primary/8 transition-colors duration-200 border-b border-border-soft ${
-                      activeConversation === conv.timeline._id ? 'bg-olive-muted/30' : ''
+                    className={`w-full p-4 flex items-start gap-3 hover:bg-ink-primary/8 transition-colors duration-200 border-b border-border-soft ${
+                      activeConversation === conv.timeline._id ? 'bg-ink-ghost' : ''
                     }`}
                   >
-                    <div className="w-12 h-12 rounded-full bg-olive-primary flex items-center justify-center text-sm font-semibold text-white flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-ink-primary flex items-center justify-center text-sm font-semibold text-white flex-shrink-0">
                       {getInitials(getConversationTitle(conv))}
                     </div>
                     <div className="flex-1 min-w-0 text-left">
@@ -154,7 +154,7 @@ export default function Messages() {
                       </p>
                       {conv.unreadCount > 0 && (
                         <div className="mt-1">
-                          <span className="inline-block px-2 py-0.5 bg-olive-primary text-white text-xs rounded-full">
+                          <span className="inline-block px-2 py-0.5 bg-ink-primary text-white text-xs rounded-full">
                             {conv.unreadCount}
                           </span>
                         </div>
@@ -179,7 +179,7 @@ export default function Messages() {
                     {/* Mobile back button */}
                     <button
                       onClick={() => setActiveConversation(null)}
-                      className="md:hidden p-2 hover:bg-olive-primary/10 rounded-lg transition-colors"
+                      className="md:hidden p-2 hover:bg-ink-primary/10 rounded-lg transition-colors"
                     >
                       <ArrowLeft size={20} className="text-text-primary" />
                     </button>
@@ -202,7 +202,7 @@ export default function Messages() {
                   {currentMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-text-muted">
                       <div className="text-center">
-                        <MessageCircle size={48} className="mx-auto mb-4 opacity-50 text-olive-light" />
+                        <MessageCircle size={48} className="mx-auto mb-4 opacity-50 text-ink-light" />
                         <p>No messages yet. Start the conversation!</p>
                       </div>
                     </div>
@@ -215,7 +215,7 @@ export default function Messages() {
                           className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                         >
                           <div className={`flex gap-2 max-w-[85%] sm:max-w-md ${isOwn ? 'flex-row-reverse' : ''}`}>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-olive-primary flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-ink-primary flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
                               {getInitials(message.sender.name)}
                             </div>
                             <div className="min-w-0">
@@ -227,7 +227,7 @@ export default function Messages() {
                               <div
                                 className={`px-3 sm:px-4 py-2 rounded-[16px] ${
                                   isOwn
-                                    ? 'bg-olive-primary text-white'
+                                    ? 'bg-ink-primary text-white'
                                     : 'glass border border-border-soft text-text-primary'
                                 }`}
                               >
@@ -253,7 +253,7 @@ export default function Messages() {
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       placeholder="Type a message..."
-                      className="flex-1 px-4 py-3 text-sm sm:text-base bg-white/60 backdrop-blur-sm text-text-primary border border-border-soft rounded-[14px] focus:outline-none focus:ring-2 focus:ring-olive-primary/15 focus:border-olive-primary placeholder-text-muted transition-all duration-200"
+                      className="flex-1 px-4 py-3 text-sm sm:text-base bg-white/60 backdrop-blur-sm text-text-primary border border-border-soft rounded-[14px] focus:outline-none focus:ring-2 focus:ring-ink-primary/15 focus:border-ink-primary placeholder-text-muted transition-all duration-200"
                     />
                     <Button
                       type="submit"
@@ -268,7 +268,7 @@ export default function Messages() {
             ) : (
               <div className="flex items-center justify-center h-full text-text-muted">
                 <div className="text-center">
-                  <MessageCircle size={64} className="mx-auto mb-4 opacity-30 text-olive-light" />
+                  <MessageCircle size={64} className="mx-auto mb-4 opacity-30 text-ink-light" />
                   <h3 className="text-xl font-heading font-medium mb-2 text-text-primary">Select a conversation</h3>
                   <p>Choose from your existing conversations or start a new one</p>
                 </div>

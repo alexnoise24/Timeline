@@ -21,7 +21,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             'w-full px-5 py-3 rounded-[14px] text-base text-text-primary',
             'bg-white/60 backdrop-blur-sm',
             'border border-border-soft',
-            'focus:outline-none focus:border-olive-primary focus:ring-2 focus:ring-olive-primary/15',
+            'focus:outline-none focus:border-ink-primary focus:ring-2 focus:ring-ink-primary/15',
             'transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]',
             'placeholder:text-text-muted',
             'disabled:bg-gray-100 disabled:cursor-not-allowed',

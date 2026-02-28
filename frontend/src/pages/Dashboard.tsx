@@ -346,7 +346,7 @@ export default function Dashboard() {
                 <span className="hidden xs:inline">{t('dashboard.newProject')}</span>
               </Button>
             )}
-            <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center border-border-soft text-text-secondary bg-transparent hover:bg-olive-primary/8 hover:text-text-primary">
+            <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center border-border-soft text-text-secondary bg-transparent hover:bg-ink-primary/8 hover:text-text-primary">
               <LogOut size={18} />
               <span className="hidden xs:inline">{t('auth.logout')}</span>
             </Button>
@@ -397,7 +397,7 @@ export default function Dashboard() {
                 placeholder={t('dashboard.searchProjects')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-olive-primary focus:ring-2 focus:ring-olive-primary/15 placeholder:text-text-muted text-text-primary transition-all duration-200"
+                className="w-full pl-12 pr-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-ink-primary focus:ring-2 focus:ring-ink-primary/15 placeholder:text-text-muted text-text-primary transition-all duration-200"
               />
             </div>
 
@@ -414,7 +414,7 @@ export default function Dashboard() {
                   <h3 className="text-xl font-heading font-medium text-text-primary capitalize">
                     {getMonthLabel(monthKey)}
                   </h3>
-                  <span className="px-3 py-0.5 bg-olive-muted text-olive-dark text-sm font-medium rounded-full">
+                  <span className="px-3 py-0.5 bg-ink-muted text-ink-primary text-sm font-medium rounded-full">
                     {timelinesInMonth.length}
                   </span>
                 </button>
@@ -425,7 +425,7 @@ export default function Dashboard() {
                   {timelinesInMonth.map((timeline) => (
                 <Card key={timeline._id} className="group relative overflow-hidden">
                   {/* Decorative stripe */}
-                  <div className="h-1 bg-olive-muted" />
+                  <div className="h-1 bg-ink-muted" />
                   <CardContent className="p-6">
                     {/* Context menu button */}
                     <button
@@ -447,18 +447,18 @@ export default function Dashboard() {
                       </div>
                       <div className="flex items-center gap-4 mb-3 text-sm text-text-secondary">
                         <div className="flex items-center gap-2">
-                          <Calendar size={16} className="text-olive-primary" />
+                          <Calendar size={16} className="text-ink-primary" />
                           <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Users size={16} className="text-olive-primary" />
+                          <Users size={16} className="text-ink-primary" />
                           <span>{t('dashboard.collaboratorsCount', { count: timeline.collaborators?.length || 0 })}</span>
                         </div>
                       </div>
                       {timeline.weddingDate && (
                         <div className="mb-4">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-olive-muted text-olive-dark text-sm font-medium rounded-full">
-                            <CountdownTimer targetDate={timeline.weddingDate} compact showIcon={false} className="!p-0 !bg-transparent !text-olive-dark" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-ink-muted text-ink-primary text-sm font-medium rounded-full">
+                            <CountdownTimer targetDate={timeline.weddingDate} compact showIcon={false} className="!p-0 !bg-transparent !text-ink-primary" />
                           </span>
                         </div>
                       )}
@@ -491,7 +491,7 @@ export default function Dashboard() {
         {sharedTimelines.length > 0 && (
           <div className="mb-8 sm:mb-12">
             <div className="flex items-center gap-3 mb-6 sm:mb-8">
-              <Share2 size={24} className="text-olive-primary" />
+              <Share2 size={24} className="text-ink-primary" />
               <h2 className="text-2xl sm:text-3xl font-heading font-medium text-text-primary">{t('dashboard.sharedTimelines')}</h2>
             </div>
             {Object.entries(groupedSharedTimelines).map(([monthKey, timelinesInMonth]) => (
@@ -502,7 +502,7 @@ export default function Dashboard() {
                 <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {timelinesInMonth.map((timeline) => (
                 <Card key={timeline._id} className="cursor-pointer overflow-hidden" onClick={() => navigate(`/timeline/${timeline._id}`)}>
-                  <div className="h-1 bg-olive-light" />
+                  <div className="h-1 bg-ink-light" />
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
@@ -515,11 +515,11 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-4 mb-3 text-sm text-text-secondary">
                       <div className="flex items-center gap-2">
-                        <Calendar size={16} className="text-olive-primary" />
+                        <Calendar size={16} className="text-ink-primary" />
                         <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Users size={16} className="text-olive-primary" />
+                        <Users size={16} className="text-ink-primary" />
                         <span>{timeline.collaborators?.length || 0} collaborators</span>
                       </div>
                     </div>
@@ -528,7 +528,7 @@ export default function Dashboard() {
                         <CountdownTimer targetDate={timeline.weddingDate} compact />
                       </div>
                     )}
-                    <div className="p-3 bg-olive-muted/30 rounded-lg border border-olive-muted text-xs text-olive-dark">
+                    <div className="p-3 bg-ink-ghost rounded-lg border border-ink-muted text-xs text-ink-medium">
                       {t('dashboard.sharedWithYou')}
                     </div>
                   </CardContent>
@@ -543,7 +543,7 @@ export default function Dashboard() {
         {/* Empty State */}
         {ownedTimelines.length === 0 && sharedTimelines.length === 0 && !isLoading && (
           <div className="text-center p-6 sm:p-12 glass-card">
-            <Calendar size={48} className="sm:w-16 sm:h-16 text-olive-light mx-auto mb-4 sm:mb-6" />
+            <Calendar size={48} className="sm:w-16 sm:h-16 text-ink-light mx-auto mb-4 sm:mb-6" />
             <h3 className="text-xl sm:text-2xl font-heading font-medium text-text-primary mb-3">{t('dashboard.noProjects')}</h3>
             <p className="text-sm sm:text-base text-text-secondary mb-6 sm:mb-8 max-w-md mx-auto">
               {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master')
@@ -580,7 +580,7 @@ export default function Dashboard() {
                 value={newProject.description}
                 onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
                 required
-                className="w-full px-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-olive-primary focus:ring-2 focus:ring-olive-primary/15 placeholder:text-text-muted text-text-primary transition-all duration-200 min-h-[80px] resize-y"
+                className="w-full px-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-ink-primary focus:ring-2 focus:ring-ink-primary/15 placeholder:text-text-muted text-text-primary transition-all duration-200 min-h-[80px] resize-y"
               />
             </div>
             <div className="overflow-hidden">
@@ -591,7 +591,7 @@ export default function Dashboard() {
                 onChange={(e) => setNewProject(prev => ({ ...prev, date: e.target.value }))}
                 required
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-olive-primary focus:ring-2 focus:ring-olive-primary/15 text-text-primary transition-all duration-200 box-border"
+                className="w-full px-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-ink-primary focus:ring-2 focus:ring-ink-primary/15 text-text-primary transition-all duration-200 box-border"
               />
             </div>
             <div className="flex gap-3 pt-2">

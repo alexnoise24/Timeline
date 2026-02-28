@@ -42,7 +42,7 @@
   
   body {
     @apply text-text-primary font-sans;
-    background: linear-gradient(150deg, #F7F6F2 0%, #F2F1EC 40%, #EEF0E8 100%);
+    background: linear-gradient(150deg, #F7F7F9 0%, #F2F2F6 50%, #EEEEF4 100%);
     min-height: 100vh;
     line-height: 1.7;
     letter-spacing: 0.01em;
@@ -81,32 +81,49 @@
 
 @layer components {
   .glass {
-    background: rgba(245, 244, 241, 0.72);
+    background: rgba(245, 245, 247, 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    box-shadow: 0 4px 24px rgba(28, 28, 26, 0.06), 0 1px 4px rgba(28, 28, 26, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.80);
+    box-shadow: 0 4px 24px rgba(45, 49, 66, 0.06), 0 1px 4px rgba(45, 49, 66, 0.04);
   }
   
   .glass-subtle {
-    background: rgba(245, 244, 241, 0.85);
+    background: rgba(245, 245, 247, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(28, 28, 26, 0.08);
+    border: 1px solid rgba(45, 49, 66, 0.08);
   }
   
   .glass-card {
-    background: rgba(245, 244, 241, 0.72);
+    background: rgba(245, 245, 247, 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    box-shadow: 0 4px 24px rgba(28, 28, 26, 0.06), 0 1px 4px rgba(28, 28, 26, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.80);
+    box-shadow: 0 4px 24px rgba(45, 49, 66, 0.06), 0 1px 4px rgba(45, 49, 66, 0.04);
     border-radius: 20px;
   }
   
   .timeline-line {
     width: 2px;
-    background: linear-gradient(to bottom, #A3B082, transparent);
+    background: linear-gradient(to bottom, #8B90A8, transparent);
+  }
+  
+  /* Modo Field (día de boda) */
+  .field-mode {
+    background: #1C1E2A;
+    color: #F5F5F7;
+  }
+  
+  .field-mode .glass,
+  .field-mode .glass-card {
+    background: rgba(37, 40, 54, 0.85);
+    border: 1px solid rgba(123, 130, 168, 0.20);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  }
+  
+  .field-mode .timeline-line {
+    background: linear-gradient(to bottom, rgba(123, 130, 168, 0.4), transparent);
   }
 }
 

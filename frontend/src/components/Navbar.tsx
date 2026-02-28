@@ -62,7 +62,7 @@ export default function Navbar() {
               {/* Mobile menu button */}
               <button
                 onClick={toggleSidebar}
-                className="lg:hidden p-2 hover:bg-olive-primary/10 rounded-lg transition-colors"
+                className="lg:hidden p-2 hover:bg-ink-primary/10 rounded-lg transition-colors"
               >
                 <Menu size={24} className="text-text-primary" />
               </button>
@@ -75,7 +75,7 @@ export default function Navbar() {
                     className="h-8 w-auto object-contain"
                   />
                 ) : (
-                  <Calendar className="text-olive-primary" size={32} />
+                  <Calendar className="text-ink-primary" size={32} />
                 )}
                 <span className="text-xl sm:text-2xl font-heading text-text-primary hidden xs:inline">
                   {branding?.enabled && branding.studioName ? branding.studioName : t('app.name')}
@@ -93,18 +93,18 @@ export default function Navbar() {
                   <div className="relative" ref={userMenuRef}>
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-olive-primary/10 transition-colors"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-ink-primary/10 transition-colors"
                     >
                       {(user.role === 'photographer' || user.role === 'planner' || user.role === 'creator' || user.role === 'master') ? (
-                        <Camera size={20} className="text-olive-primary" />
+                        <Camera size={20} className="text-ink-primary" />
                       ) : (
-                        <Users size={20} className="text-olive-primary" />
+                        <Users size={20} className="text-ink-primary" />
                       )}
                       <span className="text-sm text-text-primary hidden md:inline">{user.name}</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium hidden sm:inline ${
                         user.role === 'photographer'
-                          ? 'bg-olive-muted text-olive-dark'
-                          : 'bg-olive-light/30 text-olive-dark'
+                          ? 'bg-ink-muted text-ink-primary'
+                          : 'bg-ink-ghost text-ink-medium'
                       }`}>
                         {user.role}
                       </span>
@@ -116,25 +116,25 @@ export default function Navbar() {
                       <div className="absolute right-0 mt-2 w-48 glass-card rounded-[16px] py-1 z-50">
                         <button
                           onClick={handleViewPlan}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-olive-primary/10 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-ink-primary/10 transition-colors"
                         >
-                          <CreditCard size={16} className="text-olive-primary" />
+                          <CreditCard size={16} className="text-ink-primary" />
                           {t('nav.myPlan')}
                         </button>
                         {canUseBranding && (
                           <button
                             onClick={handleBranding}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-olive-primary/10 transition-colors"
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-ink-primary/10 transition-colors"
                           >
-                            <Palette size={16} className="text-olive-primary" />
+                            <Palette size={16} className="text-ink-primary" />
                             {t('nav.branding')}
                           </button>
                         )}
                         <button
                           onClick={handleChangePassword}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-olive-primary/10 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-text-primary hover:bg-ink-primary/10 transition-colors"
                         >
-                          <KeyRound size={16} className="text-olive-primary" />
+                          <KeyRound size={16} className="text-ink-primary" />
                           {t('auth.changePassword')}
                         </button>
                         <hr className="my-1 border-border-soft" />
