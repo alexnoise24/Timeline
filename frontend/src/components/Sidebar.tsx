@@ -39,14 +39,15 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Sidebar - Hidden on mobile, collapsible on tablet, expanded on desktop */}
+      {/* Sidebar - Mobile drawer + tablet/desktop sidebar */}
       <div 
         className={`
           fixed lg:static inset-y-0 left-0 z-50
-          hidden md:flex flex-col
-          glass-subtle border-r border-border-soft
-          transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-          ${isExpanded ? 'w-[220px]' : 'tablet:w-16 desktop:w-[220px]'}
+          flex flex-col
+          light-mode-forced border-r border-border-soft
+          transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+          w-[280px] md:w-[220px]
+          ${isExpanded ? 'md:w-[220px]' : 'tablet:w-16 desktop:w-[220px]'}
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         onMouseEnter={() => setIsExpanded(true)}
@@ -57,20 +58,20 @@ export default function Sidebar() {
         <div className="lg:hidden flex justify-end p-4">
           <button
             onClick={closeSidebar}
-            className="p-2 hover:bg-ink-primary/10 rounded-lg transition-colors duration-200 text-text-secondary"
+            className="p-2 hover:bg-[#2D3142]/10 rounded-lg transition-colors duration-200 text-[#2D3142]"
           >
             <X size={24} strokeWidth={1.5} />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 pt-2 lg:pt-6 px-3">
+        <nav className="flex-1 pt-2 lg:pt-6 px-3 text-[#2D3142]">
           <button
             onClick={() => handleNavigate('/dashboard')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 min-h-[44px] ${
               isProjectsActive
-                ? 'bg-ink-primary text-white'
-                : 'text-text-secondary hover:bg-ink-primary/8'
+                ? 'bg-[#2D3142] text-white'
+                : 'text-[#2D3142] hover:bg-[#2D3142]/10'
             }`}
           >
             <Calendar size={20} strokeWidth={1.5} className="flex-shrink-0" />
@@ -83,8 +84,8 @@ export default function Sidebar() {
             onClick={() => handleNavigate('/messages')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 min-h-[44px] ${
               isMessagesActive
-                ? 'bg-ink-primary text-white'
-                : 'text-text-secondary hover:bg-ink-primary/8'
+                ? 'bg-[#2D3142] text-white'
+                : 'text-[#2D3142] hover:bg-[#2D3142]/10'
             }`}
           >
             <MessageCircle size={20} strokeWidth={1.5} className="flex-shrink-0" />
@@ -98,8 +99,8 @@ export default function Sidebar() {
               onClick={() => handleNavigate('/community')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 min-h-[44px] ${
                 isCommunityActive
-                  ? 'bg-ink-primary text-white'
-                  : 'text-text-secondary hover:bg-ink-primary/8'
+                  ? 'bg-[#2D3142] text-white'
+                  : 'text-[#2D3142] hover:bg-[#2D3142]/10'
               }`}
             >
               <Users size={20} strokeWidth={1.5} className="flex-shrink-0" />
@@ -114,8 +115,8 @@ export default function Sidebar() {
               onClick={() => handleNavigate('/settings')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200 min-h-[44px] ${
                 isSettingsActive
-                  ? 'bg-ink-primary text-white'
-                  : 'text-text-secondary hover:bg-ink-primary/8'
+                  ? 'bg-[#2D3142] text-white'
+                  : 'text-[#2D3142] hover:bg-[#2D3142]/10'
               }`}
             >
               <Settings size={20} strokeWidth={1.5} className="flex-shrink-0" />

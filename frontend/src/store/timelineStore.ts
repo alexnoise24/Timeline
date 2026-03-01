@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Timeline, Event, Shot, InspirationImage } from '@/types';
 import api from '@/lib/api';
 import { getSocket } from '@/lib/socket';
+import { watchService } from '@/services/watchService';
 
 interface TimelineState {
   timelines: Timeline[];
@@ -50,6 +51,8 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
     try {
       const { data } = await api.get('/timelines');
       set({ timelines: data.timelines });
+      // Sync to Apple Watch
+      watchService.syncTimelines(data.timelines);
     } catch (error) {
       console.error('Error fetching timelines:', error);
     } finally {
@@ -78,10 +81,13 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
 
   updateTimeline: async (id, timelineData) => {
     const { data } = await api.put(`/timelines/${id}`, timelineData);
+    const updatedTimelines = get().timelines.map((t) => (t._id === id ? data.timeline : t));
     set((state) => ({
-      timelines: state.timelines.map((t) => (t._id === id ? data.timeline : t)),
+      timelines: updatedTimelines,
       currentTimeline: state.currentTimeline?._id === id ? data.timeline : state.currentTimeline,
     }));
+    // Sync to Apple Watch
+    watchService.syncTimelines(updatedTimelines);
     
     const socket = getSocket();
     socket?.emit('timeline-update', { timelineId: id, timeline: data.timeline });

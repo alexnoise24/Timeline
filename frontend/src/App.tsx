@@ -3,11 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
+import { useTimelineStore } from './store/timelineStore';
 import { MobileMenuProvider } from './context/MobileMenuContext';
 import { BrandingProvider } from './context/BrandingContext';
 import { OfflineProvider } from './context/OfflineContext';
 import NotificationHandler from './components/NotificationHandler';
 import OfflineIndicator from './components/OfflineIndicator';
+import { watchService } from './services/watchService';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -70,6 +72,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { checkAuth, isLoading: isAuthLoading } = useAuthStore();
+  const { timelines, fetchTimelines } = useTimelineStore();
   const { t } = useTranslation();
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -88,6 +91,46 @@ function App() {
 
     initializeAuth();
   }, [checkAuth]);
+
+  // Initialize Apple Watch sync
+  useEffect(() => {
+    watchService.init();
+
+    const handleWatchSync = () => {
+      if (timelines && timelines.length > 0) {
+        watchService.syncTimelines(timelines);
+      } else {
+        fetchTimelines();
+      }
+    };
+
+    const handleStartWedding = (e: Event) => {
+      const { projectId } = (e as CustomEvent).detail;
+      localStorage.setItem(
+        `lenzu-wedding-mode-${projectId}`,
+        'true'
+      );
+      window.dispatchEvent(new CustomEvent('weddingModeChanged', 
+        { detail: { projectId, active: true } }));
+    };
+
+    const handleFinishWedding = (e: Event) => {
+      const { projectId } = (e as CustomEvent).detail;
+      localStorage.removeItem(`lenzu-wedding-mode-${projectId}`);
+      window.dispatchEvent(new CustomEvent('weddingModeChanged',
+        { detail: { projectId, active: false } }));
+    };
+
+    window.addEventListener('watchRequestsSync', handleWatchSync);
+    window.addEventListener('startWeddingDayFromWatch', handleStartWedding);
+    window.addEventListener('finishWeddingDayFromWatch', handleFinishWedding);
+
+    return () => {
+      window.removeEventListener('watchRequestsSync', handleWatchSync);
+      window.removeEventListener('startWeddingDayFromWatch', handleStartWedding);
+      window.removeEventListener('finishWeddingDayFromWatch', handleFinishWedding);
+    };
+  }, [timelines, fetchTimelines]);
 
   // Show loading state while initializing
   if (!isInitialized || isAuthLoading) {

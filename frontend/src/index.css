@@ -125,6 +125,59 @@
   .field-mode .timeline-line {
     background: linear-gradient(to bottom, rgba(123, 130, 168, 0.4), transparent);
   }
+  
+  /* Forzar tema claro para drawer mobile */
+  .light-mode-forced {
+    background: #F5F5F7 !important;
+    color: #2D3142 !important;
+  }
+  
+  /* Shot List estilos para field-mode */
+  .field-mode .shot-list-container .shot-title {
+    color: #F5F5F7;
+    font-weight: 500;
+  }
+  
+  .field-mode .shot-list-container .shot-subtitle {
+    color: #A8AFCC;
+    font-weight: 400;
+  }
+  
+  .field-mode .shot-list-container .shot-counter {
+    color: #7B82A8;
+  }
+  
+  .field-mode .shot-list-container .shot-checkbox {
+    border: 2px solid #4A5068;
+    background: transparent;
+    min-width: 24px;
+    min-height: 24px;
+  }
+  
+  .field-mode .shot-list-container .filter-pill-active {
+    background: #2D3142;
+    color: #F5F5F7;
+  }
+  
+  .field-mode .shot-list-container .filter-pill-inactive {
+    border: 1px solid #4A5068;
+    background: transparent;
+    color: #7B82A8;
+  }
+  
+  .field-mode .shot-list-container .progress-bar-bg {
+    background: #252836;
+    border-radius: 999px;
+  }
+  
+  .field-mode .shot-list-container .progress-bar-fill {
+    background: #A8AFCC;
+    border-radius: 999px;
+  }
+  
+  .field-mode .shot-list-container .shot-actions {
+    display: none;
+  }
 }
 
 @layer utilities {

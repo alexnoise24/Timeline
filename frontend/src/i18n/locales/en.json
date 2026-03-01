@@ -186,7 +186,15 @@
     "event": "event",
     "events": "events",
     "addEventToDay": "Add Event",
-    "noEventsInDay": "No events for this day yet"
+    "noEventsInDay": "No events for this day yet",
+    "startWeddingDay": "Start Wedding Day",
+    "finishWeddingDay": "Finish Wedding Day",
+    "liveIndicator": "LIVE",
+    "nowIndicator": "NOW",
+    "confirmFinishWedding": "Finish the wedding day?",
+    "shotList": "Shot List",
+    "weddingMode": "Wedding Mode",
+    "finish": "Finish"
   },
   "overview": {
     "basicInformation": "Basic Information",

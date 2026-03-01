@@ -1,6 +1,7 @@
 import { useState, useRef, TouchEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Camera, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, Camera, Sparkles, ChevronLeft, XCircle } from 'lucide-react';
 import { Timeline } from '@/types';
 
 interface WeddingSwipeViewProps {
@@ -9,6 +10,7 @@ interface WeddingSwipeViewProps {
   shotListContent: React.ReactNode;
   inspirationContent: React.ReactNode;
   activeEventId: string | null;
+  onExitWeddingMode: () => void;
 }
 
 type SwipeTab = 'timeline' | 'shotlist' | 'inspiration';
@@ -19,8 +21,10 @@ export default function WeddingSwipeView({
   shotListContent,
   inspirationContent,
   activeEventId,
+  onExitWeddingMode,
 }: WeddingSwipeViewProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState<SwipeTab>('timeline');
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -70,21 +74,42 @@ export default function WeddingSwipeView({
   const getPanelLabel = (panel: SwipeTab) => {
     switch (panel) {
       case 'timeline':
-        return t('timelineView.timeline', 'Timeline');
+        return t('timelineView.timeline');
       case 'shotlist':
-        return t('timelineView.shotList', 'Shot List');
+        return t('timelineView.shotList');
       case 'inspiration':
-        return t('timelineView.inspiration', 'Inspiration');
+        return t('timelineView.inspiration');
+    }
+  };
+
+  const handleGoBack = () => {
+    navigate('/dashboard');
+  };
+
+  const handleFinishWeddingDay = () => {
+    if (window.confirm(t('timelineView.confirmFinishWedding'))) {
+      localStorage.removeItem(`lenzu-wedding-mode-${timeline._id}`);
+      onExitWeddingMode();
     }
   };
 
   return (
     <div className="fixed inset-0 bg-field-bg flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 pt-[env(safe-area-inset-top)] px-4 pb-3 bg-field-surface border-b border-field-accent/20">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-field-text truncate max-w-[200px]">
+      <div className="flex-shrink-0 pt-[env(safe-area-inset-top)] px-2 pb-3 bg-field-surface border-b border-field-accent/20">
+        <div className="flex items-center justify-between gap-2">
+          {/* Back Button */}
+          <button
+            onClick={handleGoBack}
+            className="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl text-[#7B82A8] hover:bg-field-accent/10 transition-colors touch-manipulation"
+            aria-label={t('timelineView.goBack')}
+          >
+            <ChevronLeft size={24} />
+          </button>
+
+          {/* Title & Live Indicator */}
+          <div className="flex-1 min-w-0 text-center">
+            <h1 className="text-base font-bold text-field-text truncate">
               {timeline.couple?.partner1 && timeline.couple?.partner2
                 ? `${timeline.couple.partner1} & ${timeline.couple.partner2}`
                 : timeline.title}
@@ -92,15 +117,20 @@ export default function WeddingSwipeView({
             {activeEventId && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 text-xs font-semibold rounded-full bg-field-highlight text-field-bg animate-pulse">
                 <span className="w-1.5 h-1.5 bg-current rounded-full"></span>
-                {t('timelineView.now', 'AHORA')}
+                {t('timelineView.liveIndicator')}
               </span>
             )}
           </div>
-          <div className="text-right">
-            <div className="text-xs text-field-accent uppercase tracking-wider">
-              {getPanelLabel(activePanel)}
-            </div>
-          </div>
+
+          {/* Finish Wedding Day Button */}
+          <button
+            onClick={handleFinishWeddingDay}
+            className="flex-shrink-0 flex flex-col items-center justify-center w-11 h-11 rounded-xl text-[#7B82A8] hover:bg-field-accent/10 transition-colors touch-manipulation"
+            aria-label={t('timelineView.finishWeddingDay')}
+          >
+            <XCircle size={22} />
+            <span className="text-[9px] mt-0.5">{t('timelineView.finish')}</span>
+          </button>
         </div>
       </div>
 

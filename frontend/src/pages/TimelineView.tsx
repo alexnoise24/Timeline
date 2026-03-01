@@ -20,6 +20,7 @@ import Inspiration from '@/components/Inspiration';
 import Sidebar from '@/components/Sidebar';
 import CollaboratorsModal from '@/components/CollaboratorsModal';
 import WeddingSwipeView from '@/components/WeddingSwipeView';
+import { watchService } from '@/services/watchService';
 
 type TabType = 'overview' | 'timeline' | 'shotlist' | 'inspiration';
 
@@ -71,8 +72,13 @@ export default function TimelineView() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isCollaboratorsModalOpen, setIsCollaboratorsModalOpen] = useState(false);
   
-  // Field mode (wedding day) state
-  const [fieldModeActive, setFieldModeActive] = useState(false);
+  // Field mode (wedding day) state - persisted in localStorage
+  const [fieldModeActive, setFieldModeActive] = useState(() => {
+    if (typeof window !== 'undefined' && id) {
+      return localStorage.getItem(`lenzu-wedding-mode-${id}`) === 'true';
+    }
+    return false;
+  });
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
   // Handle resize for mobile detection
@@ -82,15 +88,23 @@ export default function TimelineView() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Toggle field-mode class on document root
+  // Toggle field-mode class on document root and persist to localStorage
   useEffect(() => {
     if (fieldModeActive) {
       document.documentElement.classList.add('field-mode');
+      if (id) {
+        localStorage.setItem(`lenzu-wedding-mode-${id}`, 'true');
+        watchService.syncWeddingMode(id, true);
+      }
     } else {
       document.documentElement.classList.remove('field-mode');
+      if (id) {
+        localStorage.removeItem(`lenzu-wedding-mode-${id}`);
+        watchService.syncWeddingMode(id, false);
+      }
     }
     return () => document.documentElement.classList.remove('field-mode');
-  }, [fieldModeActive]);
+  }, [fieldModeActive, id]);
 
   // Active event detection state
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
@@ -439,7 +453,11 @@ export default function TimelineView() {
                   {day.label && <span className="text-field-accent ml-2">— {day.label}</span>}
                 </h3>
                 <div className="space-y-3">
-                  {day.events.map((event) => (
+                  {[...day.events].sort((a, b) => {
+                    const timeA = (a.time || '00:00').replace(':', '');
+                    const timeB = (b.time || '00:00').replace(':', '');
+                    return parseInt(timeA) - parseInt(timeB);
+                  }).map((event) => (
                     <div
                       key={event._id}
                       className={`p-3 rounded-lg ${
@@ -460,7 +478,7 @@ export default function TimelineView() {
                         </div>
                         {activeEventId === event._id && (
                           <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-field-highlight text-field-bg animate-pulse">
-                            {t('timelineView.now', 'AHORA')}
+                            {t('timelineView.nowIndicator')}
                           </span>
                         )}
                       </div>
@@ -473,6 +491,7 @@ export default function TimelineView() {
         }
         shotListContent={<ShootList timeline={currentTimeline} />}
         inspirationContent={<Inspiration timeline={currentTimeline} />}
+        onExitWeddingMode={() => setFieldModeActive(false)}
       />
     );
   }
@@ -533,7 +552,7 @@ export default function TimelineView() {
                   }`}
                 >
                   <Camera size={16} />
-                  {fieldModeActive ? t('timelineView.endWeddingDay', 'Finalizar día de boda') : t('timelineView.startWeddingDay', 'Iniciar día de boda')}
+                  {fieldModeActive ? t('timelineView.finishWeddingDay') : t('timelineView.startWeddingDay')}
                 </button>
               </div>
             </div>
@@ -745,7 +764,7 @@ export default function TimelineView() {
                                           'mobile:bg-field-highlight mobile:text-field-bg desktop:bg-ink-primary desktop:text-white tablet:bg-ink-primary tablet:text-white'
                                         }`}>
                                           <span className="w-1.5 h-1.5 bg-current rounded-full"></span>
-                                          {t('timelineView.now', 'AHORA')}
+                                          {t('timelineView.nowIndicator')}
                                         </span>
                                       )}
                                     </div>

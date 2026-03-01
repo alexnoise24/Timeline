@@ -136,12 +136,12 @@ export default function ShootList({ timeline }: ShootListProps) {
   })).filter(cat => cat.shots.length > 0);
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="shot-list-container space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-heading font-medium text-text-primary">{t('shotList.title')}</h2>
-          <p className="text-gray-600 mt-1">
+          <h2 className="shot-title text-2xl font-heading font-medium text-text-primary">{t('shotList.title')}</h2>
+          <p className="shot-counter text-gray-600 mt-1">
             {t('shotList.shotsCompleted', { completed: completedCount, total: totalCount, percentage: completionPercentage })}
           </p>
         </div>
@@ -155,9 +155,9 @@ export default function ShootList({ timeline }: ShootListProps) {
 
       {/* Progress Bar */}
       {totalCount > 0 && (
-        <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="progress-bar-bg bg-gray-200 rounded-full h-3 overflow-hidden">
           <div
-            className="bg-green-600 h-full transition-all duration-300"
+            className="progress-bar-fill bg-green-600 h-full transition-all duration-300"
             style={{ width: `${completionPercentage}%` }}
           />
         </div>
@@ -169,8 +169,8 @@ export default function ShootList({ timeline }: ShootListProps) {
           onClick={() => setSelectedCategory('all')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             selectedCategory === 'all'
-              ? 'bg-black text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'filter-pill-active bg-black text-white'
+              : 'filter-pill-inactive bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
           {t('shotList.all', { count: incompleteShotList.length })}
@@ -185,7 +185,7 @@ export default function ShootList({ timeline }: ShootListProps) {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 selectedCategory === cat.value
                   ? cat.color
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'filter-pill-inactive bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               {cat.label} ({count})
@@ -197,8 +197,8 @@ export default function ShootList({ timeline }: ShootListProps) {
             onClick={() => setSelectedCategory('completed')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               selectedCategory === 'completed'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'filter-pill-active bg-green-600 text-white'
+                : 'filter-pill-inactive bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {t('shotList.completed')} ({completedShotList.length})
@@ -253,7 +253,7 @@ export default function ShootList({ timeline }: ShootListProps) {
                           <div className="flex-shrink-0">
                             <button
                               onClick={() => handleToggleComplete(shot)}
-                              className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg sm:rounded border-2 flex items-center justify-center transition-colors touch-manipulation ${
+                              className={`shot-checkbox w-10 h-10 sm:w-8 sm:h-8 rounded-lg sm:rounded border-2 flex items-center justify-center transition-colors touch-manipulation ${
                                 shot.isCompleted
                                   ? 'bg-green-600 border-green-600'
                                   : 'border-gray-300 hover:border-green-600 active:bg-green-50'
@@ -264,14 +264,14 @@ export default function ShootList({ timeline }: ShootListProps) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4
-                              className={`font-medium ${
+                              className={`shot-title font-medium ${
                                 shot.isCompleted ? 'line-through text-gray-500' : 'text-gray-900'
                               }`}
                             >
                               {shot.title}
                             </h4>
                             {shot.description && (
-                              <p className="text-sm text-text-secondary mt-1 break-words">{shot.description}</p>
+                              <p className="shot-subtitle text-sm text-text-secondary mt-1 break-words">{shot.description}</p>
                             )}
                             {shot.isCompleted && shot.completedBy && (
                               <p className="text-xs text-gray-500 mt-2">
@@ -280,7 +280,7 @@ export default function ShootList({ timeline }: ShootListProps) {
                             )}
                           </div>
                           {canEdit && (
-                            <div className="flex gap-1">
+                            <div className="shot-actions flex gap-1">
                               <button
                                 onClick={() => handleEditShot(shot)}
                                 className="flex-shrink-0 p-3 sm:p-2 text-blue-600 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-colors touch-manipulation"

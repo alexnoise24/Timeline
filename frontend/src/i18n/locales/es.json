@@ -186,7 +186,15 @@
     "event": "evento",
     "events": "eventos",
     "addEventToDay": "Agregar Evento",
-    "noEventsInDay": "No hay eventos para este día todavía"
+    "noEventsInDay": "No hay eventos para este día todavía",
+    "startWeddingDay": "Iniciar día de boda",
+    "finishWeddingDay": "Finalizar día de boda",
+    "liveIndicator": "EN VIVO",
+    "nowIndicator": "AHORA",
+    "confirmFinishWedding": "¿Finalizar el día de boda?",
+    "shotList": "Lista de tomas",
+    "weddingMode": "Modo boda",
+    "finish": "Finalizar"
   },
   "overview": {
     "basicInformation": "Información Básica",
