@@ -319,6 +319,13 @@
     "enabled": "Notificaciones activadas",
     "disabled": "Notificaciones desactivadas"
   },
+  "offline": {
+    "offlineMode": "Modo sin conexión",
+    "changesSavedLocally": "Cambios guardados localmente",
+    "syncingChanges": "Sincronizando {{count}} cambios...",
+    "syncComplete": "Todo sincronizado",
+    "offlineAvailable": "Disponible sin conexión"
+  },
   "trial": {
     "daysRemaining": "Te quedan {{days}} días de prueba",
     "lastDay": "¡Último día de prueba!",

@@ -12,50 +12,47 @@ export default function OfflineIndicator() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 z-50">
+    <div className="fixed top-0 left-0 right-0 z-[9999] safe-area-top">
       {/* Offline Banner */}
       {!isOnline && (
-        <div className="bg-amber-500 text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-3 mb-2">
-          <WifiOff size={18} />
-          <div>
-            <p className="font-medium text-sm">
-              {isSpanish ? 'Sin conexión' : 'Offline'}
+        <div className="bg-amber-500 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-lg">
+          <WifiOff size={20} />
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-sm">
+              {isSpanish ? 'Sin conexión' : 'Offline Mode'}
             </p>
-            <p className="text-xs opacity-80">
-              {isSpanish 
+            <span className="text-xs opacity-80">
+              — {isSpanish 
                 ? `Última sync: ${lastSyncTime}` 
                 : `Last sync: ${lastSyncTime}`}
-            </p>
+            </span>
           </div>
         </div>
       )}
 
       {/* Pending Changes Badge */}
-      {pendingChangesCount > 0 && (
-        <div className="bg-blue-500 text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-3 mb-2">
-          <CloudOff size={18} />
-          <div>
-            <p className="font-medium text-sm">
-              {pendingChangesCount} {isSpanish ? 'cambios pendientes' : 'pending changes'}
-            </p>
-            {isOnline && (
-              <button
-                onClick={syncNow}
-                disabled={isSyncing}
-                className="text-xs underline opacity-80 hover:opacity-100"
-              >
-                {isSpanish ? 'Sincronizar ahora' : 'Sync now'}
-              </button>
-            )}
-          </div>
+      {pendingChangesCount > 0 && !isSyncing && (
+        <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-lg">
+          <CloudOff size={20} />
+          <p className="font-semibold text-sm">
+            {pendingChangesCount} {isSpanish ? 'cambios pendientes' : 'pending changes'}
+          </p>
+          {isOnline && (
+            <button
+              onClick={syncNow}
+              className="ml-2 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs font-medium transition-colors"
+            >
+              {isSpanish ? 'Sincronizar' : 'Sync now'}
+            </button>
+          )}
         </div>
       )}
 
       {/* Syncing Indicator */}
       {isSyncing && (
-        <div className="bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-3">
-          <RefreshCw size={18} className="animate-spin" />
-          <p className="font-medium text-sm">
+        <div className="bg-green-500 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-lg">
+          <RefreshCw size={20} className="animate-spin" />
+          <p className="font-semibold text-sm">
             {isSpanish ? 'Sincronizando...' : 'Syncing...'}
           </p>
         </div>

@@ -319,6 +319,13 @@
     "enabled": "Notifications enabled",
     "disabled": "Notifications disabled"
   },
+  "offline": {
+    "offlineMode": "Offline Mode",
+    "changesSavedLocally": "Changes saved locally",
+    "syncingChanges": "Syncing {{count}} changes...",
+    "syncComplete": "All changes synced",
+    "offlineAvailable": "Available offline"
+  },
   "trial": {
     "daysRemaining": "{{days}} days left in your trial",
     "lastDay": "Last day of your trial!",
