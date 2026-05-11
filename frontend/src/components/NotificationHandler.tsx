@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, BellOff, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  requestNotificationPermission, 
-  onForegroundMessage, 
+import {
+  requestNotificationPermission,
+  onForegroundMessage,
   isNotificationSupported,
-  getNotificationPermission 
+  getNotificationPermission
 } from '@/lib/firebase';
 import api from '@/lib/api';
 import Button from './ui/Button';
 
 export default function NotificationHandler() {
+  const navigate = useNavigate();
   const [permission, setPermission] = useState<NotificationPermission>(getNotificationPermission());
   const [showPrompt, setShowPrompt] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,24 +32,63 @@ export default function NotificationHandler() {
   }, [permission]);
 
   useEffect(() => {
-    // Listen for foreground messages
+    // Listen for foreground FCM messages (web)
     const unsubscribe = onForegroundMessage((payload) => {
       console.log('Received foreground message:', payload);
-      
-      // Show toast notification
+
       const notification = (payload as any)?.notification || {};
+      const data = (payload as any)?.data || {};
       const title = notification.title || 'New Notification';
       const body = notification.body || '';
-      
+      const url = data.url as string | undefined;
+
       toast(title, {
         description: body,
         icon: <Bell size={16} />,
         duration: 5000,
+        ...(url && {
+          action: {
+            label: 'View',
+            onClick: () => navigate(url),
+          },
+        }),
       });
     });
 
     return unsubscribe;
-  }, []);
+  }, [navigate]);
+
+  useEffect(() => {
+    // Handle FCM token delivered by the iOS native layer via window event
+    const handleNativeFCMToken = async (e: Event) => {
+      const token = (e as CustomEvent<{ token: string }>).detail?.token;
+      if (!token) return;
+      console.log('[iOS] nativeFCMToken received:', token);
+      try {
+        await api.post('/users/fcm-token', { fcmToken: token, device: 'ios' });
+        console.log('[iOS] FCM token saved to backend');
+      } catch (err) {
+        console.error('[iOS] Failed to save FCM token:', err);
+      }
+    };
+
+    // Handle notification tap delivered by the iOS native layer
+    const handlePushNotificationTap = (e: Event) => {
+      const url = (e as CustomEvent<{ url: string }>).detail?.url;
+      if (url) {
+        console.log('[iOS] pushNotificationTap → navigating to', url);
+        navigate(url);
+      }
+    };
+
+    window.addEventListener('nativeFCMToken', handleNativeFCMToken);
+    window.addEventListener('pushNotificationTap', handlePushNotificationTap);
+
+    return () => {
+      window.removeEventListener('nativeFCMToken', handleNativeFCMToken);
+      window.removeEventListener('pushNotificationTap', handlePushNotificationTap);
+    };
+  }, [navigate]);
 
   const handleEnableNotifications = async () => {
     setIsLoading(true);

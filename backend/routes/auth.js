@@ -5,6 +5,8 @@ import User from '../models/User.js';
 import { generateToken, authenticate } from '../middleware/auth.js';
 import { MASTER_EMAIL, TRIAL_DURATION_DAYS } from '../config/constants.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.js';
+import sendTelegramNotification from '../services/telegram.js';
+import { logActivity } from '../services/activityLogger.js';
 
 const router = express.Router();
 
@@ -52,10 +54,22 @@ router.post('/register',
 
       await user.save();
 
+      // Log registration activity (fire and forget)
+      logActivity(user._id, user.name, 'user.register', { role: user.role, email: user.email }, req);
+
       // Send welcome email (async, don't block registration)
       sendWelcomeEmail(user).catch(err => {
         console.error('Failed to send welcome email:', err);
       });
+
+      // Telegram notification (fire and forget)
+      const fecha = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+      const trialHasta = user.trial_end_date
+        ? user.trial_end_date.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })
+        : 'N/A';
+      sendTelegramNotification(
+        `🆕 *Nuevo usuario registrado*\n👤 ${user.name}\n📧 ${user.email}\n📅 ${fecha}\n📱 Trial activo hasta: ${trialHasta}`
+      ).catch(() => {});
 
       // Generate token
       const token = generateToken(user._id);
@@ -103,12 +117,32 @@ router.post('/login',
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
+      // Auto-expire trial if needed so the response always has fresh plan status
+      if (user.is_trial_active && user.trial_end_date && new Date() > new Date(user.trial_end_date)) {
+        await User.findByIdAndUpdate(user._id, {
+          is_trial_active: false,
+          current_plan: 'none'
+        });
+        user.is_trial_active = false;
+        user.current_plan = 'none';
+      }
+
+      const trialExpired =
+        !user.is_trial_active &&
+        user.trial_end_date !== null &&
+        user.current_plan === 'none' &&
+        user.role !== 'guest';
+
+      // Log login activity (fire and forget)
+      logActivity(user._id, user.name, 'user.login', { plan: user.current_plan }, req);
+
       // Generate token
       const token = generateToken(user._id);
 
       res.json({
         message: 'Login successful',
         token,
+        trial_expired: trialExpired,
         user: user.toJSON()
       });
     } catch (error) {

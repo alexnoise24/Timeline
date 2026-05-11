@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
+import i18n from '@/i18n/config';
+import Logo from '@/components/ui/Logo';
 
 interface PasswordRequirement {
   label: string;
@@ -19,7 +21,7 @@ const Register: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    role: 'guest' as 'photographer' | 'planner' | 'guest'
+    role: 'photographer' as 'photographer' | 'guest'
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +36,24 @@ const Register: React.FC = () => {
       setFormData(prev => ({ ...prev, role: 'guest' }));
     }
   }, [inviteToken]);
+
+  // Auto-detect browser language on mount (Spanish → es, everything else → en)
+  useEffect(() => {
+    const browserLang = navigator.language || (navigator as any).userLanguage || 'en';
+    const detected = browserLang.toLowerCase().startsWith('es') ? 'es' : 'en';
+    i18n.changeLanguage(detected);
+  }, []);
+
+  const toggleLang = () => {
+    i18n.changeLanguage(i18n.language === 'es' ? 'en' : 'es');
+  };
+
+  // Beta badge: "30 días gratis" during beta (until May 8, 2026), then normal trialBadge
+  const betaDeadline = new Date('2026-05-08T23:59:59');
+  const isBeta = new Date() < betaDeadline;
+  const trialBadgeText = isBeta
+    ? (i18n.language === 'es' ? '30 días gratis' : '30 days free')
+    : t('auth.trialBadge');
 
   // Password validation requirements
   const getPasswordRequirements = (password: string): PasswordRequirement[] => {
@@ -93,15 +113,20 @@ const Register: React.FC = () => {
         }
       }
       
-      // Redirect photographers/planners to pricing, guests to dashboard
-      if (formData.role === 'photographer' || formData.role === 'planner') {
+      // Redirect photographers to pricing, guests to dashboard
+      if (formData.role === 'photographer') {
         navigate('/pricing', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
       console.error('Registration error:', err);
-      setError(err.message || 'Registration failed. Please try again.');
+      const apiMessage: string = err.response?.data?.message || err.response?.data?.error || err.message || '';
+      if (apiMessage.toLowerCase().includes('already registered') || apiMessage.toLowerCase().includes('already exists') || apiMessage.toLowerCase().includes('duplicate')) {
+        setError('duplicate_email');
+      } else {
+        setError('generic');
+      }
       setIsLoading(false);
     }
   };
@@ -111,79 +136,85 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md bg-white border border-gray-200 rounded-xl shadow-sm p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-black mb-1">{t('app.name')}</h1>
-          <p className="text-sm text-primary-500">{t('app.tagline')}</p>
+    <div className="min-h-screen flex items-center justify-center bg-paper px-4 py-10">
+      <div className="w-full max-w-md">
+
+        {/* Logo */}
+        <div className="flex justify-center mb-10">
+          <Logo size="lg" variant="paper" />
         </div>
 
-        <h2 className="text-xl font-semibold text-black mb-6 text-center">{t('auth.registerButton')}</h2>
+        <div className="border-[1.5px] border-ink bg-fog overflow-hidden">
+          {/* Card header */}
+          <div className="border-b-[1.5px] border-ink px-8 py-5">
+            <h2 className="font-display font-bold text-[22px] tracking-[-0.02em] leading-none text-ink">
+              {t('auth.registerButton').toUpperCase()}
+            </h2>
+            <p className="alto-label text-stone mt-2">
+              {t('auth.hasAccount')}{' '}
+              <Link to="/login" className="text-lavender hover:text-lavender-deep transition-colors duration-snap">
+                {t('auth.login')}
+              </Link>
+            </p>
+          </div>
+
+          <div className="px-8 py-6">
 
         {inviteToken && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 text-sm">
-            <p className="font-semibold mb-1">📨 {t('auth.inviteReceived')}</p>
-            <p className="text-xs">{t('auth.inviteMessage')}</p>
+          <div className="mb-4 border-[1px] border-lavender bg-lavender/5 p-4">
+            <p className="alto-label text-ink mb-1">{t('auth.inviteReceived')}</p>
+            <p className="font-mono text-[11px] text-stone">{t('auth.inviteMessage')}</p>
           </div>
         )}
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-primary-700 mb-1">{t('auth.name')}</label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Name */}
+          <div className="flex flex-col gap-[6px]">
+            <span className="alto-label text-ink">{t('auth.name')}</span>
             <input
               type="text"
-              placeholder={t('auth.namePlaceholder')}
               value={formData.name}
               onChange={(e) => updateFormData('name', e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full border-[1.5px] border-ink bg-paper px-[14px] py-[12px] font-mono font-bold text-[14px] text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender placeholder:text-stone placeholder:font-normal"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-primary-700 mb-1">{t('auth.email')}</label>
+          {/* Email */}
+          <div className="flex flex-col gap-[6px]">
+            <span className="alto-label text-ink">{t('auth.email')}</span>
             <input
               type="email"
-              placeholder={t('auth.emailPlaceholder')}
               value={formData.email}
               onChange={(e) => updateFormData('email', e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full border-[1.5px] border-ink bg-paper px-[14px] py-[12px] font-mono font-bold text-[14px] text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender placeholder:text-stone placeholder:font-normal"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-primary-700 mb-1">{t('auth.password')}</label>
+          {/* Password */}
+          <div className="flex flex-col gap-[6px]">
+            <span className="alto-label text-ink">{t('auth.password')}</span>
             <input
               type="password"
-              placeholder={t('auth.passwordPlaceholder')}
               value={formData.password}
               onChange={(e) => updateFormData('password', e.target.value)}
               onFocus={() => setShowPasswordRequirements(true)}
               onBlur={() => setShowPasswordRequirements(false)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full border-[1.5px] border-ink bg-paper px-[14px] py-[12px] font-mono font-bold text-[14px] text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender placeholder:text-stone placeholder:font-normal"
             />
-            
-            {/* Password requirements box */}
             {showPasswordRequirements && (
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs font-semibold text-blue-900 mb-2">{t('auth.passwordRequirements')}</p>
-                <ul className="space-y-1">
-                  {passwordRequirements.map((req, index) => (
-                    <li key={index} className="flex items-center gap-2 text-xs">
-                      {req.met ? (
-                        <Check size={14} className="text-green-600" />
-                      ) : (
-                        <X size={14} className="text-gray-400" />
-                      )}
-                      <span className={req.met ? 'text-green-700' : 'text-gray-600'}>
+              <div className="border-[1px] border-ink/30 bg-paper p-3">
+                <p className="alto-label text-ink mb-2">{t('auth.passwordRequirements')}</p>
+                <ul className="flex flex-col gap-1">
+                  {passwordRequirements.map((req, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      {req.met
+                        ? <Check size={12} strokeWidth={2} className="text-moss flex-shrink-0" />
+                        : <X size={12} strokeWidth={2} className="text-stone flex-shrink-0" />
+                      }
+                      <span className={`font-mono text-[11px] ${req.met ? 'text-moss' : 'text-stone'}`}>
                         {req.label}
                       </span>
                     </li>
@@ -193,97 +224,99 @@ const Register: React.FC = () => {
             )}
           </div>
 
-          <div className="bg-primary-50 p-5 rounded-lg border border-gray-200">
-            <label className="block text-sm font-semibold text-primary-700 mb-4">{t('auth.chooseAccountType')}</label>
+          {/* Account type */}
+          <div className="border-[1px] border-ink/20 bg-paper p-4 overflow-hidden">
+            <span className="alto-label text-ink block mb-3">{t('auth.chooseAccountType')}</span>
 
-            <label className={
-              `flex items-center p-4 rounded-lg cursor-pointer mb-2 transition border ${formData.role === 'photographer' ? 'border-black bg-white' : 'border-gray-300 bg-white'}`
-            }>
-              <input
-                type="radio"
-                name="role"
-                value="photographer"
-                checked={formData.role === 'photographer'}
-                onChange={(e) => updateFormData('role', e.target.value as 'photographer' | 'planner' | 'guest')}
-                className="mr-3 w-4 h-4"
-              />
-              <span className="mr-2">📷</span>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-black">{t('auth.photographer')}</span>
-                  <span className="text-xs bg-accent text-text px-2 py-0.5 rounded-full font-medium">
-                    {t('auth.trialBadge')}
-                  </span>
+            {!inviteToken && (
+              <div
+                onClick={() => updateFormData('role', 'photographer')}
+                className={`w-full flex gap-3 p-3 cursor-pointer border-[1.5px] mb-2 transition-colors duration-snap ${
+                  formData.role === 'photographer' ? 'border-ink bg-fog' : 'border-ink/20 hover:border-ink/40'
+                }`}
+              >
+                <div className="flex-shrink-0 w-4 h-4 mt-0.5 border-[1.5px] border-ink flex items-center justify-center bg-paper">
+                  {formData.role === 'photographer' && <div className="w-2 h-2 bg-ink" />}
                 </div>
-                <div className="text-xs text-primary-500">{t('auth.photographerDesc')}</div>
-              </div>
-            </label>
-
-            <label className={
-              `flex items-center p-4 rounded-lg cursor-pointer mb-2 transition border ${formData.role === 'planner' ? 'border-black bg-white' : 'border-gray-300 bg-white'}`
-            }>
-              <input
-                type="radio"
-                name="role"
-                value="planner"
-                checked={formData.role === 'planner'}
-                onChange={(e) => updateFormData('role', e.target.value as 'photographer' | 'planner' | 'guest')}
-                className="mr-3 w-4 h-4"
-              />
-              <span className="mr-2">📋</span>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-black">{t('auth.planner')}</span>
-                  <span className="text-xs bg-accent text-text px-2 py-0.5 rounded-full font-medium">
-                    {t('auth.trialBadge')}
-                  </span>
+                <div className="overflow-hidden">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-bold text-[12px] uppercase text-ink">{t('auth.photographer')}</span>
+                    <span className="border-[1px] border-lavender bg-lavender/10 text-ink font-mono font-bold text-[9px] uppercase tracking-[0.10em] px-2 py-0.5">
+                      {trialBadgeText}
+                    </span>
+                  </div>
+                  <p className="font-mono text-[11px] text-stone mt-1 leading-relaxed">{t('auth.photographerDesc')}</p>
                 </div>
-                <div className="text-xs text-primary-500">{t('auth.plannerDesc')}</div>
               </div>
-            </label>
+            )}
 
-            <label className={
-              `flex items-center p-4 rounded-lg cursor-pointer transition border ${formData.role === 'guest' ? 'border-black bg-white' : 'border-gray-300 bg-white'}`
-            }>
-              <input
-                type="radio"
-                name="role"
-                value="guest"
-                checked={formData.role === 'guest'}
-                onChange={(e) => updateFormData('role', e.target.value as 'photographer' | 'planner' | 'guest')}
-                className="mr-3 w-4 h-4"
-              />
-              <span className="mr-2">👥</span>
-              <div>
-                <div className="font-medium text-black">{t('auth.guest')}</div>
-                <div className="text-xs text-primary-500">{t('auth.guestDesc')}</div>
+            <div
+              onClick={() => updateFormData('role', 'guest')}
+              className={`w-full flex gap-3 p-3 cursor-pointer border-[1.5px] transition-colors duration-snap ${
+                formData.role === 'guest' ? 'border-ink bg-fog' : 'border-ink/20 hover:border-ink/40'
+              }`}
+            >
+              <div className="flex-shrink-0 w-4 h-4 mt-0.5 border-[1.5px] border-ink flex items-center justify-center bg-paper">
+                {formData.role === 'guest' && <div className="w-2 h-2 bg-ink" />}
               </div>
-            </label>
+              <div className="overflow-hidden">
+                <span className="font-mono font-bold text-[12px] uppercase text-ink block">{t('auth.guest')}</span>
+                <p className="font-mono text-[11px] text-stone mt-1 leading-relaxed">{t('auth.guestDesc')}</p>
+              </div>
+            </div>
+
+            {/* Hidden real radio inputs for form submission */}
+            <input type="radio" name="role" value="photographer" checked={formData.role === 'photographer'} onChange={() => {}} className="sr-only" />
+            <input type="radio" name="role" value="guest" checked={formData.role === 'guest'} onChange={() => {}} className="sr-only" />
           </div>
+
+          {/* Error */}
+          {error && (
+            <div className="border-[1px] border-brick bg-brick/5 p-4">
+              <p className="font-mono text-[12px] text-brick leading-relaxed">
+                {error === 'duplicate_email' ? (
+                  <>
+                    Este correo ya tiene una cuenta.{' '}
+                    <Link to="/login" className="underline font-bold">Iniciar sesión</Link>
+                  </>
+                ) : (
+                  'Ocurrió un error. Intenta de nuevo.'
+                )}
+              </p>
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full px-4 py-2 rounded-lg font-medium text-white ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-primary-800'}`}
+            className="w-full flex items-center justify-center gap-2 bg-lavender text-ink border-[1.5px] border-ink font-mono font-bold text-[12px] uppercase tracking-[0.08em] px-[22px] py-[14px] hover:bg-lavender-deep disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-snap"
           >
-            {isLoading ? t('auth.creatingAccount') : t('auth.registerButton')}
+            {isLoading ? t('auth.creatingAccount') : <>{t('auth.registerButton')} →</>}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-primary-600">
-          {t('auth.hasAccount')}{' '}
-          <Link to="/login" className="text-black font-medium hover:underline">{t('auth.login')}</Link>
-        </p>
+          </div>{/* end px-8 py-6 */}
 
-        <div className="mt-6 pt-4 border-t border-gray-200 flex justify-center gap-4 text-xs text-gray-500">
-          <Link to="/privacy" className="hover:text-gray-700">
-            Privacy Policy
-          </Link>
-          <span>•</span>
-          <Link to="/terms" className="hover:text-gray-700">
-            Terms of Service
-          </Link>
-        </div>
+          {/* Footer */}
+          <div className="border-t-[1px] border-ink/20 px-8 py-4 flex items-center justify-between">
+            <div className="flex gap-4">
+              <Link to="/privacy" className="alto-label text-stone hover:text-ink transition-colors duration-snap">
+                Privacy Policy
+              </Link>
+              <span className="alto-label text-stone">·</span>
+              <Link to="/terms" className="alto-label text-stone hover:text-ink transition-colors duration-snap">
+                Terms of Service
+              </Link>
+            </div>
+            <button
+              type="button"
+              onClick={toggleLang}
+              className="alto-label text-stone hover:text-ink transition-colors duration-snap"
+            >
+              {i18n.language === 'es' ? 'EN' : 'ES'}
+            </button>
+          </div>
+        </div>{/* end border card */}
       </div>
     </div>
   );

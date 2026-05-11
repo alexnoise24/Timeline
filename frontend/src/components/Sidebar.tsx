@@ -1,131 +1,96 @@
-import { useState } from 'react';
 import { Calendar, MessageCircle, Users, X, Settings } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMobileMenu } from '@/context/MobileMenuContext';
 import { useAuthStore } from '@/store/authStore';
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const { isSidebarOpen, closeSidebar } = useMobileMenu();
   const { user } = useAuthStore();
-  const [isExpanded, setIsExpanded] = useState(false);
 
-  const isProjectsActive = location.pathname === '/dashboard';
-  const isMessagesActive = location.pathname === '/messages';
-  const isCommunityActive = location.pathname === '/community';
-  const isSettingsActive = location.pathname === '/settings';
+  const isActive = (path: string) => location.pathname === path;
 
-  const canAccessCommunity = user?.role !== 'guest' && (
-    user?.role === 'master' || 
-    ['starter', 'pro', 'studio', 'trial'].includes(user?.current_plan || '')
-  );
+  const canAccessCommunity =
+    user?.role !== 'guest' &&
+    (user?.role === 'master' ||
+      ['starter', 'pro', 'studio', 'master', 'lifetime', 'trial'].includes(user?.current_plan || ''));
 
   const handleNavigate = (path: string) => {
     navigate(path);
     closeSidebar();
-    setIsExpanded(false);
   };
 
-  const toggleExpand = () => setIsExpanded(!isExpanded);
+  const navItem = (path: string, Icon: React.ElementType, label: string) => {
+    const active = isActive(path);
+    return (
+      <button
+        key={path}
+        onClick={() => handleNavigate(path)}
+        className={[
+          'w-full flex items-center gap-3 px-4 py-3 min-h-[44px]',
+          'alto-label border-b border-ink/10',
+          'transition-colors duration-snap',
+          active
+            ? 'bg-ink text-paper'
+            : 'bg-transparent text-ink hover:bg-fog',
+        ].join(' ')}
+      >
+        <Icon size={16} strokeWidth={1.5} className="flex-shrink-0" />
+        <span className="whitespace-nowrap">{label}</span>
+      </button>
+    );
+  };
 
   return (
     <>
       {/* Mobile overlay */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+        <div
+          className="fixed inset-0 z-40 lg:hidden"
+          style={{ backgroundColor: 'rgba(10,10,10,0.50)' }}
           onClick={closeSidebar}
         />
       )}
 
-      {/* Sidebar - Mobile drawer + tablet/desktop sidebar */}
-      <div 
-        className={`
-          fixed lg:static inset-y-0 left-0 z-50
-          flex flex-col
-          light-mode-forced border-r border-border-soft
-          transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-          w-[280px] md:w-[220px]
-          ${isExpanded ? 'md:w-[220px]' : 'tablet:w-16 desktop:w-[220px]'}
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
-        onMouseEnter={() => setIsExpanded(true)}
-        onMouseLeave={() => setIsExpanded(false)}
-        onClick={toggleExpand}
+      {/* Sidebar panel */}
+      <div
+        className={[
+          'fixed lg:static inset-y-0 left-0 z-50',
+          'flex flex-col bg-paper border-r-[1.5px] border-ink',
+          'w-[240px]',
+          'transition-transform duration-slide ease-in-out',
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        ].join(' ')}
       >
-        {/* Mobile close button */}
-        <div className="lg:hidden flex justify-end p-4">
+        {/* Mobile: close button */}
+        <div
+          className="lg:hidden flex justify-between items-center px-4 py-3 border-b-[1.5px] border-ink"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+        >
+          <span className="alto-label text-stone">MENU</span>
           <button
             onClick={closeSidebar}
-            className="p-2 hover:bg-[#2D3142]/10 rounded-lg transition-colors duration-200 text-[#2D3142]"
+            className="p-2 hover:bg-fog transition-colors duration-snap"
+            aria-label="Close menu"
           >
-            <X size={24} strokeWidth={1.5} />
+            <X size={16} strokeWidth={1.5} className="text-ink" />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 pt-2 lg:pt-6 px-3 text-[#2D3142]">
-          <button
-            onClick={() => handleNavigate('/dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 min-h-[44px] ${
-              isProjectsActive
-                ? 'bg-[#2D3142] text-white'
-                : 'text-[#2D3142] hover:bg-[#2D3142]/10'
-            }`}
-          >
-            <Calendar size={20} strokeWidth={1.5} className="flex-shrink-0" />
-            <span className={`font-medium whitespace-nowrap transition-opacity duration-200 ${
-              isExpanded ? 'opacity-100' : 'tablet:opacity-0 tablet:w-0 desktop:opacity-100 desktop:w-auto'
-            }`}>Projects</span>
-          </button>
-
-          <button
-            onClick={() => handleNavigate('/messages')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 min-h-[44px] ${
-              isMessagesActive
-                ? 'bg-[#2D3142] text-white'
-                : 'text-[#2D3142] hover:bg-[#2D3142]/10'
-            }`}
-          >
-            <MessageCircle size={20} strokeWidth={1.5} className="flex-shrink-0" />
-            <span className={`font-medium whitespace-nowrap transition-opacity duration-200 ${
-              isExpanded ? 'opacity-100' : 'tablet:opacity-0 tablet:w-0 desktop:opacity-100 desktop:w-auto'
-            }`}>Messages</span>
-          </button>
-
-          {canAccessCommunity && (
-            <button
-              onClick={() => handleNavigate('/community')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-full mb-2 transition-all duration-200 min-h-[44px] ${
-                isCommunityActive
-                  ? 'bg-[#2D3142] text-white'
-                  : 'text-[#2D3142] hover:bg-[#2D3142]/10'
-              }`}
-            >
-              <Users size={20} strokeWidth={1.5} className="flex-shrink-0" />
-              <span className={`font-medium whitespace-nowrap transition-opacity duration-200 ${
-                isExpanded ? 'opacity-100' : 'tablet:opacity-0 tablet:w-0 desktop:opacity-100 desktop:w-auto'
-              }`}>Community</span>
-            </button>
-          )}
-
-          <div className="mt-auto pt-4 border-t border-border-soft">
-            <button
-              onClick={() => handleNavigate('/settings')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200 min-h-[44px] ${
-                isSettingsActive
-                  ? 'bg-[#2D3142] text-white'
-                  : 'text-[#2D3142] hover:bg-[#2D3142]/10'
-              }`}
-            >
-              <Settings size={20} strokeWidth={1.5} className="flex-shrink-0" />
-              <span className={`font-medium whitespace-nowrap transition-opacity duration-200 ${
-                isExpanded ? 'opacity-100' : 'tablet:opacity-0 tablet:w-0 desktop:opacity-100 desktop:w-auto'
-              }`}>Settings</span>
-            </button>
-          </div>
+        {/* Nav items */}
+        <nav className="flex-1 pt-2 lg:pt-[80px] flex flex-col">
+          {navItem('/dashboard', Calendar, t('sidebar.projects'))}
+          {navItem('/messages', MessageCircle, t('sidebar.messages'))}
+          {canAccessCommunity && navItem('/community', Users, t('sidebar.community'))}
         </nav>
+
+        {/* Bottom: settings */}
+        <div className="border-t-[1.5px] border-ink">
+          {navItem('/settings', Settings, t('sidebar.settings'))}
+        </div>
       </div>
     </>
   );

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, User, Trash2, AlertTriangle, Loader2, Mail, Shield, FileText } from 'lucide-react';
+import { ArrowLeft, User, Trash2, AlertTriangle, Loader2, Mail, Shield, FileText, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
@@ -25,7 +25,6 @@ export default function AccountSettings() {
       toast.error(t('settings.typeDeleteToConfirm'));
       return;
     }
-
     if (!password) {
       toast.error(t('settings.passwordRequired'));
       return;
@@ -38,205 +37,198 @@ export default function AccountSettings() {
       logout();
       navigate('/login');
     } catch (error: any) {
-      const message = error.response?.data?.message || t('settings.deleteError');
-      toast.error(message);
+      toast.error(error.response?.data?.message || t('settings.deleteError'));
     } finally {
       setDeleting(false);
     }
   };
 
+  const planLabel = (plan: string) => {
+    const labels: Record<string, string> = {
+      free: 'GRATIS', trial: 'PRUEBA', starter: 'STARTER',
+      pro: 'PRO', studio: 'STUDIO', master: 'MASTER', lifetime: 'LIFETIME',
+    };
+    return labels[plan] || plan.toUpperCase();
+  };
+
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-paper">
       <Sidebar />
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        
-        <div className="flex-1 overflow-y-auto">
+
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+
             {/* Header */}
-            <div className="flex items-center gap-4 mb-8">
+            <div className="mb-8 pb-6 border-b-[1.5px] border-ink">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 alto-label text-stone hover:text-ink transition-colors duration-[80ms] mb-4"
               >
-                <ArrowLeft size={20} className="text-text/70" />
+                <ArrowLeft size={13} strokeWidth={1.5} />
+                {t('common.back')}
               </button>
-              <div>
-                <h1 className="text-2xl font-heading text-text">{t('settings.title')}</h1>
-                <p className="text-sm text-text/60">{t('settings.subtitle')}</p>
+              <p className="alto-label text-stone mb-1">LENZU · AJUSTES</p>
+              <h1 className="font-display font-bold text-[32px] tracking-[-0.03em] leading-none text-ink">
+                {t('settings.title').toUpperCase()}
+              </h1>
+            </div>
+
+            {/* Account Info */}
+            <div className="border-[1.5px] border-ink bg-paper mb-4">
+              <div className="px-5 py-3 border-b-[1px] border-ink/20 flex items-center gap-2">
+                <User size={13} strokeWidth={1.5} className="text-stone" />
+                <h2 className="alto-label text-ink">{t('settings.accountInfo').toUpperCase()}</h2>
+              </div>
+              <div className="divide-y-[1px] divide-ink/10">
+                <div className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center gap-2 alto-label text-stone">
+                    <Mail size={12} strokeWidth={1.5} />
+                    {t('settings.email').toUpperCase()}
+                  </div>
+                  <span className="font-mono font-bold text-[12px] text-ink">{user?.email}</span>
+                </div>
+                <div className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center gap-2 alto-label text-stone">
+                    <Shield size={12} strokeWidth={1.5} />
+                    {t('settings.role').toUpperCase()}
+                  </div>
+                  <span className="font-mono font-bold text-[12px] text-ink">
+                    {user?.role === 'guest' ? t('auth.guest').toUpperCase() : user?.role?.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center gap-2 alto-label text-stone">
+                    <FileText size={12} strokeWidth={1.5} />
+                    {t('settings.plan').toUpperCase()}
+                  </div>
+                  <span className="border-[1px] border-lavender/50 bg-lavender/10 px-2 py-0.5 font-mono font-bold text-[10px] text-ink">
+                    {planLabel(user?.current_plan || 'free')}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Account Info Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-accent/20 rounded-lg">
-                  <User size={20} className="text-accent" />
-                </div>
-                <h2 className="text-lg font-semibold text-text">{t('settings.accountInfo')}</h2>
+            {/* Legal */}
+            <div className="border-[1.5px] border-ink bg-paper mb-4">
+              <div className="px-5 py-3 border-b-[1px] border-ink/20">
+                <h2 className="alto-label text-ink">{t('settings.legal').toUpperCase()}</h2>
               </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <Mail size={18} className="text-text/50" />
-                    <span className="text-text/70">{t('settings.email')}</span>
-                  </div>
-                  <span className="text-text font-medium">{user?.email}</span>
-                </div>
-                
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <Shield size={18} className="text-text/50" />
-                    <span className="text-text/70">{t('settings.role')}</span>
-                  </div>
-                  <span className="text-text font-medium capitalize">{user?.role}</span>
-                </div>
-                
-                <div className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
-                    <FileText size={18} className="text-text/50" />
-                    <span className="text-text/70">{t('settings.plan')}</span>
-                  </div>
-                  <span className="text-text font-medium capitalize">{user?.current_plan || 'free'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Legal Links */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-              <h2 className="text-lg font-semibold text-text mb-4">{t('settings.legal')}</h2>
-              <div className="space-y-2">
-                <button
-                  onClick={() => navigate('/privacy')}
-                  className="w-full text-left px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors text-text/80"
-                >
-                  {t('settings.privacyPolicy')}
-                </button>
-                <button
-                  onClick={() => navigate('/terms')}
-                  className="w-full text-left px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors text-text/80"
-                >
-                  {t('settings.termsOfService')}
-                </button>
-                <button
-                  onClick={() => navigate('/support')}
-                  className="w-full text-left px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors text-text/80"
-                >
-                  {t('settings.helpSupport')}
-                </button>
+              <div className="divide-y-[1px] divide-ink/10">
+                {[
+                  { label: t('settings.privacyPolicy'), path: '/privacy' },
+                  { label: t('settings.termsOfService'), path: '/terms' },
+                  { label: t('settings.helpSupport'), path: '/support' },
+                ].map(({ label, path }) => (
+                  <button
+                    key={path}
+                    onClick={() => navigate(path)}
+                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-fog transition-colors duration-[80ms]"
+                  >
+                    <span className="font-mono text-[12px] text-ink">{label}</span>
+                    <ChevronRight size={13} strokeWidth={1.5} className="text-stone" />
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Danger Zone */}
-            <div className="bg-white rounded-2xl border border-red-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle size={20} className="text-red-600" />
-                </div>
-                <h2 className="text-lg font-semibold text-red-600">{t('settings.dangerZone')}</h2>
+            <div className="border-[1.5px] border-brick/40 bg-paper">
+              <div className="px-5 py-3 border-b-[1px] border-brick/20 flex items-center gap-2">
+                <AlertTriangle size={13} strokeWidth={1.5} className="text-brick" />
+                <h2 className="alto-label text-brick">{t('settings.dangerZone').toUpperCase()}</h2>
               </div>
-              
-              <p className="text-text/70 text-sm mb-4">
-                {t('settings.deleteAccountWarning')}
-              </p>
-              
-              <Button
-                onClick={() => setShowDeleteModal(true)}
-                disabled={isMaster}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                <Trash2 size={18} />
-                {t('settings.deleteAccount')}
-              </Button>
-              
-              {isMaster && (
-                <p className="text-xs text-text/50 mt-2">
-                  {t('settings.masterCannotDelete')}
+              <div className="px-5 py-5">
+                <p className="font-mono text-[11px] text-stone leading-relaxed mb-4">
+                  {t('settings.deleteAccountWarning')}
                 </p>
-              )}
+                <Button
+                  variant="danger"
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={isMaster}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 size={13} strokeWidth={1.5} />
+                  {t('settings.deleteAccount')}
+                </Button>
+                {isMaster && (
+                  <p className="alto-label text-stone mt-2">{t('settings.masterCannotDelete')}</p>
+                )}
+              </div>
             </div>
+
           </div>
         </div>
       </div>
 
       {/* Delete Account Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-red-100 rounded-full">
-                <AlertTriangle size={24} className="text-red-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-text">{t('settings.confirmDelete')}</h3>
+        <div className="fixed inset-0 bg-[rgba(10,10,10,0.55)] flex items-center justify-center z-50 p-4">
+          <div className="bg-paper border-[1.5px] border-ink w-full max-w-md">
+            {/* Modal header */}
+            <div className="px-6 py-4 border-b-[1.5px] border-ink flex items-center gap-2">
+              <AlertTriangle size={14} strokeWidth={1.5} className="text-brick" />
+              <h3 className="font-display font-bold text-[16px] tracking-[-0.02em] text-ink">
+                {t('settings.confirmDelete').toUpperCase()}
+              </h3>
             </div>
-            
-            <p className="text-text/70 mb-4">
-              {t('settings.deleteAccountDescription')}
-            </p>
-            
-            <ul className="text-sm text-text/60 mb-6 space-y-1">
-              <li>• {t('settings.deleteItem1')}</li>
-              <li>• {t('settings.deleteItem2')}</li>
-              <li>• {t('settings.deleteItem3')}</li>
-              <li>• {t('settings.deleteItem4')}</li>
-            </ul>
-            
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-text/70 mb-1">
-                  {t('settings.enterPassword')}
-                </label>
+
+            <div className="px-6 py-5 space-y-4">
+              <p className="font-mono text-[12px] text-stone leading-relaxed">
+                {t('settings.deleteAccountDescription')}
+              </p>
+
+              <ul className="space-y-1 border-l-[2px] border-brick/30 pl-3">
+                {['deleteItem1', 'deleteItem2', 'deleteItem3', 'deleteItem4'].map(key => (
+                  <li key={key} className="font-mono text-[11px] text-stone">
+                    {t(`settings.${key}`)}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex flex-col gap-[6px]">
+                <span className="alto-label text-ink">{t('settings.enterPassword')}</span>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                  className="w-full border-[1.5px] border-ink bg-paper px-[14px] py-[11px] font-mono text-[13px] text-ink focus:outline-none focus:outline-[2px] focus:outline-brick placeholder:text-stone"
                   placeholder="••••••••"
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-text/70 mb-1">
-                  {t('settings.typeDelete')}
-                </label>
+
+              <div className="flex flex-col gap-[6px]">
+                <span className="alto-label text-ink">{t('settings.typeDelete')}</span>
                 <input
                   type="text"
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                  className="w-full border-[1.5px] border-ink bg-paper px-[14px] py-[11px] font-mono font-bold text-[13px] text-ink focus:outline-none focus:outline-[2px] focus:outline-brick placeholder:text-stone placeholder:font-normal"
                   placeholder="DELETE"
                 />
               </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setPassword('');
-                  setConfirmText('');
-                }}
-                className="flex-1"
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                onClick={handleDeleteAccount}
-                disabled={deleting || confirmText !== 'DELETE' || !password}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
-              >
-                {deleting ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    {t('settings.deleting')}
-                  </>
-                ) : (
-                  t('settings.deleteForever')
-                )}
-              </Button>
+
+              <div className="flex gap-3 pt-1">
+                <Button
+                  variant="secondary"
+                  onClick={() => { setShowDeleteModal(false); setPassword(''); setConfirmText(''); }}
+                  className="flex-1"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={handleDeleteAccount}
+                  disabled={deleting || confirmText !== 'DELETE' || !password}
+                  className="flex-1 flex items-center justify-center gap-2"
+                >
+                  {deleting
+                    ? <><Loader2 size={13} strokeWidth={1.5} className="animate-spin" />{t('settings.deleting')}</>
+                    : t('settings.deleteForever')}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

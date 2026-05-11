@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Link as LinkIcon, Check, Copy } from 'lucide-react';
+import { Mail, Link as LinkIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -13,11 +14,22 @@ interface InviteModalProps {
 }
 
 export default function InviteModal({ isOpen, onClose, timelineId, timelineTitle }: InviteModalProps) {
+  const { t } = useTranslation();
   const { inviteGuest, createInviteLink } = useInvitationsStore();
   const [email, setEmail] = useState('');
   const [inviteStatus, setInviteStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    if (!inviteUrl) return;
+    navigator.clipboard.writeText(inviteUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const handleInviteByEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,33 +52,32 @@ export default function InviteModal({ isOpen, onClose, timelineId, timelineTitle
     }
   };
 
-  const handleCopyInviteLink = async () => {
+  const handleGenerateLink = async () => {
+    setIsGenerating(true);
     try {
       const token = await createInviteLink(timelineId);
-      const url = `${window.location.origin}/invite/${token}`;
-      await navigator.clipboard.writeText(url);
-      setCopyStatus('copied');
-      setTimeout(() => setCopyStatus('idle'), 2000);
-    } catch (err) {
-      setCopyStatus('error');
-      setTimeout(() => setCopyStatus('idle'), 2500);
+      setInviteUrl(`${window.location.origin}/invite/${token}`);
+    } catch (err: any) {
+      console.error('[InviteModal] failed to generate invite link:', err?.message, err);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="p-6">
-        <h2 className="text-2xl font-bold text-black mb-2">Invite to Timeline</h2>
+        <h2 className="text-2xl font-bold text-black mb-2">{t('invite.title')}</h2>
         <p className="text-sm text-primary-600 mb-6">{timelineTitle}</p>
 
         {/* Invite by Email Section */}
         <div className="mb-6 pb-6 border-b border-gray-200">
           <div className="flex items-center gap-2 mb-3">
             <Mail size={20} className="text-primary-600" />
-            <h3 className="text-lg font-semibold text-black">Invite Registered User</h3>
+            <h3 className="text-lg font-semibold text-black">{t('invite.inviteRegistered')}</h3>
           </div>
           <p className="text-sm text-primary-600 mb-4">
-            Send an invitation to a user who already has an account. They'll see this timeline in their Shared Timelines.
+            {t('invite.inviteRegisteredDesc')}
           </p>
 
           <form onSubmit={handleInviteByEmail} className="space-y-3">
@@ -96,7 +107,7 @@ export default function InviteModal({ isOpen, onClose, timelineId, timelineTitle
               disabled={isSubmitting || !email.trim()}
               className="w-full"
             >
-              {isSubmitting ? 'Sending...' : 'Send Invitation'}
+              {isSubmitting ? t('invite.sending') : t('invite.sendInvitation')}
             </Button>
           </form>
         </div>
@@ -105,36 +116,46 @@ export default function InviteModal({ isOpen, onClose, timelineId, timelineTitle
         <div>
           <div className="flex items-center gap-2 mb-3">
             <LinkIcon size={20} className="text-primary-600" />
-            <h3 className="text-lg font-semibold text-black">Share Invite Link</h3>
+            <h3 className="text-lg font-semibold text-black">{t('invite.shareLink')}</h3>
           </div>
           <p className="text-sm text-primary-600 mb-4">
-            Generate a link to share with anyone. If they don't have an account, they'll be prompted to register first.
+            {t('invite.shareLinkDesc')}
           </p>
 
-          <Button
-            onClick={handleCopyInviteLink}
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2"
-          >
-            {copyStatus === 'copied' ? (
-              <>
-                <Check size={18} />
-                Link Copied!
-              </>
-            ) : copyStatus === 'error' ? (
-              'Failed to copy'
-            ) : (
-              <>
-                <Copy size={18} />
-                Copy Invite Link
-              </>
-            )}
-          </Button>
+          {!inviteUrl && (
+            <Button
+              onClick={handleGenerateLink}
+              disabled={isGenerating}
+              variant="outline"
+              className="w-full"
+            >
+              {isGenerating ? t('timelineView.generating') : t('invite.generateLink')}
+            </Button>
+          )}
+          {inviteUrl && (
+            <div>
+              <p className="text-sm text-primary-600 mb-2">{t('invite.shareThisLink')}</p>
+              <input
+                type="text"
+                readOnly
+                value={inviteUrl}
+                onFocus={(e) => e.target.select()}
+                className="w-full px-3 py-2 text-xs font-mono border border-gray-300 rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-black mb-2"
+              />
+              <Button
+                onClick={handleCopyLink}
+                variant="outline"
+                className="w-full"
+              >
+                {copied ? t('invite.copied') : t('invite.copyLink')}
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 pt-4 border-t border-gray-200">
           <Button onClick={onClose} variant="outline" className="w-full">
-            Close
+            {t('invite.close')}
           </Button>
         </div>
       </div>

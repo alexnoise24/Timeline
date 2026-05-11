@@ -8,24 +8,38 @@ import { io } from '../server.js';
 import upload from '../middleware/upload.js';
 import { uploadInspiration, processInspirationImage } from '../middleware/uploadInspiration.js';
 import { getTimelineLimit, isMaster } from '../config/constants.js';
+import { logActivity } from '../services/activityLogger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
+// Strip collaborator entries where the user document was deleted
+const stripDeletedCollaborators = (tl) => {
+  const obj = tl.toObject ? tl.toObject() : { ...tl };
+  obj.collaborators = (obj.collaborators || []).filter(c => c.user != null);
+  return obj;
+};
+
 // Get all timelines for user
 router.get('/', authenticate, async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Get timelines where user is owner or collaborator
+    // Timelines owned by the user
     const ownedTimelines = await Timeline.find({ owner: userId })
       .populate('owner', 'name email avatar')
       .populate('collaborators.user', 'name email avatar')
       .sort({ updatedAt: -1 });
 
-    // Get timelines where user is invited (accepted invitations)
+    // Timelines the user is in the collaborators array directly
+    const collaboratorTimelines = await Timeline.find({ 'collaborators.user': userId })
+      .populate('owner', 'name email avatar')
+      .populate('collaborators.user', 'name email avatar')
+      .sort({ updatedAt: -1 });
+
+    // Timelines via accepted invitations in user profile
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(userId).populate({
       path: 'invitedTimelines.timelineId',
@@ -35,22 +49,21 @@ router.get('/', authenticate, async (req, res) => {
       ]
     });
 
-    // Filter for accepted invitations and ensure timeline exists
     const invitedTimelines = user.invitedTimelines
       .filter(invite => invite.status === 'accepted' && invite.timelineId)
       .map(invite => invite.timelineId)
-      .filter(timeline => timeline !== null); // Remove any null timelines
+      .filter(tl => tl !== null);
 
-    // Combine and deduplicate timelines (in case user owns a timeline they're also invited to)
-    const timelineIds = new Set([
-      ...ownedTimelines.map(t => t._id.toString()),
-      ...invitedTimelines.map(t => t._id.toString())
-    ]);
-    
-    const allTimelines = [
-      ...ownedTimelines,
-      ...invitedTimelines.filter(t => !ownedTimelines.some(owned => owned._id.toString() === t._id.toString()))
-    ];
+    // Deduplicate across all three sources, then strip deleted collaborators
+    const seen = new Set();
+    const allTimelines = [...ownedTimelines, ...collaboratorTimelines, ...invitedTimelines]
+      .filter(tl => {
+        const id = tl._id.toString();
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      })
+      .map(stripDeletedCollaborators);
 
     res.json({ timelines: allTimelines });
   } catch (error) {
@@ -110,7 +123,7 @@ router.get('/:id', authenticate, requireTimelineAccess, async (req, res) => {
       console.log(`Migration complete for timeline ${timeline._id}`);
     }
 
-    res.json({ timeline });
+    res.json({ timeline: stripDeletedCollaborators(timeline) });
   } catch (error) {
     console.error('Error fetching timeline:', error);
     res.status(500).json({ message: 'Error al obtener timeline' });
@@ -147,6 +160,8 @@ router.post('/', authenticate, requirePhotographer, async (req, res) => {
 
     await timeline.save();
     await timeline.populate('owner', 'name email avatar');
+
+    logActivity(req.userId, req.user.name, 'wedding.create', { timelineId: timeline._id, title: timeline.title }, req);
 
     res.status(201).json({ timeline });
   } catch (error) {
@@ -235,6 +250,18 @@ router.delete('/:id/collaborators/:userId', authenticate, requireTimelineOwner, 
     }
 
     await timeline.save();
+
+    // Also remove the invitation entry from the user's invitedTimelines
+    // so requireTimelineAccess no longer grants access via the 'invited' path
+    const User = (await import('../models/User.js')).default;
+    const removedUser = await User.findById(userId);
+    if (removedUser) {
+      removedUser.invitedTimelines = removedUser.invitedTimelines.filter(
+        inv => inv.timelineId.toString() !== req.params.id.toString()
+      );
+      await removedUser.save();
+    }
+
     await timeline.populate('collaborators.user', 'name email avatar');
 
     res.json({ message: 'Collaborator removed successfully', timeline });
@@ -927,6 +954,7 @@ router.put('/:id/shots/:shotId', authenticate, requireTimelineAccess, async (req
     }
 
     // If marking as completed, set completion info
+    const wasCompleted = shot.isCompleted;
     if (req.body.isCompleted && !shot.isCompleted) {
       shot.completedBy = req.userId;
       shot.completedAt = new Date();
@@ -940,6 +968,10 @@ router.put('/:id/shots/:shotId', authenticate, requireTimelineAccess, async (req
 
     await timeline.save();
     await timeline.populate('shotList.createdBy shotList.completedBy', 'name email avatar');
+
+    if (!wasCompleted && shot.isCompleted) {
+      logActivity(req.userId, req.user.name, 'shot.check', { timelineId: req.params.id, shotId: req.params.shotId, shotTitle: shot.title }, req);
+    }
 
     res.json({ shot });
   } catch (error) {
@@ -975,14 +1007,22 @@ router.delete('/:id/shots/:shotId', authenticate, requireTimelineAccess, async (
 });
 
 // Upload photographer image
-router.post('/:id/photographers/upload', authenticate, requireTimelineAccess, upload.single('photo'), async (req, res) => {
+router.post('/:id/photographers/upload', authenticate, requireTimelineAccess, (req, res, next) => {
+  upload.single('photo')(req, res, (err) => {
+    if (err) {
+      logActivity(req.userId, req.user?.name, 'error.upload', { error: err.message, timelineId: req.params.id }, req);
+      return res.status(400).json({ message: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Return the file URL
     const imageUrl = `/uploads/photographers/${req.file.filename}`;
+    logActivity(req.userId, req.user?.name, 'photographer.photo_upload', { timelineId: req.params.id, filename: req.file.filename }, req);
     res.json({ imageUrl });
   } catch (error) {
     console.error('Error uploading photographer image:', error);
@@ -1024,6 +1064,7 @@ router.post('/:id/photographers', authenticate, requireTimelineAccess, async (re
     await timeline.save();
 
     const newPhotographer = timeline.photographersTeam[timeline.photographersTeam.length - 1];
+    logActivity(req.userId, req.user.name, 'photographer.add', { timelineId: req.params.id, name, role }, req);
     res.status(201).json({ photographer: newPhotographer });
   } catch (error) {
     console.error('Error adding photographer:', error);
@@ -1257,6 +1298,14 @@ router.delete('/:id/inspiration/:imageId', authenticate, requireTimelineAccess, 
     console.error('Error deleting inspiration:', error);
     res.status(500).json({ message: 'Failed to delete image' });
   }
+});
+
+// Log wedding mode toggle (frontend-only state, just for analytics)
+router.post('/:id/wedding-mode', authenticate, requireTimelineAccess, async (req, res) => {
+  const { active } = req.body;
+  const eventType = active ? 'wedding.activate' : 'wedding.deactivate';
+  logActivity(req.userId, req.user.name, eventType, { timelineId: req.params.id }, req);
+  res.json({ ok: true });
 });
 
 // Delete timeline (only owner can delete)

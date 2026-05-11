@@ -20,6 +20,9 @@ export const setupSocketHandlers = (io) => {
   io.on('connection', (socket) => {
     console.log(`Usuario conectado: ${socket.userId}`);
 
+    // Auto-join personal room so the server can push events to this specific user
+    socket.join(`user-${socket.userId}`);
+
     socket.on('join-timeline', (timelineId) => {
       socket.join(`timeline-${timelineId}`);
     });
@@ -34,20 +37,23 @@ export const setupSocketHandlers = (io) => {
 
     socket.on('event-added', async (data) => {
       socket.to(`timeline-${data.timelineId}`).emit('event-added', data);
-      
+
       // Send push notification
       try {
-        const sender = await User.findById(socket.userId);
-        if (sender) {
+        const [sender, timeline] = await Promise.all([
+          User.findById(socket.userId),
+          Timeline.findById(data.timelineId).select('title')
+        ]);
+        if (sender && timeline) {
           await notifyTimelineMembers(
             data.timelineId,
             socket.userId,
             {
-              title: `${sender.name} added a new event`,
-              body: data.event?.title || 'New event added to timeline'
+              title: timeline.title,
+              body: `${sender.name} made changes to the timeline`
             },
             {
-              type: 'event-added',
+              type: 'timeline_update',
               url: `/timeline/${data.timelineId}`
             }
           );
@@ -59,23 +65,23 @@ export const setupSocketHandlers = (io) => {
 
     socket.on('event-updated', async (data) => {
       socket.to(`timeline-${data.timelineId}`).emit('event-updated', data);
-      
+
       // Send push notification
       try {
-        const sender = await User.findById(socket.userId);
-        if (sender) {
-          const isCompleted = data.event?.isCompleted;
+        const [sender, timeline] = await Promise.all([
+          User.findById(socket.userId),
+          Timeline.findById(data.timelineId).select('title')
+        ]);
+        if (sender && timeline) {
           await notifyTimelineMembers(
             data.timelineId,
             socket.userId,
             {
-              title: isCompleted 
-                ? `${sender.name} completed an event` 
-                : `${sender.name} updated an event`,
-              body: data.event?.title || 'Event updated'
+              title: timeline.title,
+              body: `${sender.name} made changes to the timeline`
             },
             {
-              type: 'event-updated',
+              type: 'timeline_update',
               url: `/timeline/${data.timelineId}`
             }
           );

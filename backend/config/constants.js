@@ -36,7 +36,7 @@ export const TRIAL_DURATION_DAYS = 7;
 // Plan limits
 export const PLAN_LIMITS = {
   none: { timelines: 0, collaborators: 0 },
-  trial: { timelines: 3, collaborators: 5 },
+  trial: { timelines: 2, collaborators: 5 },
   free: { timelines: 1, collaborators: 2 },
   starter: { timelines: 5, collaborators: 10 },
   pro: { timelines: 20, collaborators: 50 },

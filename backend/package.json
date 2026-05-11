@@ -9,7 +9,8 @@
     "start": "node server.js",
     "migrate:users": "node scripts/migrate-users.js",
     "fix:master": "node scripts/fix-master-user.js",
-    "debug:timelines": "node scripts/debug-timelines.js"
+    "debug:timelines": "node scripts/debug-timelines.js",
+    "migrate:locations": "node scripts/migrate-locations.js"
   },
   "keywords": [],
   "author": "",

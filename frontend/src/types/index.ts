@@ -14,7 +14,7 @@ export interface User {
   trial_start_date?: string;
   trial_end_date?: string;
   is_trial_active?: boolean;
-  current_plan?: 'none' | 'trial' | 'free' | 'starter' | 'pro' | 'studio' | 'master';
+  current_plan?: 'none' | 'trial' | 'free' | 'starter' | 'pro' | 'studio' | 'master' | 'lifetime';
   plan_expiration_date?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
@@ -118,6 +118,7 @@ export interface Timeline {
   weddingDate: string;
   location?: string;
   locationUrl?: string;
+  locationsList?: Array<{ name: string; url: string }>;
   couple?: {
     partner1?: string;
     partner2?: string;

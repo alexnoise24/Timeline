@@ -1,83 +1,42 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, X, Sparkles, ArrowLeft, Loader2, Settings2 } from 'lucide-react';
+import { Check, ArrowLeft, Loader2, Settings2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import Button from '@/components/ui/Button';
+import Logo from '@/components/ui/Logo';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
 
-interface PlanFeature {
-  key: string;
-  free: boolean | string;
-  starter: boolean | string;
-  pro: boolean | string;
-  studio: boolean | string;
-}
-
-const plans = [
-  {
-    id: 'free',
-    price: 0,
-    period: 'month',
-    timelines: 1,
-    collaborators: 2,
-    popular: false,
-  },
-  {
-    id: 'starter',
-    price: 9,
-    period: 'month',
-    timelines: 5,
-    collaborators: 10,
-    popular: false,
-  },
-  {
-    id: 'pro',
-    price: 19,
-    period: 'month',
-    timelines: 20,
-    collaborators: 50,
-    popular: true,
-  },
-  {
-    id: 'studio',
-    price: 39,
-    period: 'month',
-    timelines: Infinity,
-    collaborators: Infinity,
-    popular: false,
-  },
-];
-
-const features: PlanFeature[] = [
-  { key: 'timelines', free: '1', starter: '5', pro: '20', studio: '∞' },
-  { key: 'collaborators', free: '2', starter: '10', pro: '50', studio: '∞' },
-  { key: 'shotLists', free: true, starter: true, pro: true, studio: true },
-  { key: 'teamPhotographers', free: false, starter: true, pro: true, studio: true },
-  { key: 'pushNotifications', free: false, starter: true, pro: true, studio: true },
-  { key: 'prioritySupport', free: false, starter: false, pro: true, studio: true },
-  { key: 'customBranding', free: false, starter: false, pro: false, studio: true },
+const ALL_FEATURES = [
+  'Proyectos ilimitados',
+  'Invitados ilimitados',
+  'Shot lists',
+  'Notificaciones push',
+  'Apple Watch sync',
+  'Modo campo (Día de boda)',
+  'Branding personalizado',
+  'Comunidad de fotógrafos',
+  'Soporte prioritario',
 ];
 
 export default function Pricing() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const trialExpired = (location.state as any)?.trialExpired === true;
   const { user, isAuthenticated, checkAuth } = useAuthStore();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [managingSubscription, setManagingSubscription] = useState(false);
 
-  // Handle success/cancel from Stripe checkout
   useEffect(() => {
     const success = searchParams.get('success');
     const canceled = searchParams.get('canceled');
 
     if (success === 'true') {
       toast.success(t('pricing.paymentSuccess'));
-      // Refresh user data to get updated plan
       checkAuth();
-      // Clear URL params
       navigate('/pricing', { replace: true });
     } else if (canceled === 'true') {
       toast.info(t('pricing.paymentCanceled'));
@@ -90,27 +49,13 @@ export default function Pricing() {
       navigate('/register');
       return;
     }
-
-    // Free plan - just update to free
-    if (planId === 'free') {
-      toast.info(t('pricing.freePlanInfo'));
-      return;
-    }
-
-    // If user already has this plan
-    if (user?.current_plan === planId) {
-      return;
-    }
+    if (planId === 'free' || user?.current_plan === planId) return;
 
     setLoadingPlan(planId);
-
     try {
       const response = await api.post('/stripe/create-checkout-session', { planId });
-
-      // Redirect to Stripe Checkout
       window.location.href = response.data.url;
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       toast.error(t('pricing.checkoutError'));
     } finally {
       setLoadingPlan(null);
@@ -122,221 +67,221 @@ export default function Pricing() {
       toast.error(t('pricing.noSubscription'));
       return;
     }
-
     setManagingSubscription(true);
-
     try {
       const response = await api.post('/stripe/create-portal-session');
-
-      // Redirect to Stripe Customer Portal
       window.location.href = response.data.url;
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       toast.error(t('pricing.portalError'));
     } finally {
       setManagingSubscription(false);
     }
   };
 
-  const renderFeatureValue = (value: boolean | string) => {
-    if (typeof value === 'string') {
-      return <span className="font-medium text-text">{value}</span>;
-    }
-    return value ? (
-      <Check size={20} className="text-green-500 mx-auto" />
-    ) : (
-      <X size={20} className="text-gray-300 mx-auto" />
-    );
-  };
+  const isPro = ['pro', 'studio', 'master', 'lifetime', 'starter'].includes(user?.current_plan || '');
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-text/70 hover:text-text transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span>{t('common.back')}</span>
-          </button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-paper">
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        {/* Title */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading text-text mb-4">
-            {t('pricing.title')}
+      {/* Nav strip */}
+      <header className="border-b-[1.5px] border-ink bg-paper">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Logo size="sm" variant="paper" />
+          {isAuthenticated && (
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-1.5 alto-label text-stone hover:text-ink transition-colors duration-[80ms]"
+            >
+              <ArrowLeft size={13} strokeWidth={1.5} />
+              Volver
+            </button>
+          )}
+        </div>
+      </header>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+
+        {/* Trial expired banner */}
+        {trialExpired && (
+          <div className="mb-10 border-[1.5px] border-ember/50 bg-ember/5 px-5 py-4">
+            <p className="font-mono font-bold text-[12px] text-ink uppercase tracking-[0.06em]">
+              Tu período de prueba ha terminado
+            </p>
+            <p className="font-mono text-[11px] text-stone mt-0.5">
+              Activa el plan Pro para seguir usando Lenzu.
+            </p>
+          </div>
+        )}
+
+        {/* Page header */}
+        <div className="mb-14 border-b-[1.5px] border-ink pb-8">
+          <p className="alto-label text-stone mb-3">LENZU · PLANES</p>
+          <h1 className="font-display font-bold text-[42px] sm:text-[60px] tracking-[-0.04em] leading-none text-ink">
+            SIMPLE.<br />SIN SORPRESAS.
           </h1>
-          <p className="text-lg text-text/70 max-w-2xl mx-auto">
-            {t('pricing.subtitle')}
+          <p className="font-mono text-[13px] text-stone mt-4 max-w-lg leading-relaxed">
+            Lenzu es para fotógrafos de bodas que quieren herramientas serias.
+            30 días para probar todo. Después, $5 al mes.
           </p>
         </div>
 
-        {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative bg-white rounded-2xl p-6 ${
-                plan.popular
-                  ? 'ring-2 ring-accent shadow-lg'
-                  : 'border border-gray-200'
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 bg-accent text-text text-xs font-medium px-3 py-1 rounded-full">
-                    <Sparkles size={12} />
-                    {t('pricing.popular')}
-                  </span>
-                </div>
-              )}
+        {/* Plans grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border-[1.5px] border-ink mb-16">
 
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-heading text-text mb-2">
-                  {t(`pricing.plans.${plan.id}.name`)}
-                </h3>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold text-text">
-                    ${plan.price}
-                  </span>
-                  <span className="text-text/60">/{t('pricing.month')}</span>
-                </div>
-                <p className="text-sm text-text/60 mt-2">
-                  {t(`pricing.plans.${plan.id}.description`)}
+          {/* ── Free Trial ── */}
+          <div className="p-8 border-b-[1.5px] md:border-b-0 md:border-r-[1.5px] border-ink">
+            <div className="mb-6">
+              <p className="alto-label text-stone mb-2">PLAN GRATIS</p>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display font-bold text-[48px] tracking-[-0.04em] leading-none text-ink">$0</span>
+                <span className="alto-label text-stone">/ 30 días</span>
+              </div>
+              <p className="font-mono text-[11px] text-stone mt-2 leading-relaxed">
+                Acceso completo durante tu período de prueba. Sin tarjeta de crédito.
+              </p>
+            </div>
+
+            <ul className="space-y-2 mb-8">
+              {ALL_FEATURES.map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <Check size={13} strokeWidth={2.5} className="text-moss flex-shrink-0" />
+                  <span className="font-mono text-[12px] text-ink">{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            {!isAuthenticated ? (
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => navigate('/register')}
+                arrow
+              >
+                Crear cuenta gratis
+              </Button>
+            ) : isPro ? (
+              <div className="border-[1px] border-ink/20 px-4 py-3">
+                <p className="alto-label text-stone text-center">Plan activo: PRO</p>
+              </div>
+            ) : (
+              <div className="border-[1px] border-moss/40 bg-moss/5 px-4 py-3">
+                <p className="alto-label text-moss text-center">
+                  {user?.trial_end_date
+                    ? `Prueba activa · termina ${new Date(user.trial_end_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                    : 'Prueba activa'}
                 </p>
               </div>
+            )}
+          </div>
 
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-center gap-2 text-sm">
-                  <Check size={16} className="text-green-500 flex-shrink-0" />
-                  <span>
-                    {plan.timelines === Infinity
-                      ? t('pricing.unlimitedTimelines')
-                      : t('pricing.timelinesCount', { count: plan.timelines })}
-                  </span>
-                </li>
-                <li className="flex items-center gap-2 text-sm">
-                  <Check size={16} className="text-green-500 flex-shrink-0" />
-                  <span>
-                    {plan.collaborators === Infinity
-                      ? t('pricing.unlimitedCollaborators')
-                      : t('pricing.collaboratorsCount', { count: plan.collaborators })}
-                  </span>
-                </li>
-              </ul>
-
-              <Button
-                onClick={() => handleSelectPlan(plan.id)}
-                disabled={loadingPlan === plan.id || user?.current_plan === plan.id}
-                className={`w-full ${
-                  plan.popular
-                    ? 'bg-accent hover:bg-accent/80 text-text'
-                    : ''
-                }`}
-                variant={plan.popular ? 'primary' : 'outline'}
-              >
-                {loadingPlan === plan.id ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : user?.current_plan === plan.id ? (
-                  t('pricing.currentPlan')
-                ) : plan.price === 0 ? (
-                  t('pricing.getStarted')
-                ) : (
-                  t('pricing.subscribe')
-                )}
-              </Button>
+          {/* ── Pro ── */}
+          <div className="p-8 bg-ink">
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <p className="alto-label text-paper/60">PLAN PRO</p>
+                <span className="border-[1px] border-lavender/50 bg-lavender/15 px-1.5 py-0.5 font-mono font-bold text-[9px] text-lavender uppercase tracking-[0.08em]">
+                  RECOMENDADO
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display font-bold text-[48px] tracking-[-0.04em] leading-none text-paper">$5</span>
+                <span className="alto-label text-paper/60">/ mes</span>
+              </div>
+              <p className="font-mono text-[11px] text-paper/60 mt-2 leading-relaxed">
+                Acceso completo, para siempre. Cancela cuando quieras.
+              </p>
             </div>
-          ))}
-        </div>
 
-        {/* Features Comparison Table */}
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-heading text-text">
-              {t('pricing.compareFeatures')}
-            </h2>
-          </div>
+            <ul className="space-y-2 mb-8">
+              {ALL_FEATURES.map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <Check size={13} strokeWidth={2.5} className="text-lavender flex-shrink-0" />
+                  <span className="font-mono text-[12px] text-paper/80">{f}</span>
+                </li>
+              ))}
+            </ul>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left p-4 font-medium text-text/70">
-                    {t('pricing.feature')}
-                  </th>
-                  {plans.map((plan) => (
-                    <th
-                      key={plan.id}
-                      className="p-4 text-center font-heading text-text"
-                    >
-                      {t(`pricing.plans.${plan.id}.name`)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {features.map((feature, index) => (
-                  <tr
-                    key={feature.key}
-                    className={index % 2 === 0 ? 'bg-gray-50' : ''}
-                  >
-                    <td className="p-4 text-sm text-text">
-                      {t(`pricing.features.${feature.key}`)}
-                    </td>
-                    <td className="p-4 text-center">
-                      {renderFeatureValue(feature.free)}
-                    </td>
-                    <td className="p-4 text-center">
-                      {renderFeatureValue(feature.starter)}
-                    </td>
-                    <td className="p-4 text-center">
-                      {renderFeatureValue(feature.pro)}
-                    </td>
-                    <td className="p-4 text-center">
-                      {renderFeatureValue(feature.studio)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {isPro ? (
+              <div className="border-[1px] border-lavender/40 bg-lavender/10 px-4 py-3">
+                <p className="alto-label text-lavender text-center">Plan actual</p>
+              </div>
+            ) : (
+              <Button
+                variant="accent"
+                className="w-full !bg-lavender !border-lavender hover:!bg-lavender-deep"
+                onClick={() => handleSelectPlan('pro')}
+                disabled={loadingPlan === 'pro'}
+                arrow
+              >
+                {loadingPlan === 'pro'
+                  ? <Loader2 size={14} strokeWidth={1.5} className="animate-spin" />
+                  : 'Activar plan Pro'}
+              </Button>
+            )}
+
+            {/* Patreon note */}
+            <div className="mt-4 border-[1px] border-paper/10 px-3 py-2.5 flex items-start gap-2">
+              <ExternalLink size={12} strokeWidth={1.5} className="text-paper/40 mt-0.5 flex-shrink-0" />
+              <p className="font-mono text-[10px] text-paper/40 leading-relaxed">
+                Miembro de Patreon? Escríbenos y te activamos el plan Pro directo.
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Manage Subscription Button */}
+        {/* Manage subscription */}
         {user?.stripe_subscription_id && (
-          <div className="mt-8 text-center">
+          <div className="mb-10 flex justify-center">
             <Button
+              variant="ghost"
               onClick={handleManageSubscription}
               disabled={managingSubscription}
-              variant="outline"
               className="inline-flex items-center gap-2"
             >
-              {managingSubscription ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <Settings2 size={18} />
-              )}
+              {managingSubscription
+                ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                : <Settings2 size={13} strokeWidth={1.5} />}
               {t('pricing.manageSubscription')}
             </Button>
           </div>
         )}
 
-        {/* FAQ or Contact */}
-        <div className="mt-12 text-center">
-          <p className="text-text/70">
-            {t('pricing.questions')}{' '}
+        {/* FAQ strip */}
+        <div className="border-t-[1.5px] border-ink pt-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {[
+            {
+              q: '¿Qué pasa al terminar el trial?',
+              a: 'Tu cuenta se pausa. Tus datos se conservan 30 días adicionales. Activa Pro para recuperar el acceso.',
+            },
+            {
+              q: '¿Puedo cancelar en cualquier momento?',
+              a: 'Sí. Cancelas desde el portal de suscripción y no se te cobra el siguiente mes.',
+            },
+            {
+              q: '¿Hay descuento para Patreon?',
+              a: 'Sí. Los miembros de nuestro Patreon obtienen el plan Pro incluido. Escríbenos a support@lenzu.app.',
+            },
+          ].map(({ q, a }) => (
+            <div key={q}>
+              <p className="font-mono font-bold text-[12px] text-ink mb-1">{q}</p>
+              <p className="font-mono text-[11px] text-stone leading-relaxed">{a}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Contact */}
+        <div className="mt-10 text-center">
+          <p className="alto-label text-stone">
+            ¿Preguntas?{' '}
             <a
               href="mailto:support@lenzu.app"
-              className="text-accent hover:underline"
+              className="text-lavender hover:text-lavender-deep transition-colors duration-[80ms]"
             >
-              {t('pricing.contactUs')}
+              support@lenzu.app
             </a>
           </p>
         </div>
+
       </div>
     </div>
   );

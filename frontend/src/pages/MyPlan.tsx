@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Crown, FolderOpen, Users, Check, X, ArrowUpRight, Loader2, Settings2 } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Users, Check, ArrowUpRight, Loader2, Settings2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import Navbar from '@/components/Navbar';
+import Sidebar from '@/components/Sidebar';
 import Button from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
@@ -12,46 +14,27 @@ interface UsageData {
   collaborators: number;
 }
 
-const planLimits: Record<string, { timelines: number; collaborators: number; features: string[] }> = {
-  free: {
-    timelines: 1,
-    collaborators: 2,
-    features: ['shotLists']
-  },
-  trial: {
-    timelines: 5,
-    collaborators: 10,
-    features: ['shotLists', 'teamPhotographers', 'pushNotifications']
-  },
-  starter: {
-    timelines: 5,
-    collaborators: 10,
-    features: ['shotLists', 'teamPhotographers', 'pushNotifications']
-  },
-  pro: {
-    timelines: 20,
-    collaborators: 50,
-    features: ['shotLists', 'teamPhotographers', 'pushNotifications', 'prioritySupport']
-  },
-  studio: {
-    timelines: Infinity,
-    collaborators: Infinity,
-    features: ['shotLists', 'teamPhotographers', 'pushNotifications', 'prioritySupport', 'customBranding']
-  },
-  master: {
-    timelines: Infinity,
-    collaborators: Infinity,
-    features: ['shotLists', 'teamPhotographers', 'pushNotifications', 'prioritySupport', 'customBranding']
-  }
+const ALL_FEATURES = [
+  'Proyectos ilimitados',
+  'Invitados ilimitados',
+  'Shot lists',
+  'Notificaciones push',
+  'Apple Watch sync',
+  'Modo campo (Día de boda)',
+  'Branding personalizado',
+  'Comunidad de fotógrafos',
+  'Soporte prioritario',
+];
+
+const PLAN_LABELS: Record<string, string> = {
+  free: 'GRATIS', trial: 'PRUEBA', starter: 'PRO',
+  pro: 'PRO', studio: 'PRO', master: 'MASTER', lifetime: 'LIFETIME',
 };
 
-const allFeatures = [
-  'shotLists',
-  'teamPhotographers', 
-  'pushNotifications',
-  'prioritySupport',
-  'customBranding'
-];
+const PLAN_PRICES: Record<string, string> = {
+  free: '$0', trial: '$0', starter: '$5',
+  pro: '$5', studio: '$5', master: '∞', lifetime: '∞',
+};
 
 export default function MyPlan() {
   const { t } = useTranslation();
@@ -63,36 +46,23 @@ export default function MyPlan() {
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
 
   const currentPlan = user?.current_plan || 'free';
-  const limits = planLimits[currentPlan] || planLimits.free;
+  const isPaid = ['starter', 'pro', 'studio', 'master', 'lifetime'].includes(currentPlan);
+  const isTrial = currentPlan === 'trial' || currentPlan === 'free';
 
   useEffect(() => {
-    fetchUsage();
+    api.get('/users/usage')
+      .then(r => setUsage(r.data))
+      .catch(e => console.error('Error fetching usage:', e))
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchUsage = async () => {
-    try {
-      const response = await api.get('/users/usage');
-      setUsage(response.data);
-    } catch (error) {
-      console.error('Error fetching usage:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleManageSubscription = async () => {
-    if (!user?.stripe_customer_id) {
-      toast.error(t('pricing.noSubscription'));
-      return;
-    }
-
+    if (!user?.stripe_customer_id) { toast.error(t('pricing.noSubscription')); return; }
     setManagingSubscription(true);
-
     try {
-      const response = await api.post('/stripe/create-portal-session');
-      window.location.href = response.data.url;
-    } catch (error) {
-      console.error('Error:', error);
+      const r = await api.post('/stripe/create-portal-session');
+      window.location.href = r.data.url;
+    } catch {
       toast.error(t('pricing.portalError'));
     } finally {
       setManagingSubscription(false);
@@ -100,238 +70,186 @@ export default function MyPlan() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!user?.stripe_subscription_id) {
-      toast.error(t('pricing.noSubscription'));
-      return;
-    }
-
-    // Confirm cancellation
-    if (!window.confirm(t('myPlan.cancelConfirm'))) {
-      return;
-    }
+    if (!user?.stripe_subscription_id) { toast.error(t('pricing.noSubscription')); return; }
+    if (!window.confirm(t('myPlan.cancelConfirm'))) return;
 
     setCancelingSubscription(true);
-
     try {
       await api.post('/stripe/cancel-subscription');
       toast.success(t('myPlan.cancelSuccess'));
-      // Refresh user data
       window.location.reload();
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       toast.error(t('myPlan.cancelError'));
     } finally {
       setCancelingSubscription(false);
     }
   };
 
-  const getPlanDisplayName = (plan: string) => {
-    const names: Record<string, string> = {
-      free: 'Free',
-      trial: 'Trial',
-      starter: 'Starter',
-      pro: 'Pro',
-      studio: 'Studio',
-      master: 'Master'
-    };
-    return names[plan] || plan;
-  };
-
-  const getPlanPrice = (plan: string) => {
-    const prices: Record<string, string> = {
-      free: '$0',
-      trial: '$0',
-      starter: '$9',
-      pro: '$19',
-      studio: '$39',
-      master: '∞'
-    };
-    return prices[plan] || '$0';
-  };
-
-  const getUsagePercentage = (used: number, limit: number) => {
-    if (limit === Infinity) return 0;
-    return Math.min((used / limit) * 100, 100);
-  };
-
-  const formatLimit = (limit: number) => {
-    return limit === Infinity ? '∞' : limit.toString();
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      <div className="flex h-screen bg-paper">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <Navbar />
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 size={20} strokeWidth={1.5} className="animate-spin text-stone" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-text/70 hover:text-text transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span>{t('common.back')}</span>
-          </button>
-        </div>
-      </div>
+    <div className="flex h-screen bg-paper">
+      <Sidebar />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        {/* Current Plan Card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-accent/20 rounded-xl">
-                <Crown size={28} className="text-accent" />
-              </div>
-              <div>
-                <p className="text-sm text-text/60">{t('myPlan.currentPlan')}</p>
-                <h1 className="text-2xl sm:text-3xl font-heading text-text">
-                  {getPlanDisplayName(currentPlan)}
-                </h1>
-              </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar />
+
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+
+            {/* Header */}
+            <div className="mb-8 pb-6 border-b-[1.5px] border-ink">
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-1.5 alto-label text-stone hover:text-ink transition-colors duration-[80ms] mb-4"
+              >
+                <ArrowLeft size={13} strokeWidth={1.5} />
+                {t('common.back')}
+              </button>
+              <p className="alto-label text-stone mb-1">LENZU · MI PLAN</p>
+              <h1 className="font-display font-bold text-[32px] tracking-[-0.03em] leading-none text-ink">
+                {t('myPlan.currentPlan').toUpperCase()}
+              </h1>
             </div>
-            <div className="text-left sm:text-right">
-              <p className="text-3xl font-bold text-text">
-                {getPlanPrice(currentPlan)}
-                <span className="text-base font-normal text-text/60">/{t('pricing.month')}</span>
-              </p>
-            </div>
-          </div>
 
-          {/* Trial info if applicable */}
-          {currentPlan === 'trial' && user?.trial_end_date && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <p className="text-amber-800 text-sm">
-                {t('myPlan.trialEnds')}: <strong>{new Date(user.trial_end_date).toLocaleDateString()}</strong>
-              </p>
-            </div>
-          )}
-
-          {/* Usage Section */}
-          <div className="border-t border-gray-100 pt-6">
-            <h3 className="font-medium text-text mb-4">{t('myPlan.usage')}</h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Timelines Usage */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <FolderOpen size={20} className="text-text/70" />
-                  <span className="text-sm text-text/70">{t('myPlan.timelines')}</span>
+            {/* Current plan card */}
+            <div className={`border-[1.5px] mb-4 ${isPaid ? 'border-ink bg-ink' : 'border-ink bg-paper'}`}>
+              <div className="px-6 py-6 flex items-end justify-between">
+                <div>
+                  <p className={`alto-label mb-1 ${isPaid ? 'text-paper/50' : 'text-stone'}`}>PLAN ACTUAL</p>
+                  <h2 className={`font-display font-bold text-[40px] tracking-[-0.04em] leading-none ${isPaid ? 'text-paper' : 'text-ink'}`}>
+                    {PLAN_LABELS[currentPlan] || currentPlan.toUpperCase()}
+                  </h2>
                 </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl font-bold text-text">{usage.timelines}</span>
-                  <span className="text-text/60">/ {formatLimit(limits.timelines)}</span>
-                </div>
-                {limits.timelines !== Infinity && (
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-accent h-2 rounded-full transition-all"
-                      style={{ width: `${getUsagePercentage(usage.timelines, limits.timelines)}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Collaborators Usage */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <Users size={20} className="text-text/70" />
-                  <span className="text-sm text-text/70">{t('myPlan.collaboratorsTotal')}</span>
-                </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl font-bold text-text">{usage.collaborators}</span>
-                  <span className="text-text/60">/ {formatLimit(limits.collaborators)}</span>
-                </div>
-                {limits.collaborators !== Infinity && (
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-accent h-2 rounded-full transition-all"
-                      style={{ width: `${getUsagePercentage(usage.collaborators, limits.collaborators)}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Features Included */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 mb-6">
-          <h3 className="font-medium text-text mb-4">{t('myPlan.featuresIncluded')}</h3>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {allFeatures.map((feature) => {
-              const isIncluded = limits.features.includes(feature);
-              return (
-                <div 
-                  key={feature}
-                  className={`flex items-center gap-3 p-3 rounded-lg ${
-                    isIncluded ? 'bg-green-50' : 'bg-gray-50'
-                  }`}
-                >
-                  {isIncluded ? (
-                    <Check size={18} className="text-green-600 shrink-0" />
-                  ) : (
-                    <X size={18} className="text-gray-400 shrink-0" />
-                  )}
-                  <span className={isIncluded ? 'text-text' : 'text-text/50'}>
-                    {t(`pricing.features.${feature}`)}
+                <div className="text-right">
+                  <span className={`font-display font-bold text-[36px] tracking-[-0.04em] leading-none ${isPaid ? 'text-paper' : 'text-ink'}`}>
+                    {PLAN_PRICES[currentPlan] || '$0'}
                   </span>
+                  <span className={`alto-label ml-1 ${isPaid ? 'text-paper/50' : 'text-stone'}`}>/MES</span>
                 </div>
-              );
-            })}
+              </div>
+
+              {/* Trial expiry */}
+              {isTrial && user?.trial_end_date && (
+                <div className="mx-4 mb-4 border-[1px] border-ember/40 bg-ember/8 px-4 py-3">
+                  <p className="font-mono text-[11px] text-ink leading-relaxed">
+                    Prueba activa · termina el{' '}
+                    <span className="font-bold">
+                      {new Date(user.trial_end_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Usage */}
+            <div className="border-[1.5px] border-ink bg-paper mb-4">
+              <div className="px-5 py-3 border-b-[1px] border-ink/20">
+                <h3 className="alto-label text-ink">{t('myPlan.usage').toUpperCase()}</h3>
+              </div>
+              <div className="grid grid-cols-2 divide-x-[1px] divide-ink/15">
+                {[
+                  { icon: <FolderOpen size={13} strokeWidth={1.5} />, label: t('myPlan.timelines'), value: usage.timelines },
+                  { icon: <Users size={13} strokeWidth={1.5} />, label: t('myPlan.collaboratorsTotal'), value: usage.collaborators },
+                ].map(({ icon, label, value }) => (
+                  <div key={label} className="px-5 py-5">
+                    <div className="flex items-center gap-1.5 alto-label text-stone mb-2">
+                      {icon}
+                      {label.toUpperCase()}
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="font-display font-bold text-[32px] tracking-[-0.04em] leading-none text-ink">
+                        {value}
+                      </span>
+                      {isPaid && (
+                        <span className="alto-label text-stone">/ ∞</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Features */}
+            <div className="border-[1.5px] border-ink bg-paper mb-6">
+              <div className="px-5 py-3 border-b-[1px] border-ink/20">
+                <h3 className="alto-label text-ink">{t('myPlan.featuresIncluded').toUpperCase()}</h3>
+              </div>
+              <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {ALL_FEATURES.map((feature) => (
+                  <div key={feature} className="flex items-center gap-2">
+                    <Check size={12} strokeWidth={2.5} className={isPaid ? 'text-moss' : 'text-stone'} />
+                    <span className={`font-mono text-[12px] ${isPaid ? 'text-ink' : 'text-stone'}`}>
+                      {feature}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {!isPaid && (
+                <div className="px-5 pb-4">
+                  <p className="font-mono text-[11px] text-stone">
+                    Todas las funciones disponibles durante la prueba.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              {!isPaid && (
+                <Button
+                  variant="accent"
+                  onClick={() => navigate('/pricing')}
+                  className="flex-1 flex items-center justify-center gap-2"
+                  arrow
+                >
+                  <ArrowUpRight size={13} strokeWidth={1.5} />
+                  Activar plan Pro · $5/mes
+                </Button>
+              )}
+
+              {user?.stripe_customer_id && (
+                <Button
+                  variant="secondary"
+                  onClick={handleManageSubscription}
+                  disabled={managingSubscription}
+                  className="flex-1 flex items-center justify-center gap-2"
+                >
+                  {managingSubscription
+                    ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                    : <Settings2 size={13} strokeWidth={1.5} />}
+                  {t('myPlan.manageSubscription')}
+                </Button>
+              )}
+
+              {user?.stripe_subscription_id && (
+                <Button
+                  variant="ghost"
+                  onClick={handleCancelSubscription}
+                  disabled={cancelingSubscription}
+                  className="flex-1 flex items-center justify-center gap-2 hover:text-brick hover:border-brick/40"
+                >
+                  {cancelingSubscription
+                    ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                    : <X size={13} strokeWidth={1.5} />}
+                  {t('myPlan.cancelPlan')}
+                </Button>
+              )}
+            </div>
+
           </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          {currentPlan !== 'master' && (
-            <Button 
-              onClick={() => navigate('/pricing')}
-              className="flex-1 inline-flex items-center justify-center gap-2"
-            >
-              <ArrowUpRight size={18} />
-              {currentPlan === 'studio' ? t('myPlan.comparePlans') : t('myPlan.upgradePlan')}
-            </Button>
-          )}
-          
-          {user?.stripe_customer_id && (
-            <Button 
-              variant="outline"
-              onClick={handleManageSubscription}
-              disabled={managingSubscription}
-              className="flex-1 inline-flex items-center justify-center gap-2"
-            >
-              {managingSubscription ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <Settings2 size={18} />
-              )}
-              {t('myPlan.manageSubscription')}
-            </Button>
-          )}
-
-          {user?.stripe_subscription_id && (
-            <Button 
-              variant="outline"
-              onClick={handleCancelSubscription}
-              disabled={cancelingSubscription}
-              className="flex-1 inline-flex items-center justify-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
-            >
-              {cancelingSubscription ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <X size={18} />
-              )}
-              {t('myPlan.cancelPlan')}
-            </Button>
-          )}
         </div>
       </div>
     </div>

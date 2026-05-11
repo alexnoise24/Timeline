@@ -25,13 +25,14 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter - only images
+// File filter - only images (including HEIC/HEIF from iPhone cameras)
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const allowedTypes = /jpeg|jpg|png|gif|webp|heic|heif/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  // HEIC files may report mimetype as image/heic, image/heif, or application/octet-stream
+  const mimetypeAllowed = /image\/(jpeg|jpg|png|gif|webp|heic|heif)|application\/octet-stream/.test(file.mimetype);
 
-  if (mimetype && extname) {
+  if (mimetypeAllowed && extname) {
     return cb(null, true);
   } else {
     cb(new Error('Only image files are allowed!'));

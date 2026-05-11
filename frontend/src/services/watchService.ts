@@ -93,6 +93,32 @@ class WatchService {
     }
   }
 
+  scheduleEventNotifications(events: { id: string; time: string; title: string }[]) {
+    console.log('🟡 scheduleEventNotifications called with', events.length, 'events')
+    console.log('🟡 webkit available?', !!(window as any).webkit)
+    console.log('🟡 messageHandlers available?', !!(window as any).webkit?.messageHandlers)
+    console.log('🟡 watchBridge available?', !!(window as any).webkit?.messageHandlers?.watchBridge)
+    try {
+      ;(window as any).webkit?.messageHandlers?.watchBridge?.postMessage({
+        action: 'scheduleNotifications',
+        events
+      })
+      console.log('🟢 postMessage sent successfully!')
+    } catch (e) {
+      console.log('🔴 Error sending postMessage:', e)
+    }
+  }
+
+  cancelAllNotifications() {
+    try {
+      ;(window as any).webkit?.messageHandlers?.watchBridge?.postMessage({
+        action: 'cancelNotifications'
+      })
+    } catch (e) {
+      // Notifications not available
+    }
+  }
+
   private handleWatchAction(detail: any) {
     const { action, data } = detail
     

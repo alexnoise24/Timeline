@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Lenzu uses HealthKit to monitor activity during wedding events.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Lenzu uses HealthKit to track activity during wedding events.</string>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>self-care</string>
+	</array>
+	<key>WKSupportsAlwaysOnDisplay</key>
+	<true/>
+</dict>
+</plist>

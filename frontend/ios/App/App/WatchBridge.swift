@@ -24,6 +24,19 @@ class WatchBridge: NSObject, WCSessionDelegate {
         }
     }
     
+    // MARK: - Local Notifications
+    
+    /// Programa notificaciones locales para los eventos del timeline
+    /// Llamado desde React via Capacitor plugin
+    func scheduleNotificationsForTimeline(_ events: [[String: Any]]) {
+        NotificationScheduler.shared.scheduleEventNotifications(events: events)
+    }
+    
+    /// Notificación de inicio de modo boda
+    func notifyWeddingDayStart(coupleName: String) {
+        NotificationScheduler.shared.scheduleWeddingDayStart(coupleName: coupleName)
+    }
+    
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         guard let action = message["action"] as? String else { return }
         

@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Timeline from '../models/Timeline.js';
 import { authenticate, requirePhotographer, requireTimelineOwner } from '../middleware/auth.js';
+import { sendPushNotification } from '../services/notifications.js';
+import { io } from '../server.js';
+import { logActivity } from '../services/activityLogger.js';
 
 const router = express.Router();
 
@@ -111,6 +114,15 @@ router.post('/accept-invite-token',
       }
 
       console.log('Invitation accepted successfully for timeline:', timelineId);
+
+      // Push real-time update so the user's dashboard shows the timeline immediately
+      io.to(`user-${req.user._id}`).emit('timeline:invited', {
+        timelineId: timelineId.toString(),
+        title: timeline.title
+      });
+
+      logActivity(req.user._id, req.user.name, 'collaborator.accept', { timelineId, timelineTitle: timeline.title, via: 'token' }, req);
+
       return res.json({ message: 'Invitation accepted', timelineId });
     } catch (error) {
       console.error('Accept invite token error:', error);
@@ -150,16 +162,71 @@ router.post('/invite/:timelineId',
         return res.status(400).json({ message: 'You cannot invite yourself to a timeline.' });
       }
 
-      // Check if invitation already exists
+      // Load the timeline to check collaborator status
+      const timeline = await Timeline.findById(timelineId);
+      if (!timeline) {
+        return res.status(404).json({ message: 'Timeline not found' });
+      }
+
+      // Check if user is already an active collaborator on the timeline
+      const alreadyCollaborator = timeline.collaborators.some(
+        c => c.user.toString() === invitedUser._id.toString()
+      );
+      if (alreadyCollaborator) {
+        return res.status(400).json({ message: 'User is already a collaborator on this timeline.' });
+      }
+
+      // Handle any existing invitation entry
       const existingInvitation = invitedUser.invitedTimelines.find(
         invite => invite.timelineId.toString() === timelineId.toString()
       );
 
       if (existingInvitation) {
-        return res.status(400).json({ message: 'User is already invited to this timeline.' });
+        if (existingInvitation.status === 'pending') {
+          // Already waiting — don't duplicate
+          return res.status(400).json({ message: 'User is already invited to this timeline.' });
+        }
+
+        if (existingInvitation.status === 'accepted') {
+          // Invitation was accepted but user is not in collaborators — fix the inconsistency
+          timeline.collaborators.push({ user: invitedUser._id, role: 'editor', addedAt: new Date() });
+          await timeline.save();
+          return res.json({
+            message: 'User added to timeline as collaborator.',
+            invitation: { email: invitedUser.email, timelineId, status: 'accepted' }
+          });
+        }
+
+        if (existingInvitation.status === 'declined') {
+          // Allow re-inviting — reset to pending
+          existingInvitation.status = 'pending';
+          existingInvitation.invitedBy = req.user._id;
+          existingInvitation.invitedAt = new Date();
+          await invitedUser.save();
+
+          sendPushNotification(
+            [invitedUser._id],
+            {
+              title: 'New Timeline Invitation',
+              body: `${req.user.name} has invited you to collaborate on ${timeline.title}`
+            },
+            { type: 'invitation', timelineId: timelineId.toString() }
+          ).catch(err => console.error('Error sending invitation notification:', err));
+
+          // Notify the invited user's dashboard in real time
+          io.to(`user-${invitedUser._id}`).emit('invitation:received', {
+            timelineId: timelineId.toString(),
+            title: timeline.title
+          });
+
+          return res.json({
+            message: 'Invitation sent successfully',
+            invitation: { email: invitedUser.email, timelineId, status: 'pending' }
+          });
+        }
       }
 
-      // Add invitation to user's profile
+      // No prior invitation — create one
       invitedUser.invitedTimelines.push({
         timelineId,
         invitedBy: req.user._id,
@@ -168,7 +235,22 @@ router.post('/invite/:timelineId',
 
       await invitedUser.save();
 
-      // TODO: Send email notification (we'll implement this later)
+      sendPushNotification(
+        [invitedUser._id],
+        {
+          title: 'New Timeline Invitation',
+          body: `${req.user.name} has invited you to collaborate on ${timeline.title}`
+        },
+        { type: 'invitation', timelineId: timelineId.toString() }
+      ).catch(err => console.error('Error sending invitation notification:', err));
+
+      // Notify the invited user's dashboard in real time
+      io.to(`user-${invitedUser._id}`).emit('invitation:received', {
+        timelineId: timelineId.toString(),
+        title: timeline.title
+      });
+
+      logActivity(req.userId, req.user.name, 'collaborator.invite', { timelineId, invitedEmail: invitedUser.email, timelineTitle: timeline.title }, req);
 
       res.json({
         message: 'Invitation sent successfully',
@@ -230,6 +312,14 @@ router.post('/accept-invitation/:timelineId',
         });
         await timeline.save();
       }
+
+      // Push real-time update so the user's dashboard shows the timeline immediately
+      io.to(`user-${userId}`).emit('timeline:invited', {
+        timelineId: timelineId.toString(),
+        title: timeline.title
+      });
+
+      logActivity(userId, user.name, 'collaborator.accept', { timelineId, timelineTitle: timeline.title }, req);
 
       res.json({
         message: 'Invitation accepted successfully',

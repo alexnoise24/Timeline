@@ -4,7 +4,6 @@ import { useAuthStore } from '@/store/authStore';
 import { Send, UserPlus, MessageCircle, ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
-import Button from '@/components/ui/Button';
 import { getInitials, formatDateTime } from '@/lib/utils';
 import { getSocket } from '@/lib/socket';
 import { Message } from '@/types';
@@ -30,7 +29,6 @@ export default function Messages() {
   useEffect(() => {
     fetchConversations();
 
-    // Set up socket listener for new messages
     const socket = getSocket();
     const handleMessageReceived = (data: { message: Message }) => {
       addMessage(data.message);
@@ -46,26 +44,21 @@ export default function Messages() {
   useEffect(() => {
     if (activeConversation) {
       fetchMessages(activeConversation);
-      
-      // Join the timeline room for real-time updates
+
       const socket = getSocket();
       if (socket) {
         socket.emit('join-timeline', activeConversation);
-        console.log(`Joined timeline room: ${activeConversation}`);
       }
-      
-      // Leave the room when changing conversations
+
       return () => {
         if (socket && activeConversation) {
           socket.emit('leave-timeline', activeConversation);
-          console.log(`Left timeline room: ${activeConversation}`);
         }
       };
     }
   }, [activeConversation, fetchMessages]);
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeConversation]);
 
@@ -95,51 +88,63 @@ export default function Messages() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-paper">
       <Sidebar />
-      
-      <div className="flex-1 flex flex-col">
+
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        
+
         <div className="flex-1 flex overflow-hidden">
-          {/* Conversations List */}
+
+          {/* ── Conversations list ── */}
           <div className={`
             ${activeConversation ? 'hidden md:flex' : 'flex'}
-            w-full md:w-80 glass-subtle flex-col border-r border-border-soft
+            w-full md:w-[280px] flex-col border-r-[1.5px] border-ink bg-paper flex-shrink-0
           `}>
-            <div className="p-4 border-b border-border-soft flex items-center justify-between">
-              <h2 className="text-xl font-heading font-medium text-text-primary">Messages</h2>
-              <button className="p-2 hover:bg-ink-primary/10 rounded-lg transition-colors text-text-secondary">
-                <UserPlus size={20} />
+            {/* List header */}
+            <div className="px-4 py-3 border-b-[1.5px] border-ink flex items-center justify-between">
+              <h2 className="font-display font-bold text-[16px] tracking-[-0.02em] text-ink">MENSAJES</h2>
+              <button className="p-1.5 text-stone hover:text-ink hover:bg-fog transition-colors duration-[80ms]">
+                <UserPlus size={16} strokeWidth={1.5} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto">
               {isLoading && conversations.length === 0 ? (
-                <div className="p-4 text-center text-text-muted">Loading...</div>
+                <p className="p-4 alto-label text-stone text-center">Cargando...</p>
               ) : conversations.length === 0 ? (
-                <div className="p-4 text-center text-text-muted">
-                  No conversations yet
-                </div>
+                <p className="p-4 alto-label text-stone text-center">Sin conversaciones</p>
               ) : (
                 conversations.map((conv) => (
                   <button
                     key={conv.timeline._id}
                     onClick={() => setActiveConversation(conv.timeline._id)}
-                    className={`w-full p-4 flex items-start gap-3 hover:bg-ink-primary/8 transition-colors duration-200 border-b border-border-soft ${
-                      activeConversation === conv.timeline._id ? 'bg-ink-ghost' : ''
+                    className={`w-full px-4 py-3 flex items-start gap-3 border-b-[1px] border-ink/10 transition-colors duration-[80ms] text-left ${
+                      activeConversation === conv.timeline._id
+                        ? 'bg-ink'
+                        : 'hover:bg-fog'
                     }`}
                   >
-                    <div className="w-12 h-12 rounded-full bg-ink-primary flex items-center justify-center text-sm font-semibold text-white flex-shrink-0">
+                    {/* Avatar */}
+                    <div className={`w-9 h-9 flex items-center justify-center font-mono font-bold text-[11px] flex-shrink-0 ${
+                      activeConversation === conv.timeline._id
+                        ? 'bg-paper text-ink'
+                        : 'bg-ink text-paper'
+                    }`}>
                       {getInitials(getConversationTitle(conv))}
                     </div>
-                    <div className="flex-1 min-w-0 text-left">
+
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-medium text-sm text-text-primary truncate">
-                          {getConversationTitle(conv)}
+                        <h3 className={`font-mono font-bold text-[12px] truncate ${
+                          activeConversation === conv.timeline._id ? 'text-paper' : 'text-ink'
+                        }`}>
+                          {getConversationTitle(conv).toUpperCase()}
                         </h3>
                         {conv.lastMessage && (
-                          <span className="text-xs text-text-muted flex-shrink-0">
+                          <span className={`font-mono text-[10px] flex-shrink-0 ${
+                            activeConversation === conv.timeline._id ? 'text-paper/60' : 'text-stone'
+                          }`}>
                             {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit'
@@ -147,17 +152,17 @@ export default function Messages() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-text-secondary truncate mt-1">
+                      <p className={`font-mono text-[11px] truncate mt-0.5 ${
+                        activeConversation === conv.timeline._id ? 'text-paper/70' : 'text-stone'
+                      }`}>
                         {conv.lastMessage
-                          ? `${conv.lastMessage.sender._id === user?._id ? 'You: ' : ''}${conv.lastMessage.content}`
-                          : 'No messages yet'}
+                          ? `${conv.lastMessage.sender._id === user?._id ? 'Tú: ' : ''}${conv.lastMessage.content}`
+                          : 'Sin mensajes'}
                       </p>
                       {conv.unreadCount > 0 && (
-                        <div className="mt-1">
-                          <span className="inline-block px-2 py-0.5 bg-ink-primary text-white text-xs rounded-full">
-                            {conv.unreadCount}
-                          </span>
-                        </div>
+                        <span className="inline-block mt-1 px-1.5 py-0.5 border-[1px] border-lavender bg-lavender/10 font-mono text-[9px] text-ink">
+                          {conv.unreadCount}
+                        </span>
                       )}
                     </div>
                   </button>
@@ -166,44 +171,43 @@ export default function Messages() {
             </div>
           </div>
 
-          {/* Chat Area */}
+          {/* ── Chat area ── */}
           <div className={`
             ${!activeConversation ? 'hidden md:flex' : 'flex'}
-            flex-1 flex-col bg-bg-surface/50
+            flex-1 flex-col bg-paper
           `}>
             {activeConversationData ? (
               <>
-                {/* Chat Header */}
-                <div className="glass-subtle p-4 border-b border-border-soft">
-                  <div className="flex items-center gap-3">
-                    {/* Mobile back button */}
-                    <button
-                      onClick={() => setActiveConversation(null)}
-                      className="md:hidden p-2 hover:bg-ink-primary/10 rounded-lg transition-colors"
-                    >
-                      <ArrowLeft size={20} className="text-text-primary" />
-                    </button>
-                    <div className="flex-1">
-                      <h2 className="text-lg sm:text-xl font-heading font-medium text-text-primary">
-                        {getConversationTitle(activeConversationData)}
-                      </h2>
-                      <p className="text-xs sm:text-sm text-text-muted mt-1">
-                        {new Date(activeConversationData.timeline.weddingDate).toLocaleDateString()}
-                      </p>
-                    </div>
+                {/* Chat header */}
+                <div className="px-4 sm:px-6 py-3 border-b-[1.5px] border-ink bg-paper flex items-center gap-3 flex-shrink-0">
+                  <button
+                    onClick={() => setActiveConversation(null)}
+                    className="md:hidden p-1.5 text-stone hover:text-ink hover:bg-fog transition-colors"
+                  >
+                    <ArrowLeft size={16} strokeWidth={1.5} />
+                  </button>
+                  <div className="flex-1">
+                    <h2 className="font-display font-bold text-[16px] tracking-[-0.02em] text-ink">
+                      {getConversationTitle(activeConversationData).toUpperCase()}
+                    </h2>
+                    <p className="alto-label text-stone mt-0.5">
+                      {new Date(activeConversationData.timeline.weddingDate).toLocaleDateString('es-ES', {
+                        year: 'numeric', month: 'long', day: 'numeric'
+                      })}
+                    </p>
                   </div>
                 </div>
 
                 {/* Messages */}
                 <div
                   ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto p-4 space-y-4"
+                  className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-3"
                 >
                   {currentMessages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-text-muted">
+                    <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <MessageCircle size={48} className="mx-auto mb-4 opacity-50 text-ink-light" />
-                        <p>No messages yet. Start the conversation!</p>
+                        <MessageCircle size={36} strokeWidth={1} className="mx-auto mb-3 text-stone/40" />
+                        <p className="alto-label text-stone">Sin mensajes. ¡Inicia la conversación!</p>
                       </div>
                     </div>
                   ) : (
@@ -214,26 +218,26 @@ export default function Messages() {
                           key={message._id}
                           className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                         >
-                          <div className={`flex gap-2 max-w-[85%] sm:max-w-md ${isOwn ? 'flex-row-reverse' : ''}`}>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-ink-primary flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+                          <div className={`flex gap-2 max-w-[80%] ${isOwn ? 'flex-row-reverse' : ''}`}>
+                            {/* Avatar */}
+                            <div className={`w-7 h-7 flex items-center justify-center font-mono font-bold text-[9px] flex-shrink-0 self-end ${
+                              isOwn ? 'bg-lavender text-ink' : 'bg-ink text-paper'
+                            }`}>
                               {getInitials(message.sender.name)}
                             </div>
+
                             <div className="min-w-0">
                               {!isOwn && (
-                                <p className="text-xs text-text-muted mb-1">
-                                  {message.sender.name}
-                                </p>
+                                <p className="alto-label text-stone mb-1">{message.sender.name}</p>
                               )}
-                              <div
-                                className={`px-3 sm:px-4 py-2 rounded-[16px] ${
-                                  isOwn
-                                    ? 'bg-ink-primary text-white'
-                                    : 'glass border border-border-soft text-text-primary'
-                                }`}
-                              >
-                                <p className="break-words text-sm sm:text-base">{message.content}</p>
+                              <div className={`px-3 py-2 border-[1.5px] ${
+                                isOwn
+                                  ? 'bg-ink border-ink text-paper'
+                                  : 'bg-fog border-ink/20 text-ink'
+                              }`}>
+                                <p className="font-mono text-[12px] leading-relaxed break-words">{message.content}</p>
                               </div>
-                              <p className="text-xs text-text-muted mt-1">
+                              <p className="alto-label text-stone mt-1">
                                 {formatDateTime(message.createdAt)}
                               </p>
                             </div>
@@ -245,36 +249,37 @@ export default function Messages() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
-                <form onSubmit={handleSendMessage} className="p-3 sm:p-4 glass-subtle border-t border-border-soft">
+                {/* Input */}
+                <form onSubmit={handleSendMessage} className="px-4 sm:px-6 py-3 border-t-[1.5px] border-ink bg-paper flex-shrink-0">
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
-                      placeholder="Type a message..."
-                      className="flex-1 px-4 py-3 text-sm sm:text-base bg-white/60 backdrop-blur-sm text-text-primary border border-border-soft rounded-[14px] focus:outline-none focus:ring-2 focus:ring-ink-primary/15 focus:border-ink-primary placeholder-text-muted transition-all duration-200"
+                      placeholder="Escribe un mensaje..."
+                      className="flex-1 border-[1.5px] border-ink bg-paper px-4 py-[10px] font-mono text-[13px] text-ink placeholder:text-stone placeholder:font-normal focus:outline-none focus:outline-[2px] focus:outline-lavender"
                     />
-                    <Button
+                    <button
                       type="submit"
                       disabled={!messageInput.trim()}
-                      className="px-4 sm:px-6"
+                      className="px-4 bg-lavender border-[1.5px] border-ink text-ink hover:bg-lavender-deep disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-[80ms] flex items-center justify-center"
                     >
-                      <Send size={18} className="sm:w-5 sm:h-5" />
-                    </Button>
+                      <Send size={15} strokeWidth={1.5} />
+                    </button>
                   </div>
                 </form>
               </>
             ) : (
-              <div className="flex items-center justify-center h-full text-text-muted">
+              <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <MessageCircle size={64} className="mx-auto mb-4 opacity-30 text-ink-light" />
-                  <h3 className="text-xl font-heading font-medium mb-2 text-text-primary">Select a conversation</h3>
-                  <p>Choose from your existing conversations or start a new one</p>
+                  <MessageCircle size={40} strokeWidth={1} className="mx-auto mb-3 text-stone/30" />
+                  <h3 className="font-display font-bold text-[18px] tracking-[-0.02em] text-ink mb-1">SELECCIONA UNA CONVERSACIÓN</h3>
+                  <p className="alto-label text-stone">Elige una conversación de la lista</p>
                 </div>
               </div>
             )}
           </div>
+
         </div>
       </div>
     </div>

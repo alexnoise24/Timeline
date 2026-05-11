@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Upload, Trash2, Save, Loader2, Palette, Building2, Globe, Mail } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Navbar from '@/components/Navbar';
+import Sidebar from '@/components/Sidebar';
 import Button from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
@@ -16,28 +18,17 @@ interface BrandingData {
   emailFooter: string | null;
 }
 
-const defaultColors = [
-  '#D4E157', // Current accent (lime)
-  '#FF6B6B', // Coral
-  '#4ECDC4', // Teal
-  '#45B7D1', // Sky blue
-  '#96CEB4', // Sage
-  '#FFEAA7', // Yellow
-  '#DDA0DD', // Plum
-  '#98D8C8', // Mint
-];
-
 export default function BrandingSettings() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, checkAuth } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [branding, setBranding] = useState<BrandingData>({
-    enabled: false,
+    enabled: true,
     studioName: null,
     logo: null,
     accentColor: null,
@@ -45,33 +36,23 @@ export default function BrandingSettings() {
     emailFooter: null,
   });
 
-  const canUseBranding = user?.role === 'master' || user?.current_plan === 'studio';
+  const canUseBranding = ['pro', 'studio', 'master', 'lifetime', 'starter'].includes(user?.current_plan || '');
 
   useEffect(() => {
-    fetchBranding();
+    api.get('/branding')
+      .then(r => setBranding(r.data.branding))
+      .catch((err: any) => {
+        if (err.response?.status !== 403) console.error('Error fetching branding:', err);
+      })
+      .finally(() => setLoading(false));
   }, []);
-
-  const fetchBranding = async () => {
-    try {
-      const response = await api.get('/branding');
-      setBranding(response.data.branding);
-    } catch (error: any) {
-      if (error.response?.status === 403) {
-        toast.error(t('branding.requiresStudio'));
-      } else {
-        console.error('Error fetching branding:', error);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await api.put('/branding', branding);
       toast.success(t('branding.saved'));
-      checkAuth(); // Refresh user data
+      checkAuth();
     } catch (error: any) {
       toast.error(error.response?.data?.message || t('branding.saveError'));
     } finally {
@@ -83,7 +64,6 @@ export default function BrandingSettings() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       toast.error(t('branding.logoTooLarge'));
       return;
@@ -103,9 +83,7 @@ export default function BrandingSettings() {
       toast.error(error.response?.data?.message || t('branding.logoUploadError'));
     } finally {
       setUploadingLogo(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -114,271 +92,154 @@ export default function BrandingSettings() {
       await api.delete('/branding/logo');
       setBranding(prev => ({ ...prev, logo: null }));
       toast.success(t('branding.logoDeleted'));
-    } catch (error) {
+    } catch {
       toast.error(t('branding.logoDeleteError'));
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      <div className="flex h-screen bg-paper">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <Navbar />
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 size={20} strokeWidth={1.5} className="animate-spin text-stone" />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!canUseBranding) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="bg-white border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-2 text-text/70 hover:text-text transition-colors"
-            >
-              <ArrowLeft size={20} />
-              <span>{t('common.back')}</span>
-            </button>
+      <div className="flex h-screen bg-paper">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Navbar />
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
+            <p className="font-display font-bold text-[18px] tracking-[-0.02em] text-ink text-center">
+              {t('branding.requiresStudioTitle').toUpperCase()}
+            </p>
+            <p className="alto-label text-stone text-center max-w-xs">
+              {t('branding.requiresStudioDescription')}
+            </p>
+            <Button variant="accent" onClick={() => navigate('/pricing')} arrow>
+              {t('branding.viewPlans')}
+            </Button>
           </div>
-        </div>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 text-center">
-          <Building2 size={48} className="mx-auto text-gray-300 mb-4" />
-          <h2 className="text-2xl font-heading text-text mb-2">
-            {t('branding.requiresStudioTitle')}
-          </h2>
-          <p className="text-text/70 mb-6">
-            {t('branding.requiresStudioDescription')}
-          </p>
-          <Button onClick={() => navigate('/pricing')}>
-            {t('branding.viewPlans')}
-          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-text/70 hover:text-text transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span>{t('common.back')}</span>
-          </button>
-        </div>
-      </div>
+    <div className="flex h-screen bg-paper">
+      <Sidebar />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-heading text-text mb-2">
-            {t('branding.title')}
-          </h1>
-          <p className="text-text/70">
-            {t('branding.description')}
-          </p>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar />
 
-        {/* Enable Branding Toggle */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-text">{t('branding.enableBranding')}</h3>
-              <p className="text-sm text-text/60">{t('branding.enableDescription')}</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={branding.enabled}
-                onChange={(e) => setBranding(prev => ({ ...prev, enabled: e.target.checked }))}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
-            </label>
-          </div>
-        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
 
-        {/* Studio Name */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="p-2 bg-gray-100 rounded-lg shrink-0 hidden sm:block">
-              <Building2 size={24} className="text-text/70" />
+            {/* Header */}
+            <div className="mb-8 pb-6 border-b-[1.5px] border-ink">
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-1.5 alto-label text-stone hover:text-ink transition-colors duration-[80ms] mb-4"
+              >
+                <ArrowLeft size={13} strokeWidth={1.5} />
+                {t('common.back')}
+              </button>
+              <p className="alto-label text-stone mb-1">LENZU · BRANDING</p>
+              <h1 className="font-display font-bold text-[32px] tracking-[-0.03em] leading-none text-ink">
+                {t('branding.title').toUpperCase()}
+              </h1>
+              <p className="font-mono text-[12px] text-stone mt-2">
+                {t('branding.description')}
+              </p>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-text mb-1">{t('branding.studioName')}</h3>
-              <p className="text-sm text-text/60 mb-4 break-words">{t('branding.studioNameDescription')}</p>
-              <input
-                type="text"
-                value={branding.studioName || ''}
-                onChange={(e) => setBranding(prev => ({ ...prev, studioName: e.target.value }))}
-                placeholder={t('branding.studioNamePlaceholder')}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/50"
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* Logo Upload */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="p-2 bg-gray-100 rounded-lg shrink-0 hidden sm:block">
-              <Upload size={24} className="text-text/70" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-text mb-1">{t('branding.logo')}</h3>
-              <p className="text-sm text-text/60 mb-4 break-words">{t('branding.logoDescription')}</p>
-              
-              {branding.logo ? (
-                <div className="flex items-center gap-4">
-                  <img
-                    src={`${import.meta.env.VITE_API_URL || ''}${branding.logo}`}
-                    alt="Logo"
-                    className="h-16 w-auto object-contain bg-gray-50 rounded-lg p-2"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={handleDeleteLogo}
-                    className="text-red-500 border-red-200 hover:bg-red-50"
-                  >
-                    <Trash2 size={16} className="mr-2" />
-                    {t('branding.deleteLogo')}
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingLogo}
-                  >
-                    {uploadingLogo ? (
-                      <Loader2 size={16} className="mr-2 animate-spin" />
-                    ) : (
-                      <Upload size={16} className="mr-2" />
-                    )}
-                    {t('branding.uploadLogo')}
-                  </Button>
-                  <p className="text-xs text-text/50 mt-2">{t('branding.logoRequirements')}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Accent Color */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="p-2 bg-gray-100 rounded-lg shrink-0 hidden sm:block">
-              <Palette size={24} className="text-text/70" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-text mb-1">{t('branding.accentColor')}</h3>
-              <p className="text-sm text-text/60 mb-4 break-words">{t('branding.accentColorDescription')}</p>
-              
-              <div className="flex flex-wrap gap-3 mb-4">
-                {defaultColors.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setBranding(prev => ({ ...prev, accentColor: color }))}
-                    className={`w-10 h-10 rounded-full border-2 transition-all ${
-                      branding.accentColor === color 
-                        ? 'border-text scale-110' 
-                        : 'border-transparent hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+            {/* Studio Name */}
+            <div className="border-[1.5px] border-ink bg-paper mb-4">
+              <div className="px-5 py-3 border-b-[1px] border-ink/20">
+                <h2 className="alto-label text-ink">{t('branding.studioName').toUpperCase()}</h2>
+                <p className="font-mono text-[11px] text-stone mt-0.5">{t('branding.studioNameDescription')}</p>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-text/60">{t('branding.customColor')}:</span>
-                <input
-                  type="color"
-                  value={branding.accentColor || '#D4E157'}
-                  onChange={(e) => setBranding(prev => ({ ...prev, accentColor: e.target.value }))}
-                  className="w-10 h-10 rounded cursor-pointer"
-                />
+              <div className="px-5 py-5">
                 <input
                   type="text"
-                  value={branding.accentColor || ''}
-                  onChange={(e) => setBranding(prev => ({ ...prev, accentColor: e.target.value }))}
-                  placeholder="#D4E157"
-                  className="w-28 px-3 py-1 border border-gray-200 rounded-lg text-sm"
+                  value={branding.studioName || ''}
+                  onChange={(e) => setBranding(prev => ({ ...prev, studioName: e.target.value }))}
+                  placeholder={t('branding.studioNamePlaceholder')}
+                  className="w-full border-[1.5px] border-ink bg-paper px-[14px] py-[12px] font-mono font-bold text-[14px] text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender placeholder:text-stone placeholder:font-normal"
                 />
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Subdomain */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="p-2 bg-gray-100 rounded-lg shrink-0 hidden sm:block">
-              <Globe size={24} className="text-text/70" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-text mb-1">{t('branding.subdomain')}</h3>
-              <p className="text-sm text-text/60 mb-4 break-words">{t('branding.subdomainDescription')}</p>
-              
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
-                <input
-                  type="text"
-                  value={branding.subdomain || ''}
-                  onChange={(e) => setBranding(prev => ({ 
-                    ...prev, 
-                    subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') 
-                  }))}
-                  placeholder="miestudio"
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg sm:rounded-l-lg sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-accent/50"
-                />
-                <span className="px-4 py-2 bg-gray-100 border border-gray-200 sm:border-l-0 rounded-lg sm:rounded-l-none sm:rounded-r-lg text-text/60 text-center">
-                  .lenzu.app
-                </span>
+            {/* Logo */}
+            <div className="border-[1.5px] border-ink bg-paper mb-8">
+              <div className="px-5 py-3 border-b-[1px] border-ink/20">
+                <h2 className="alto-label text-ink">{t('branding.logo').toUpperCase()}</h2>
+                <p className="font-mono text-[11px] text-stone mt-0.5">{t('branding.logoDescription')}</p>
+              </div>
+              <div className="px-5 py-5">
+                {branding.logo ? (
+                  <div className="flex items-center gap-4">
+                    <div className="border-[1.5px] border-ink/20 bg-fog p-3">
+                      <img
+                        src={`${import.meta.env.VITE_API_URL || ''}${branding.logo}`}
+                        alt="Logo"
+                        className="h-14 w-auto object-contain"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      onClick={handleDeleteLogo}
+                      className="flex items-center gap-2 hover:text-brick hover:border-brick/40"
+                    >
+                      <Trash2 size={13} strokeWidth={1.5} />
+                      {t('branding.deleteLogo')}
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="flex items-center gap-2"
+                    >
+                      {uploadingLogo
+                        ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                        : <Upload size={13} strokeWidth={1.5} />}
+                      {t('branding.uploadLogo')}
+                    </Button>
+                    <p className="font-mono text-[10px] text-stone mt-2">{t('branding.logoRequirements')}</p>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Email Footer */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="p-2 bg-gray-100 rounded-lg shrink-0 hidden sm:block">
-              <Mail size={24} className="text-text/70" />
+            {/* Save */}
+            <div className="flex justify-end">
+              <Button variant="accent" onClick={handleSave} disabled={saving} className="flex items-center gap-2" arrow>
+                {saving
+                  ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                  : <Save size={13} strokeWidth={1.5} />}
+                {t('branding.saveChanges')}
+              </Button>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-text mb-1">{t('branding.emailFooter')}</h3>
-              <p className="text-sm text-text/60 mb-4 break-words">{t('branding.emailFooterDescription')}</p>
-              <textarea
-                value={branding.emailFooter || ''}
-                onChange={(e) => setBranding(prev => ({ ...prev, emailFooter: e.target.value }))}
-                placeholder={t('branding.emailFooterPlaceholder')}
-                rows={3}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? (
-              <Loader2 size={18} className="mr-2 animate-spin" />
-            ) : (
-              <Save size={18} className="mr-2" />
-            )}
-            {t('branding.saveChanges')}
-          </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -42,6 +42,16 @@ export default function Overview({ timeline }: OverviewProps) {
     return formatted;
   };
 
+  const getInitialLocationsList = (tl: Timeline) => {
+    if (tl.locationsList && tl.locationsList.length > 0) return tl.locationsList;
+    if (tl.location) return [{ name: tl.location, url: tl.locationUrl || '' }];
+    return [{ name: '', url: '' }];
+  };
+
+  const [locationsList, setLocationsList] = useState<Array<{ name: string; url: string }>>(
+    getInitialLocationsList(timeline)
+  );
+
   const [formData, setFormData] = useState({
     title: timeline.title || '',
     description: timeline.description || '',
@@ -64,7 +74,7 @@ export default function Overview({ timeline }: OverviewProps) {
     console.log('Timeline changed, updating form. Wedding date from server:', timeline.weddingDate);
     const formattedDate = formatDateForInput(timeline.weddingDate);
     console.log('Setting formData.weddingDate to:', formattedDate);
-    
+
     setFormData({
       title: timeline.title || '',
       description: timeline.description || '',
@@ -81,6 +91,7 @@ export default function Overview({ timeline }: OverviewProps) {
       guestAttire: timeline.guestAttire || '',
       generalNotes: timeline.generalNotes || '',
     });
+    setLocationsList(getInitialLocationsList(timeline));
   }, [timeline]);
 
   const canEdit = user && (
@@ -105,14 +116,18 @@ export default function Overview({ timeline }: OverviewProps) {
       
       console.log('Date to save (ISO):', weddingDate.toISOString());
       
+      const filteredLocations = locationsList.filter(l => l.name.trim() !== '');
+      const firstLocation = filteredLocations[0];
+
       await updateOverview(timeline._id, {
         title: formData.title,
         description: formData.description,
         weddingDate: weddingDate.toISOString(),
         startTime: formData.startTime,
         endTime: formData.endTime,
-        location: formData.location,
-        locationUrl: formData.locationUrl,
+        location: firstLocation?.name || '',
+        locationUrl: firstLocation?.url || '',
+        locationsList: filteredLocations,
         contacts: {
           partner1Phone: formData.partner1Phone,
           partner2Phone: formData.partner2Phone,
@@ -150,6 +165,7 @@ export default function Overview({ timeline }: OverviewProps) {
       guestAttire: timeline.guestAttire || '',
       generalNotes: timeline.generalNotes || '',
     });
+    setLocationsList(getInitialLocationsList(timeline));
     setIsEditing(false);
   };
 
@@ -445,32 +461,78 @@ export default function Overview({ timeline }: OverviewProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Locación</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">Locación</label>
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => setLocationsList([...locationsList, { name: '', url: '' }])}
+                    className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    <Plus size={14} />
+                    Agregar locación
+                  </button>
+                )}
+              </div>
               {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Nombre de la locación"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Link de Google Maps (https://maps.google.com/...)"
-                    value={formData.locationUrl}
-                    onChange={(e) => setFormData({ ...formData, locationUrl: e.target.value })}
-                  />
+                <div className="space-y-3">
+                  {locationsList.map((loc, index) => (
+                    <div key={index} className="flex gap-2 items-start">
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          placeholder="Nombre de la locación"
+                          value={loc.name}
+                          onChange={(e) => {
+                            const updated = [...locationsList];
+                            updated[index] = { ...updated[index], name: e.target.value };
+                            setLocationsList(updated);
+                          }}
+                        />
+                        <Input
+                          placeholder="Link de Google Maps (https://maps.google.com/...)"
+                          value={loc.url}
+                          onChange={(e) => {
+                            const updated = [...locationsList];
+                            updated[index] = { ...updated[index], url: e.target.value };
+                            setLocationsList(updated);
+                          }}
+                        />
+                      </div>
+                      {locationsList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setLocationsList(locationsList.filter((_, i) => i !== index))}
+                          className="mt-1 p-1 text-red-500 hover:text-red-700 transition-colors"
+                          title="Eliminar locación"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div>
-                  <p className="text-gray-900">{timeline.location || '-'}</p>
-                  {timeline.locationUrl && (
-                    <a
-                      href={timeline.locationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline text-sm mt-1 inline-block"
-                    >
-                      Ver en Google Maps
-                    </a>
+                <div className="space-y-2">
+                  {(timeline.locationsList && timeline.locationsList.length > 0
+                    ? timeline.locationsList
+                    : timeline.location ? [{ name: timeline.location, url: timeline.locationUrl || '' }] : []
+                  ).map((loc, index) => (
+                    <div key={index}>
+                      <p className="text-gray-900">{loc.name}</p>
+                      {loc.url && (
+                        <a
+                          href={loc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline text-sm inline-block"
+                        >
+                          Ver en Google Maps
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                  {!timeline.location && !(timeline.locationsList?.length) && (
+                    <p className="text-gray-900">-</p>
                   )}
                 </div>
               )}

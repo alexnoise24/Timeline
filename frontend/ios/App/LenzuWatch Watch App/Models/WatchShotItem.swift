@@ -1,6 +1,6 @@
 import Foundation
 
-struct WatchShotItem: Identifiable, Codable {
+struct WatchShotItem: Identifiable, Codable, Equatable {
     let id: String
     let title: String
     let category: String

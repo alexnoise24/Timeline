@@ -3,6 +3,7 @@ import CommunityMessage from '../models/CommunityMessage.js';
 import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
 import { isMaster } from '../config/constants.js';
+import sendTelegramNotification from '../services/telegram.js';
 
 const router = express.Router();
 
@@ -88,6 +89,17 @@ router.post('/', authenticate, async (req, res) => {
 
     // Populate user info before returning
     await message.populate('user', 'name email role current_plan');
+
+    // Telegram notification (fire and forget — no bloquea la respuesta)
+    const planLabel = user.current_plan
+      ? user.current_plan.charAt(0).toUpperCase() + user.current_plan.slice(1)
+      : 'Free';
+    const hora = new Date().toLocaleTimeString('es-MX', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City'
+    });
+    sendTelegramNotification(
+      `💬 *Nuevo mensaje en Community*\n👤 ${user.name} · ${planLabel}\n📝 ${content.trim()}\n🕐 ${hora}`
+    ).catch(() => {});
 
     res.status(201).json({ message });
   } catch (error) {

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calendar } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Logo from '@/components/ui/Logo';
 
 export default function Login() {
   const { t } = useTranslation();
@@ -31,6 +31,10 @@ export default function Login() {
 
     try {
       await login(email, password);
+      if (useAuthStore.getState().trialExpired) {
+        navigate('/pricing', { state: { trialExpired: true } });
+        return;
+      }
       // After successful login, check if there's a timeline ID in the location state
       const state = location.state as { from?: { pathname: string } };
       const redirectTo = state?.from?.pathname || '/';
@@ -41,102 +45,88 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-gray-100 px-4">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <Calendar className="text-primary-600" size={48} />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('app.name')}</h1>
-          <p className="text-gray-600 mt-2">{t('app.tagline')}</p>
+    <div className="min-h-screen flex items-center justify-center bg-paper px-4">
+      <div className="w-full max-w-md">
+
+        {/* Logo */}
+        <div className="flex justify-center mb-10">
+          <Logo size="lg" variant="paper" />
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-            {showWelcome ? t('auth.welcome') : t('auth.login')}
-          </h2>
-          {showWelcome ? (
-            <p className="mt-2 text-lg text-gray-600">
-              {t('auth.welcomeMessage')}
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-gray-600">
+        {/* Card */}
+        <div className="border-[1.5px] border-ink bg-fog">
+          {/* Card header */}
+          <div className="border-b-[1.5px] border-ink px-8 py-5">
+            <h2 className="font-display font-bold text-[22px] tracking-[-0.02em] leading-none text-ink">
+              {showWelcome ? t('auth.welcome').toUpperCase() : t('auth.login').toUpperCase()}
+            </h2>
+            {!showWelcome && (
+              <p className="alto-label text-stone mt-2">
+                {t('auth.noAccount')}{' '}
+                <Link to="/register" className="text-lavender hover:text-lavender-deep transition-colors duration-snap">
+                  {t('auth.register')}
+                </Link>
+              </p>
+            )}
+          </div>
+
+          <div className="px-8 py-6 flex flex-col gap-4">
+            {/* Welcome success message */}
+            {showWelcome && (
+              <div className="border-[1px] border-moss bg-moss/5 p-4">
+                <p className="font-mono text-[12px] text-moss leading-relaxed">{t('auth.registrationSuccess')}</p>
+              </div>
+            )}
+
+            {/* Error */}
+            {error && !showWelcome && (
+              <div className="border-[1px] border-brick bg-brick/5 p-4">
+                <p className="font-mono text-[12px] text-brick leading-relaxed">{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <Input
+                type="email"
+                label={t('auth.email')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Input
+                type="password"
+                label={t('auth.password')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+
+              <div className="text-right">
+                <Link to="/forgot-password" className="alto-label text-stone hover:text-ink transition-colors duration-snap">
+                  {t('auth.forgotPassword')}
+                </Link>
+              </div>
+
+              <Button type="submit" variant="accent" className="w-full" disabled={isLoading} arrow>
+                {isLoading ? t('auth.signingIn') : t('auth.loginButton')}
+              </Button>
+            </form>
+
+            <p className="text-center alto-label text-stone pt-2">
               {t('auth.noAccount')}{' '}
-              <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+              <Link to="/register" className="text-lavender hover:text-lavender-deep transition-colors duration-snap">
                 {t('auth.register')}
               </Link>
             </p>
-          )}
+          </div>
 
-          {showWelcome && (
-            <div className="bg-green-50 border-l-4 border-green-400 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <Calendar className="h-5 w-5 text-green-400" aria-hidden="true" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-green-700">{t('auth.registrationSuccess')}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {error && !showWelcome && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <Calendar className="h-5 w-5 text-red-400" aria-hidden="true" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              type="email"
-              label={t('auth.email')}
-              placeholder={t('auth.emailPlaceholder')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-
-            <Input
-              type="password"
-              label={t('auth.password')}
-              placeholder={t('auth.passwordPlaceholder')}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-
-            <div className="text-right">
-              <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                {t('auth.forgotPassword')}
-              </Link>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? t('auth.signingIn') : t('auth.loginButton')}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            {t('auth.noAccount')}{' '}
-            <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
-              {t('auth.register')}
-            </Link>
-          </p>
-
-          <div className="mt-6 pt-4 border-t border-gray-200 flex justify-center gap-4 text-xs text-gray-500">
-            <Link to="/privacy" className="hover:text-gray-700">
+          {/* Footer */}
+          <div className="border-t-[1px] border-ink/20 px-8 py-4 flex justify-center gap-6">
+            <Link to="/privacy" className="alto-label text-stone hover:text-ink transition-colors duration-snap">
               Privacy Policy
             </Link>
-            <span>•</span>
-            <Link to="/terms" className="hover:text-gray-700">
+            <span className="alto-label text-stone">·</span>
+            <Link to="/terms" className="alto-label text-stone hover:text-ink transition-colors duration-snap">
               Terms of Service
             </Link>
           </div>

@@ -26,6 +26,7 @@ interface TimelineState {
   timelines: Timeline[];
   currentTimeline: Timeline | null;
   isLoading: boolean;
+  accessDenied: boolean;
   fetchTimelines: () => Promise<void>;
   fetchTimeline: (id: string) => Promise<void>;
   createTimeline: (data: Partial<Timeline>) => Promise<Timeline>;
@@ -63,6 +64,7 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
   timelines: [],
   currentTimeline: null,
   isLoading: false,
+  accessDenied: false,
 
   fetchTimelines: async () => {
     set({ isLoading: true });
@@ -96,9 +98,9 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
   },
 
   fetchTimeline: async (id) => {
-    set({ isLoading: true });
+    set({ isLoading: true, accessDenied: false });
     const userId = getUserId();
-    
+
     if (navigator.onLine) {
       try {
         const { data } = await api.get(`/timelines/${id}`);
@@ -108,10 +110,14 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
           await saveTimelineOffline(data.timeline, userId);
           await updateLastSync(userId);
         }
-      } catch (error) {
-        console.error('Error fetching timeline:', error);
-        const cached = await getTimelineOffline(id);
-        if (cached) set({ currentTimeline: cached });
+      } catch (error: any) {
+        if (error?.response?.status === 403) {
+          set({ accessDenied: true, currentTimeline: null });
+        } else {
+          console.error('Error fetching timeline:', error);
+          const cached = await getTimelineOffline(id);
+          if (cached) set({ currentTimeline: cached });
+        }
       }
     } else {
       const cached = await getTimelineOffline(id);

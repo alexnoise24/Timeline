@@ -45,8 +45,23 @@ export const useInvitationsStore = create<InvitationsState>((set, get) => ({
   },
 
   createInviteLink: async (timelineId) => {
-    const { data } = await api.post(`/invitations/create-link/${timelineId}`);
-    return data.token as string;
+    const endpoint = `/invitations/create-link/${timelineId}`;
+    console.log('[createInviteLink] calling', endpoint);
+    try {
+      const { data } = await api.post(endpoint);
+      console.log('[createInviteLink] success, token received:', !!data.token);
+      return data.token as string;
+    } catch (err: any) {
+      console.error('[createInviteLink] FAILED', {
+        endpoint,
+        status: err?.response?.status,
+        statusText: err?.response?.statusText,
+        responseData: err?.response?.data,
+        message: err?.message,
+        code: err?.code,
+      });
+      throw err;
+    }
   },
 
   acceptInviteToken: async (token) => {

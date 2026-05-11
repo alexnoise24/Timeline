@@ -26,6 +26,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import AccountSettings from './pages/AccountSettings';
 import Support from './pages/Support';
+import Landing from './pages/Landing';
+import AdminPanel from './pages/AdminPanel';
 
 function PrivateRoute({ children }: { children: React.ReactNode}) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -63,11 +65,30 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    // If user is already authenticated, redirect to home
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
+}
+
+function TrialExpiredGuard({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthStore();
+  const paid = ['starter', 'pro', 'studio', 'master', 'lifetime'];
+  const expired =
+    user &&
+    user.role !== 'guest' &&
+    !paid.includes(user.current_plan || '') &&
+    (user.current_plan === 'none' ||
+      (!!user.trial_end_date && new Date(user.trial_end_date) < new Date()));
+  if (expired) {
+    return <Navigate to="/pricing" state={{ trialExpired: true }} replace />;
+  }
+  return <>{children}</>;
+}
+
+function HomeRoute() {
+  const { isAuthenticated } = useAuthStore();
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />;
 }
 
 function App() {
@@ -119,6 +140,9 @@ function App() {
       localStorage.removeItem(`lenzu-wedding-mode-${projectId}`);
       window.dispatchEvent(new CustomEvent('weddingModeChanged',
         { detail: { projectId, active: false } }));
+      // Tell the Watch to exit Wedding Mode
+      watchService.syncWeddingMode(projectId, false);
+      watchService.cancelAllNotifications();
     };
 
     window.addEventListener('watchRequestsSync', handleWatchSync);
@@ -206,11 +230,13 @@ function App() {
             path="/dashboard"
             element={
               <PrivateRoute>
-                <Dashboard />
+                <TrialExpiredGuard>
+                  <Dashboard />
+                </TrialExpiredGuard>
               </PrivateRoute>
             }
           />
-          <Route path="/pricing" element={<Pricing />} />
+<Route path="/pricing" element={<Pricing />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/support" element={<Support />} />
@@ -247,13 +273,14 @@ function App() {
             }
           />
           <Route
-            path="/"
+            path="/admin"
             element={
               <PrivateRoute>
-                <Dashboard />
+                <AdminPanel />
               </PrivateRoute>
             }
           />
+          <Route path="/" element={<HomeRoute />} />
           {/* Catch-all route for 404s */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -110,18 +110,18 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
         </div>
 
         {/* Collaborators */}
-        {timeline.collaborators.length > 0 ? (
+        {timeline.collaborators.filter(c => c.user != null).length > 0 ? (
           <div>
             <h3 className="text-sm font-medium text-gray-700 mb-2">
-              Collaborators ({timeline.collaborators.length})
+              Collaborators ({timeline.collaborators.filter(c => c.user != null).length})
             </h3>
             <div className="space-y-2">
-              {timeline.collaborators.map((collab, index) => {
+              {timeline.collaborators.filter(c => c.user != null).map((collab, index) => {
                 const userId = collab.user?._id || (typeof collab.user === 'string' ? collab.user : null);
-                const userName = collab.user?.name || 'Unknown User';
-                const userEmail = collab.user?.email || 'No email available';
+                const userName = collab.user?.name || collab.user?.email || 'User';
+                const userEmail = collab.user?.email || '';
                 const userInitial = userName.charAt(0).toUpperCase();
-                
+
                 return (
                   <div
                     key={userId?.toString() || `collab-${index}`}
@@ -133,10 +133,7 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{userName}</p>
-                        <p className="text-sm text-gray-600">{userEmail}</p>
-                        {!collab.user?.name && (
-                          <p className="text-xs text-orange-600 mt-1">⚠️ User data not loaded</p>
-                        )}
+                        {userEmail && <p className="text-sm text-gray-600">{userEmail}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

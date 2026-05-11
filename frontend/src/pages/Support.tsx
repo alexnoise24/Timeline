@@ -1,160 +1,169 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Mail, MessageCircle, FileText, Shield, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Mail, ChevronRight, Shield, FileText } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Sidebar from '@/components/Sidebar';
+import { useAuthStore } from '@/store/authStore';
+
+const FAQ_ES = [
+  {
+    q: '¿Cómo creo un nuevo proyecto?',
+    a: 'Desde el Dashboard, haz clic en "Nuevo proyecto". Completa el nombre de la pareja, la fecha y el lugar.',
+  },
+  {
+    q: '¿Cómo invito colaboradores?',
+    a: 'Abre tu proyecto, ve a la pestaña Overview y usa el formulario de invitación. Puedes invitar por email o generar un link.',
+  },
+  {
+    q: '¿Funciona con Apple Watch?',
+    a: 'Sí. En el modo campo (Día de boda) la app sincroniza el timeline con tu Watch y envía notificaciones push para cada evento.',
+  },
+  {
+    q: '¿Puedo cancelar mi suscripción?',
+    a: 'Sí, en cualquier momento. Ve a Mi Plan → Gestionar suscripción. No se te cobra el siguiente mes.',
+  },
+  {
+    q: '¿Qué pasa con mis datos si cancelo?',
+    a: 'Tus proyectos se conservan 30 días después de cancelar. Puedes reactivar en cualquier momento.',
+  },
+];
+
+const FAQ_EN = [
+  {
+    q: 'How do I create a new project?',
+    a: 'From the Dashboard, click "New project". Fill in the couple name, date and venue.',
+  },
+  {
+    q: 'How do I invite collaborators?',
+    a: 'Open your project, go to the Overview tab and use the invite form. You can invite by email or share a link.',
+  },
+  {
+    q: 'Does it work with Apple Watch?',
+    a: 'Yes. In field mode (Wedding Day) the app syncs the timeline to your Watch and sends push notifications for each event.',
+  },
+  {
+    q: 'Can I cancel my subscription?',
+    a: 'Yes, anytime. Go to My Plan → Manage subscription. You won\'t be charged the next month.',
+  },
+  {
+    q: 'What happens to my data if I cancel?',
+    a: 'Your projects are kept for 30 days after cancelling. You can reactivate at any time.',
+  },
+];
 
 export default function Support() {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const isSpanish = i18n.language === 'es';
+  const { isAuthenticated } = useAuthStore();
+  const isEs = i18n.language === 'es';
+  const faq = isEs ? FAQ_ES : FAQ_EN;
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft size={20} className="text-text/70" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-heading text-text">
-              {isSpanish ? 'Centro de Ayuda' : 'Help Center'}
-            </h1>
-            <p className="text-sm text-text/60">
-              {isSpanish ? 'Estamos aquí para ayudarte' : "We're here to help"}
-            </p>
-          </div>
+  const content = (
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+
+      {/* Header */}
+      <div className="mb-8 pb-6 border-b-[1.5px] border-ink">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 alto-label text-stone hover:text-ink transition-colors duration-[80ms] mb-4"
+        >
+          <ArrowLeft size={13} strokeWidth={1.5} />
+          {isEs ? 'Volver' : 'Back'}
+        </button>
+        <p className="alto-label text-stone mb-1">LENZU · AYUDA</p>
+        <h1 className="font-display font-bold text-[32px] tracking-[-0.03em] leading-none text-ink">
+          {isEs ? 'CENTRO DE AYUDA' : 'HELP CENTER'}
+        </h1>
+        <p className="font-mono text-[12px] text-stone mt-2">
+          {isEs ? 'Estamos aquí para ayudarte.' : "We're here to help."}
+        </p>
+      </div>
+
+      {/* Contact */}
+      <div className="border-[1.5px] border-ink bg-paper mb-4">
+        <div className="px-5 py-3 border-b-[1px] border-ink/20 flex items-center gap-2">
+          <Mail size={12} strokeWidth={1.5} className="text-stone" />
+          <h2 className="alto-label text-ink">{isEs ? 'CONTACTO' : 'CONTACT'}</h2>
         </div>
-
-        {/* Contact Section */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-accent/20 rounded-lg">
-              <Mail size={20} className="text-accent" />
-            </div>
-            <h2 className="text-xl font-semibold text-text">
-              {isSpanish ? 'Contacto' : 'Contact Us'}
-            </h2>
-          </div>
-          
-          <p className="text-text/70 mb-4">
-            {isSpanish 
-              ? '¿Tienes preguntas o necesitas ayuda? Envíanos un correo y te responderemos lo antes posible.'
-              : 'Have questions or need assistance? Send us an email and we\'ll get back to you as soon as possible.'}
+        <div className="px-5 py-5">
+          <p className="font-mono text-[12px] text-stone leading-relaxed mb-4">
+            {isEs
+              ? '¿Tienes preguntas o necesitas ayuda? Escríbenos y te respondemos lo antes posible.'
+              : 'Have questions or need help? Write to us and we\'ll get back to you as soon as possible.'}
           </p>
-          
-          <a 
+          <a
             href="mailto:support@lenzu.app"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-text rounded-xl hover:bg-accent/80 transition-colors"
+            className="inline-flex items-center gap-2 border-[1.5px] border-ink px-4 py-[10px] font-mono font-bold text-[12px] text-ink hover:bg-fog transition-colors duration-[80ms]"
           >
-            <Mail size={18} />
+            <Mail size={13} strokeWidth={1.5} />
             support@lenzu.app
           </a>
         </div>
+      </div>
 
-        {/* FAQ Section */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <HelpCircle size={20} className="text-blue-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-text">
-              {isSpanish ? 'Preguntas Frecuentes' : 'Frequently Asked Questions'}
-            </h2>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="font-medium text-text mb-2">
-                {isSpanish ? '¿Cómo creo un nuevo proyecto?' : 'How do I create a new project?'}
-              </h3>
-              <p className="text-text/70 text-sm">
-                {isSpanish 
-                  ? 'Desde el Dashboard, haz clic en el botón "Crear Nuevo" en la esquina superior derecha. Completa los detalles del evento y listo.'
-                  : 'From the Dashboard, click the "Create New" button in the top right corner. Fill in the event details and you\'re all set.'}
-              </p>
-            </div>
-            
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="font-medium text-text mb-2">
-                {isSpanish ? '¿Cómo invito colaboradores?' : 'How do I invite collaborators?'}
-              </h3>
-              <p className="text-text/70 text-sm">
-                {isSpanish 
-                  ? 'Abre tu proyecto, ve a la pestaña "Overview" y haz clic en "Invitar". Ingresa el email del colaborador y selecciona su rol.'
-                  : 'Open your project, go to the "Overview" tab and click "Invite". Enter the collaborator\'s email and select their role.'}
-              </p>
-            </div>
-            
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="font-medium text-text mb-2">
-                {isSpanish ? '¿Puedo usar la app sin conexión?' : 'Can I use the app offline?'}
-              </h3>
-              <p className="text-text/70 text-sm">
-                {isSpanish 
-                  ? 'Actualmente LenzuApp requiere conexión a internet para sincronizar cambios en tiempo real con tu equipo.'
-                  : 'Currently LenzuApp requires an internet connection to sync changes in real-time with your team.'}
-              </p>
-            </div>
-            
-            <div className="pb-2">
-              <h3 className="font-medium text-text mb-2">
-                {isSpanish ? '¿Cómo cancelo mi suscripción?' : 'How do I cancel my subscription?'}
-              </h3>
-              <p className="text-text/70 text-sm">
-                {isSpanish 
-                  ? 'Ve a "Mi Plan" desde el menú y haz clic en "Gestionar Suscripción". Desde ahí puedes cancelar o modificar tu plan.'
-                  : 'Go to "My Plan" from the menu and click "Manage Subscription". From there you can cancel or modify your plan.'}
-              </p>
-            </div>
-          </div>
+      {/* FAQ */}
+      <div className="border-[1.5px] border-ink bg-paper mb-4">
+        <div className="px-5 py-3 border-b-[1px] border-ink/20">
+          <h2 className="alto-label text-ink">{isEs ? 'PREGUNTAS FRECUENTES' : 'FAQ'}</h2>
         </div>
-
-        {/* Quick Links */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-text mb-4">
-            {isSpanish ? 'Enlaces Útiles' : 'Useful Links'}
-          </h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              onClick={() => navigate('/privacy')}
-              className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors text-left"
-            >
-              <Shield size={20} className="text-text/50" />
-              <span className="text-text/80">
-                {isSpanish ? 'Política de Privacidad' : 'Privacy Policy'}
-              </span>
-            </button>
-            
-            <button
-              onClick={() => navigate('/terms')}
-              className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors text-left"
-            >
-              <FileText size={20} className="text-text/50" />
-              <span className="text-text/80">
-                {isSpanish ? 'Términos de Servicio' : 'Terms of Service'}
-              </span>
-            </button>
-            
-            <button
-              onClick={() => navigate('/pricing')}
-              className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors text-left"
-            >
-              <MessageCircle size={20} className="text-text/50" />
-              <span className="text-text/80">
-                {isSpanish ? 'Ver Planes' : 'View Plans'}
-              </span>
-            </button>
-          </div>
+        <div className="divide-y-[1px] divide-ink/10">
+          {faq.map(({ q, a }) => (
+            <div key={q} className="px-5 py-4">
+              <p className="font-mono font-bold text-[12px] text-ink mb-1">{q}</p>
+              <p className="font-mono text-[11px] text-stone leading-relaxed">{a}</p>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* App Info */}
-        <div className="text-center text-text/50 text-sm">
-          <p>LenzuApp v1.0.0</p>
-          <p>© 2026 Alex Obregon</p>
+      {/* Links */}
+      <div className="border-[1.5px] border-ink bg-paper mb-8">
+        <div className="px-5 py-3 border-b-[1px] border-ink/20">
+          <h2 className="alto-label text-ink">{isEs ? 'ENLACES ÚTILES' : 'USEFUL LINKS'}</h2>
+        </div>
+        <div className="divide-y-[1px] divide-ink/10">
+          {[
+            { label: isEs ? 'Política de privacidad' : 'Privacy Policy', path: '/privacy', icon: <Shield size={12} strokeWidth={1.5} /> },
+            { label: isEs ? 'Términos de servicio' : 'Terms of Service', path: '/terms', icon: <FileText size={12} strokeWidth={1.5} /> },
+            { label: isEs ? 'Ver planes' : 'View plans', path: '/pricing', icon: <ChevronRight size={12} strokeWidth={1.5} /> },
+          ].map(({ label, path, icon }) => (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-fog transition-colors duration-[80ms]"
+            >
+              <div className="flex items-center gap-2 font-mono text-[12px] text-ink">
+                <span className="text-stone">{icon}</span>
+                {label}
+              </div>
+              <ChevronRight size={12} strokeWidth={1.5} className="text-stone" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <p className="alto-label text-stone text-center">Lenzu · © 2026 Alex Obregon</p>
+
+    </div>
+  );
+
+  // Public route (no auth) — no Sidebar/Navbar
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-paper">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen bg-paper">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {content}
         </div>
       </div>
     </div>

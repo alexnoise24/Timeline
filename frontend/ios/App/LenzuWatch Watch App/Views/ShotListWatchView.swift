@@ -3,11 +3,12 @@ import SwiftUI
 struct ShotListWatchView: View {
     let project: WatchProject
     @EnvironmentObject var connectivity: WatchConnectivityService
-    
+    @State private var localItems: [WatchShotItem] = []
+
     var completedCount: Int {
-        project.shotItems.filter { $0.isCompleted }.count
+        localItems.filter { $0.isCompleted }.count
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Progress bar
@@ -19,8 +20,8 @@ struct ShotListWatchView: View {
                     Rectangle()
                         .fill(Color(red: 0.66, green: 0.69, blue: 0.83))
                         .frame(
-                            width: project.shotItems.isEmpty ? 0 :
-                                geo.size.width * CGFloat(completedCount) / CGFloat(project.shotItems.count),
+                            width: localItems.isEmpty ? 0 :
+                                geo.size.width * CGFloat(completedCount) / CGFloat(localItems.count),
                             height: 4)
                 }
                 .cornerRadius(2)
@@ -28,27 +29,39 @@ struct ShotListWatchView: View {
             .frame(height: 4)
             .padding(.horizontal)
             .padding(.bottom, 8)
-            
+
             // Shot items list
-            List(project.shotItems) { item in
-                HStack(spacing: 8) {
-                    Image(systemName: item.isCompleted ? "checkmark.square.fill" : "square")
-                        .foregroundColor(item.isCompleted ? Color(red: 0.66, green: 0.69, blue: 0.83) : .gray)
-                        .font(.caption)
-                        .onTapGesture {
-                            connectivity.toggleShotItem(
-                                projectId: project.id,
-                                itemId: item.id,
-                                completed: !item.isCompleted)
-                        }
-                    
-                    Text(item.title)
-                        .font(.caption2)
-                        .foregroundColor(item.isCompleted ? .gray : .white)
-                        .strikethrough(item.isCompleted)
+            List($localItems) { $item in
+                Button {
+                    item.isCompleted.toggle()
+                    connectivity.toggleShotItem(
+                        projectId: project.id,
+                        itemId: item.id,
+                        completed: item.isCompleted)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: item.isCompleted ? "checkmark.square.fill" : "square")
+                            .foregroundColor(item.isCompleted ? Color(red: 0.66, green: 0.69, blue: 0.83) : .gray)
+                            .font(.caption)
+
+                        Text(item.title)
+                            .font(.caption2)
+                            .foregroundColor(item.isCompleted ? .gray : .white)
+                            .strikethrough(item.isCompleted)
+
+                        Spacer()
+                    }
                 }
+                .buttonStyle(.plain)
             }
         }
         .navigationTitle("Shot List")
+        .onAppear {
+            localItems = project.shotItems
+        }
+        .onChange(of: project.shotItems) { updated in
+            // Merge incoming sync from iPhone preserving any in-flight local toggles
+            localItems = updated
+        }
     }
 }

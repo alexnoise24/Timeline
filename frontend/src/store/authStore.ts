@@ -8,6 +8,7 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  trialExpired: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role?: 'photographer' | 'planner' | 'guest') => Promise<void>;
   logout: () => void;
@@ -19,6 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   isLoading: false,
   isAuthenticated: false,
+  trialExpired: false,
 
   login: async (email, password) => {
     set({ isLoading: true });
@@ -30,22 +32,24 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       localStorage.setItem('token', data.token);
-      
+
       set({
         user: data.user,
         token: data.token,
         isAuthenticated: true,
+        trialExpired: data.trial_expired === true,
         isLoading: false
       });
 
       initSocket(data.token);
     } catch (error: any) {
       localStorage.removeItem('token');
-      set({ 
-        user: null, 
-        token: null, 
+      set({
+        user: null,
+        token: null,
         isAuthenticated: false,
-        isLoading: false 
+        trialExpired: false,
+        isLoading: false
       });
       throw error;
     }
@@ -121,11 +125,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('token');
     disconnectSocket();
-    set({ 
-      user: null, 
-      token: null, 
+    set({
+      user: null,
+      token: null,
       isAuthenticated: false,
-      isLoading: false 
+      trialExpired: false,
+      isLoading: false
     });
   },
 

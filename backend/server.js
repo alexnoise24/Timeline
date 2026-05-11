@@ -15,6 +15,7 @@ import pushRoutes from './routes/push.js';
 import stripeRoutes from './routes/stripe.js';
 import brandingRoutes from './routes/branding.js';
 import communityRoutes from './routes/community.js';
+import adminRoutes from './routes/admin.js';
 import { setupSocketHandlers } from './socket/handlers.js';
 import { initializeFirebase } from './services/firebase.js';
 
@@ -59,7 +60,10 @@ const corsOptions = {
       'https://weddingtimelinealexobregon.netlify.app',
       'http://localhost:3000',
       'https://lenzu.app',
-      'https://www.lenzu.app'
+      'https://www.lenzu.app',
+      'capacitor://localhost',
+      'ionic://localhost',
+      'http://localhost'
     ];
     
     if (allowedOrigins.indexOf(origin) === -1) {
@@ -109,6 +113,7 @@ app.use('/api/push', pushRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/branding', brandingRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

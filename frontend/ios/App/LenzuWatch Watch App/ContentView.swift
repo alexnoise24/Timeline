@@ -8,22 +8,24 @@ struct ContentView: View {
             if connectivity.projects.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "camera.fill")
-                        .font(.title2)
-                        .foregroundColor(.gray)
                     Text("Sin proyectos")
+                    Text("Abre Lenzu en tu iPhone")
                         .font(.caption)
                         .foregroundColor(.gray)
-                    Text("Abre Lenzu en tu iPhone")
-                        .font(.caption2)
-                        .foregroundColor(.gray.opacity(0.7))
-                        .multilineTextAlignment(.center)
                 }
+            } else if connectivity.weddingModeActive,
+                      let activeId = connectivity.activeProjectId,
+                      let activeProject = connectivity.projects.first(where: { $0.id == activeId }) {
+                TimelineWatchView(project: activeProject)
             } else {
                 ProjectListView()
             }
         }
         .onAppear {
             connectivity.requestSync()
+            // Safety stop: if a background session is somehow still running when
+            // the app is visibly in the foreground, kill it here.
+            ExtendedRuntimeSessionManager.shared.stopSession(caller: "ContentView.onAppear")
         }
     }
 }

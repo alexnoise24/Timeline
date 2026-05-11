@@ -13,6 +13,45 @@ import stripe, {
 
 const router = express.Router();
 
+// Get subscription status for the current user
+router.get('/subscription-status', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Master users always have full access — never touch Stripe
+    if (isMaster(user)) {
+      return res.json({ plan: 'master', status: 'active', subscriptionId: null });
+    }
+
+    // No Stripe subscription on file — return plan from DB as-is
+    if (!user.stripe_subscription_id) {
+      return res.json({
+        plan: user.current_plan || 'none',
+        status: 'active',
+        subscriptionId: null,
+      });
+    }
+
+    // Retrieve live subscription from Stripe
+    const subscription = await stripe.subscriptions.retrieve(user.stripe_subscription_id);
+    const priceId = subscription.items.data[0].price.id;
+    const planName = getPlanFromPriceId(priceId);
+
+    return res.json({
+      plan: planName,
+      status: subscription.status,
+      subscriptionId: subscription.id,
+    });
+  } catch (error) {
+    console.error('Error retrieving subscription status:', error);
+    res.status(500).json({ message: 'Error al obtener estado de suscripción' });
+  }
+});
+
 // Get available prices
 router.get('/prices', (req, res) => {
   res.json({
@@ -161,6 +200,12 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       const subscriptionId = session.subscription;
 
       console.log(`Checkout completed for user ${userId}`);
+
+      // Guard: subscriptionId is null for one-time payments — skip subscription handling
+      if (!subscriptionId) {
+        console.log(`No subscriptionId in checkout session for user ${userId} — skipping`);
+        break;
+      }
 
       // Get subscription details to find the plan
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);

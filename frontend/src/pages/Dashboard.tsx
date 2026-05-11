@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Calendar, Users, LogOut, UserPlus, Share2, Bell, Trash2, Search, ChevronRight } from 'lucide-react';
+import { Plus, LogOut, UserPlus, Share2, Bell, Trash2, Search, ChevronRight } from 'lucide-react';
 import TrialBanner from '@/components/TrialBanner';
 import TrialExpiredModal from '@/components/TrialExpiredModal';
 import Onboarding from '@/components/Onboarding';
@@ -10,7 +10,9 @@ import Navbar from '@/components/Navbar';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
-import { Card, CardContent } from '@/components/ui/Card';
+import Tag from '@/components/ui/Tag';
+import Ticket from '@/components/ui/Ticket';
+import Avatar from '@/components/ui/Avatar';
 import InviteModal from '@/components/InviteModal';
 import Sidebar from '@/components/Sidebar';
 import CountdownTimer from '@/components/CountdownTimer';
@@ -19,13 +21,16 @@ import { useTimelineStore } from '@/store/timelineStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
 import { requestNotificationPermission, isNotificationSupported } from '@/lib/notifications';
 import { usePlatform } from '@/hooks/usePlatform';
+import { getSocket } from '@/lib/socket';
 
-// Local helper interface for form only
 interface NewProjectForm {
   title: string;
   description: string;
-  date: string; // yyyy-mm-dd
+  date: string;
 }
+
+const isCreatorRole = (role?: string) =>
+  ['photographer', 'planner', 'creator', 'master'].includes(role || '');
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
@@ -39,634 +44,541 @@ export default function Dashboard() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedTimelineForInvite, setSelectedTimelineForInvite] = useState<{ id: string; title: string } | null>(null);
   const [selectedTimelineForDelete, setSelectedTimelineForDelete] = useState<{ id: string; title: string } | null>(null);
-  const [newProject, setNewProject] = useState<NewProjectForm>({
-    title: '',
-    description: '',
-    date: ''
-  });
+  const [newProject, setNewProject] = useState<NewProjectForm>({ title: '', description: '', date: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [isTrialExpiredModalOpen, setIsTrialExpiredModalOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Check if user needs onboarding (first time)
   useEffect(() => {
     if (user) {
-      const onboardingKey = `onboarding-completed-${user._id}`;
-      const hasCompletedOnboarding = localStorage.getItem(onboardingKey);
-      if (!hasCompletedOnboarding) {
-        setShowOnboarding(true);
-      }
+      const key = `onboarding-completed-${user._id}`;
+      if (!localStorage.getItem(key)) setShowOnboarding(true);
     }
   }, [user]);
 
   const handleOnboardingComplete = () => {
-    if (user) {
-      const onboardingKey = `onboarding-completed-${user._id}`;
-      localStorage.setItem(onboardingKey, 'true');
-    }
+    if (user) localStorage.setItem(`onboarding-completed-${user._id}`, 'true');
     setShowOnboarding(false);
   };
 
-  // Determine user role for onboarding
-  const getOnboardingRole = (): 'creator' | 'guest' => {
-    if (user?.role === 'guest') return 'guest';
-    return 'creator';
-  };
+  const getOnboardingRole = (): 'creator' | 'guest' => (user?.role === 'guest' ? 'guest' : 'creator');
 
-  // Check if trial has expired (for non-master users)
-  const isTrialExpired = user && 
-    user.role !== 'master' && 
-    user.is_trial_active === false && 
+  const FULL_ACCESS_PLANS = ['master', 'lifetime', 'studio', 'pro', 'starter'];
+
+  const isTrialExpired = user &&
+    user.role !== 'master' &&
+    !FULL_ACCESS_PLANS.includes(user.current_plan || '') &&
+    user.is_trial_active === false &&
     user.current_plan === 'none' &&
-    (user.role === 'photographer' || user.role === 'creator');
+    isCreatorRole(user.role);
 
-  // Check if user has active trial (for showing banner)
-  const hasActiveTrial = user && 
-    user.role !== 'master' && 
-    user.is_trial_active === true && 
+  const hasActiveTrial = user &&
+    user.role !== 'master' &&
+    !FULL_ACCESS_PLANS.includes(user.current_plan || '') &&
+    user.is_trial_active === true &&
     user.trial_end_date;
 
-  // Show trial expired modal on mount if trial has expired
   useEffect(() => {
     if (isTrialExpired) {
-      // Small delay so user sees the dashboard first
-      const timer = setTimeout(() => {
-        setIsTrialExpiredModalOpen(true);
-      }, 500);
+      const timer = setTimeout(() => setIsTrialExpiredModalOpen(true), 500);
       return () => clearTimeout(timer);
     }
   }, [isTrialExpired]);
 
-  const showError = (message: string) => {
-    toast.error(message, {
-      duration: 5000,
-      position: 'top-center',
-    });
-  };
-
   useEffect(() => {
-    if (user) {
-      fetchTimelines();
-      fetchMyInvitations(); // Fetch for all users
-    }
+    if (user) { fetchTimelines(); fetchMyInvitations(); }
   }, [user, fetchTimelines, fetchMyInvitations]);
 
-  // Request notification permission automatically on first visit
   useEffect(() => {
-    const requestNotifications = async () => {
-      // Check if we've already asked before
-      const hasAskedBefore = localStorage.getItem('notification-permission-requested');
-      
-      if (!hasAskedBefore && isNotificationSupported() && Notification.permission === 'default') {
-        // Wait a bit so user sees the dashboard first
-        setTimeout(async () => {
-          await requestNotificationPermission();
-          // Mark that we've asked, regardless of the result
-          localStorage.setItem('notification-permission-requested', 'true');
-        }, 2000); // Wait 2 seconds after dashboard loads
-      }
-    };
+    if (!user) return;
+    const socket = getSocket();
+    if (!socket) return;
+    const onInvited = () => fetchTimelines();
+    const onReceived = () => fetchMyInvitations();
+    socket.on('timeline:invited', onInvited);
+    socket.on('invitation:received', onReceived);
+    return () => { socket.off('timeline:invited', onInvited); socket.off('invitation:received', onReceived); };
+  }, [user, fetchTimelines, fetchMyInvitations]);
 
-    if (user) {
-      requestNotifications();
+  useEffect(() => {
+    if (!user) return;
+    const asked = localStorage.getItem('notification-permission-requested');
+    if (!asked && isNotificationSupported() && Notification.permission === 'default') {
+      setTimeout(async () => {
+        await requestNotificationPermission();
+        localStorage.setItem('notification-permission-requested', 'true');
+      }, 2000);
     }
   }, [user]);
 
-  const handleOpenInviteModal = (timelineId: string, timelineTitle: string) => {
-    setSelectedTimelineForInvite({ id: timelineId, title: timelineTitle });
+  const showError = (msg: string) => toast.error(msg, { duration: 5000, position: 'top-center' });
+
+  const handleOpenInviteModal = (id: string, title: string) => {
+    setSelectedTimelineForInvite({ id, title });
     setIsInviteModalOpen(true);
   };
+  const handleCloseInviteModal = () => { setIsInviteModalOpen(false); setSelectedTimelineForInvite(null); };
 
-  const handleCloseInviteModal = () => {
-    setIsInviteModalOpen(false);
-    setSelectedTimelineForInvite(null);
-  };
-
-  // Separate owned and shared timelines
-  const ownedTimelines = timelines.filter(t => t && t.owner && user && t.owner._id === user._id);
-  const sharedTimelines = timelines.filter(t => t && t.owner && user && t.owner._id !== user._id);
+  const ownedTimelines = timelines.filter(t => t?.owner?._id === user?._id);
+  const sharedTimelines = timelines.filter(t => t?.owner?._id !== user?._id);
   const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
 
-  // Group timelines by month
-  const groupTimelinesByMonth = (timelineList: typeof timelines) => {
+  const groupTimelinesByMonth = (list: typeof timelines) => {
     const grouped: { [key: string]: typeof timelines } = {};
-    
-    timelineList.forEach(timeline => {
-      if (timeline.weddingDate) {
-        const date = new Date(timeline.weddingDate);
-        const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        if (!grouped[monthYear]) {
-          grouped[monthYear] = [];
-        }
-        grouped[monthYear].push(timeline);
+    list.forEach(tl => {
+      if (tl.weddingDate) {
+        const d = new Date(tl.weddingDate);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(tl);
       }
     });
-
-    // Sort by date within each month
-    Object.keys(grouped).forEach(key => {
-      grouped[key].sort((a, b) => 
-        new Date(a.weddingDate!).getTime() - new Date(b.weddingDate!).getTime()
-      );
-    });
-
-    // Sort months chronologically
-    const sortedKeys = Object.keys(grouped).sort();
-    const sortedGrouped: { [key: string]: typeof timelines } = {};
-    sortedKeys.forEach(key => {
-      sortedGrouped[key] = grouped[key];
-    });
-
-    return sortedGrouped;
+    Object.keys(grouped).forEach(k => grouped[k].sort((a, b) => new Date(a.weddingDate!).getTime() - new Date(b.weddingDate!).getTime()));
+    const sorted: { [key: string]: typeof timelines } = {};
+    Object.keys(grouped).sort().forEach(k => { sorted[k] = grouped[k]; });
+    return sorted;
   };
 
-  const getMonthLabel = (monthYearKey: string) => {
-    const [year, month] = monthYearKey.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
+  const getMonthLabel = (key: string) => {
+    const [y, m] = key.split('-');
+    const d = new Date(parseInt(y), parseInt(m) - 1);
     const locale = i18n.language === 'es' ? 'es-ES' : 'en-US';
-    return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(locale, { month: 'long', year: 'numeric' }).toUpperCase();
   };
 
-  // Filter timelines by search query
-  const filterTimelines = (timelineList: typeof timelines) => {
-    if (!searchQuery.trim()) return timelineList;
-    const query = searchQuery.toLowerCase();
-    return timelineList.filter(timeline => 
-      timeline.title?.toLowerCase().includes(query) ||
-      timeline.description?.toLowerCase().includes(query)
-    );
+  const filterTimelines = (list: typeof timelines) => {
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase();
+    return list.filter(tl => tl.title?.toLowerCase().includes(q) || tl.description?.toLowerCase().includes(q));
   };
 
-  const filteredOwnedTimelines = filterTimelines(ownedTimelines);
-  const filteredSharedTimelines = filterTimelines(sharedTimelines);
+  const groupedOwned = groupTimelinesByMonth(filterTimelines(ownedTimelines));
+  const groupedShared = groupTimelinesByMonth(filterTimelines(sharedTimelines));
 
-  const groupedOwnedTimelines = groupTimelinesByMonth(filteredOwnedTimelines);
-  const groupedSharedTimelines = groupTimelinesByMonth(filteredSharedTimelines);
-
-  // Initialize all months as collapsed on first load
   useEffect(() => {
     if (ownedTimelines.length > 0 || sharedTimelines.length > 0) {
-      const allMonthKeys = new Set<string>();
-      Object.keys(groupTimelinesByMonth(ownedTimelines)).forEach(key => allMonthKeys.add(key));
-      Object.keys(groupTimelinesByMonth(sharedTimelines)).forEach(key => allMonthKeys.add(key));
-      setCollapsedMonths(allMonthKeys);
+      const keys = new Set<string>();
+      [...Object.keys(groupTimelinesByMonth(ownedTimelines)), ...Object.keys(groupTimelinesByMonth(sharedTimelines))].forEach(k => keys.add(k));
+      setCollapsedMonths(keys);
     }
   }, [ownedTimelines.length, sharedTimelines.length]);
 
-  const toggleMonth = (monthKey: string) => {
-    setCollapsedMonths(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(monthKey)) {
-        newSet.delete(monthKey);
-      } else {
-        newSet.add(monthKey);
-      }
-      return newSet;
-    });
+  const toggleMonth = (key: string) => setCollapsedMonths(prev => {
+    const s = new Set(prev);
+    s.has(key) ? s.delete(key) : s.add(key);
+    return s;
+  });
+
+  const handleAcceptInvitation = async (id: string) => {
+    try { await acceptInvitation(id); await fetchTimelines(); toast.success('Invitation accepted.'); }
+    catch { showError('Failed to accept invitation'); }
+  };
+  const handleDeclineInvitation = async (id: string) => {
+    try { await declineInvitation(id); toast.success('Invitation declined.'); }
+    catch { showError('Failed to decline invitation'); }
   };
 
-  const handleAcceptInvitation = async (timelineId: string) => {
-    try {
-      await acceptInvitation(timelineId);
-      // Refresh timelines to show the newly accepted timeline
-      await fetchTimelines();
-      toast.success('Invitation accepted!');
-    } catch (error) {
-      console.error('Error accepting invitation:', error);
-      showError('Failed to accept invitation');
-    }
-  };
-
-  const handleDeclineInvitation = async (timelineId: string) => {
-    try {
-      await declineInvitation(timelineId);
-      toast.success('Invitation declined');
-    } catch (error) {
-      console.error('Error declining invitation:', error);
-      showError('Failed to decline invitation');
-    }
-  };
-
-  const handleOpenDeleteModal = (timelineId: string, timelineTitle: string) => {
-    setSelectedTimelineForDelete({ id: timelineId, title: timelineTitle });
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleCloseDeleteModal = () => {
-    setIsDeleteModalOpen(false);
-    setSelectedTimelineForDelete(null);
-  };
-
+  const handleOpenDeleteModal = (id: string, title: string) => { setSelectedTimelineForDelete({ id, title }); setIsDeleteModalOpen(true); };
+  const handleCloseDeleteModal = () => { setIsDeleteModalOpen(false); setSelectedTimelineForDelete(null); };
   const handleConfirmDelete = async () => {
     if (!selectedTimelineForDelete) return;
-
-    try {
-      await deleteTimeline(selectedTimelineForDelete.id);
-      toast.success('Timeline deleted successfully');
-      handleCloseDeleteModal();
-    } catch (error) {
-      console.error('Error deleting timeline:', error);
-      showError('Failed to delete timeline');
-    }
+    try { await deleteTimeline(selectedTimelineForDelete.id); toast.success('Timeline deleted.'); handleCloseDeleteModal(); }
+    catch { showError('Failed to delete timeline'); }
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
+    if (!newProject.title.trim()) { showError('Project title is required'); return; }
     try {
-      if (!newProject.title.trim()) {
-        showError('Project title is required');
-        return;
-      }
-
-      // Fix timezone issue: set time to noon UTC to prevent date shifting
       const weddingDate = new Date(newProject.date + 'T12:00:00.000Z');
-
-      const created = await createTimeline({
-        title: newProject.title,
-        description: newProject.description,
-        weddingDate: weddingDate.toISOString(),
-      });
-
-      // Ensure timeline was created with an ID
-      if (!created?._id) {
-        throw new Error('Failed to create timeline - no ID returned');
-      }
-
-      // Close modal and reset form only after successful creation
+      const created = await createTimeline({ title: newProject.title, description: newProject.description, weddingDate: weddingDate.toISOString() });
+      if (!created?._id) throw new Error('No ID returned');
       setIsCreateModalOpen(false);
       setNewProject({ title: '', description: '', date: '' });
-      
-      toast.success('Project created successfully!');
+      toast.success('Project created.');
       navigate(`/timeline/${created._id}`);
     } catch (error: any) {
-      console.error('Error creating project:', error);
-      showError(error.response?.data?.message || 'Failed to create project. Please try again.');
+      showError(error.response?.data?.message || 'Failed to create project.');
     }
   };
 
-  // Status fields are not in backend model; omit status badge
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  };
 
-  // Show onboarding if needed
   if (showOnboarding) {
-    return (
-      <Onboarding
-        userRole={getOnboardingRole()}
-        onComplete={handleOnboardingComplete}
-      />
-    );
+    return <Onboarding userRole={getOnboardingRole()} onComplete={handleOnboardingComplete} />;
   }
 
+  const isNativeApp =
+    (window as any).Capacitor?.isNativePlatform?.() === true ||
+    navigator.userAgent.includes('Capacitor') ||
+    window.location.href.startsWith('capacitor://');
+
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-paper">
       <Toaster position="top-center" />
       <Sidebar />
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        <div className={`flex-1 overflow-y-auto px-6 sm:px-8 max-w-7xl mx-auto w-full py-8 sm:py-12 ${isIOS ? 'pb-24' : ''}`}>
-        {/* Trial Banner - only for photographers/creators with active trial */}
-        {hasActiveTrial && user && (
-          <TrialBanner 
-            user={user} 
-            onViewPlans={() => navigate('/pricing')} 
-          />
-        )}
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8 sm:mb-12 p-8 sm:p-10 glass-card" style={{ background: 'linear-gradient(135deg, rgba(205,212,188,0.3), rgba(245,244,241,0.8))' }}>
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-heading font-medium text-text-primary tracking-tight mb-2">{t('dashboard.title')}</h1>
-            <p className="text-base sm:text-lg text-text-secondary">{t('dashboard.welcome', { name: user?.name })}</p>
-          </div>
-          <div className="flex gap-2 sm:gap-3">
-            {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master') && (
-              <Button onClick={() => setIsCreateModalOpen(true)} className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center">
-                <Plus size={18} />
-                <span className="hidden xs:inline">{t('dashboard.newProject')}</span>
-              </Button>
+        <div className={`flex-1 min-h-0 overflow-y-auto ${isIOS ? 'pb-24' : ''}`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+            {/* Trial Banner */}
+            {hasActiveTrial && user && (
+              <TrialBanner user={user} onViewPlans={() => navigate('/pricing')} />
             )}
-            <Button onClick={logout} variant="outline" className="inline-flex items-center gap-2 flex-1 sm:flex-none justify-center border-border-soft text-text-secondary bg-transparent hover:bg-ink-primary/8 hover:text-text-primary">
-              <LogOut size={18} />
-              <span className="hidden xs:inline">{t('auth.logout')}</span>
+
+            {/* ── Page header ── */}
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 pb-6 border-b-[1.5px] border-ink">
+              <div>
+                <p className="alto-label text-stone mb-2">LENZU · DASHBOARD</p>
+                <h1 className="font-display text-[36px] sm:text-[48px] font-bold tracking-[-0.04em] leading-none text-ink">
+                  {t('dashboard.myProjects').toUpperCase()}
+                </h1>
+              </div>
+              <div className="flex gap-2">
+                {isCreatorRole(user?.role) && (
+                  <Button variant="accent" onClick={() => setIsCreateModalOpen(true)} arrow>
+                    <Plus size={14} strokeWidth={2} />
+                    {t('dashboard.newProject')}
+                  </Button>
+                )}
+                <Button variant="ghost" onClick={logout}>
+                  <LogOut size={14} strokeWidth={1.5} />
+                  <span className="hidden xs:inline">{t('auth.logout')}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* ── TestFlight banner ── */}
+            {isCreatorRole(user?.role) && !isNativeApp && (
+              <div className="mb-8 border-[1.5px] border-ink bg-fog flex flex-col sm:flex-row sm:items-center gap-4 p-5">
+                <div className="flex-1">
+                  <p className="alto-label mb-1">APP iOS · TESTFLIGHT</p>
+                  <p className="font-mono text-[12px] text-stone leading-relaxed">
+                    Lenzu disponible en TestFlight — instálala para el día de la boda.
+                  </p>
+                </div>
+                <a
+                  href="https://testflight.apple.com/join/UbSPGPQ2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-[22px] py-[14px] bg-ink text-paper font-mono font-bold text-[11px] uppercase tracking-[0.08em] hover:bg-fog hover:text-ink border-[1.5px] border-ink transition-colors duration-snap whitespace-nowrap"
+                >
+                  Unirse al Beta →
+                </a>
+              </div>
+            )}
+
+            {/* ── Pending invitations ── */}
+            {pendingInvitations.length > 0 && (
+              <div className="mb-8 border-[1.5px] border-lavender bg-fog p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Bell size={16} strokeWidth={1.5} className="text-lavender" />
+                  <span className="alto-label text-ink">
+                    {t('dashboard.pendingInvitations', { count: pendingInvitations.length })}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {pendingInvitations.map((inv) => (
+                    <div key={inv.timelineId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-[1px] border-ink p-4 bg-paper">
+                      <div>
+                        <p className="font-display font-bold text-[16px] tracking-[-0.02em] text-ink">{inv.timelineTitle}</p>
+                        <p className="alto-label text-stone mt-1">
+                          {t('dashboard.invitedBy', { name: inv.invitedBy?.name })}
+                          {inv.weddingDate && ` · ${formatDate(inv.weddingDate)}`}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="accent" onClick={() => handleAcceptInvitation(inv.timelineId)} arrow>
+                          {t('dashboard.accept')}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDeclineInvitation(inv.timelineId)}>
+                          {t('dashboard.decline')}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── My Projects ── */}
+            {isCreatorRole(user?.role) && ownedTimelines.length > 0 && (
+              <div className="mb-12">
+                {/* Search */}
+                <div className="relative mb-6">
+                  <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone" strokeWidth={1.5} />
+                  <input
+                    type="text"
+                    placeholder={t('dashboard.searchProjects')}
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-[12px] border-[1.5px] border-ink bg-fog font-mono text-[12px] text-ink placeholder:text-stone placeholder:font-normal focus:outline-none focus:outline-[2px] focus:outline-lavender"
+                  />
+                </div>
+
+                {Object.entries(groupedOwned).map(([monthKey, timelinesInMonth]) => (
+                  <div key={monthKey} className="mb-8">
+                    {/* Month header */}
+                    <button
+                      onClick={() => toggleMonth(monthKey)}
+                      className="w-full flex items-center gap-3 text-left mb-4 hover:opacity-70 transition-opacity duration-snap"
+                    >
+                      <ChevronRight
+                        size={16}
+                        className={`text-stone transition-transform duration-snap ${collapsedMonths.has(monthKey) ? '' : 'rotate-90'}`}
+                        strokeWidth={2}
+                      />
+                      <span className="font-display font-bold text-[14px] tracking-[-0.02em] text-ink">{getMonthLabel(monthKey)}</span>
+                      <Tag variant="solid">{timelinesInMonth.length}</Tag>
+                    </button>
+
+                    {!collapsedMonths.has(monthKey) && (
+                      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                        {timelinesInMonth.map((timeline) => (
+                          <div key={timeline._id} className="group relative border-[1.5px] border-ink bg-fog hover:bg-paper transition-colors duration-snap">
+                            {/* Delete button */}
+                            <button
+                              onClick={e => { e.stopPropagation(); handleOpenDeleteModal(timeline._id, timeline.title); }}
+                              className="absolute top-3 right-3 p-2 opacity-0 group-hover:opacity-100 hover:bg-brick hover:text-paper text-stone transition-all duration-snap"
+                              title={t('dashboard.deleteTimeline')}
+                            >
+                              <Trash2 size={12} strokeWidth={1.5} />
+                            </button>
+
+                            {/* Ticket accent */}
+                            <div className="absolute top-0 right-12 flex justify-end pt-0 pr-0 overflow-hidden">
+                              {timeline.weddingDate && (
+                                <Ticket
+                                  size={36}
+                                  content={`${String(new Date(timeline.weddingDate).getMonth() + 1).padStart(2, '0')}/${String(new Date(timeline.weddingDate).getDate()).padStart(2, '0')}`}
+                                  rotate={-6}
+                                  shadow={false}
+                                />
+                              )}
+                            </div>
+
+                            <div className="p-5 cursor-pointer" onClick={() => navigate(`/timeline/${timeline._id}`)}>
+                              {/* Tags row */}
+                              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                <Tag variant="default">TIMELINE</Tag>
+                                {timeline.weddingDate && (
+                                  <Tag variant="accent" dot>
+                                    <CountdownTimer targetDate={timeline.weddingDate} compact showIcon={false} className="!p-0 !bg-transparent !text-ink !text-[10px]" />
+                                  </Tag>
+                                )}
+                              </div>
+
+                              {/* Title */}
+                              <h3 className="font-display font-bold text-[22px] tracking-[-0.02em] leading-tight text-ink mb-1 pr-8">
+                                {(timeline.title || 'Untitled').toUpperCase()}
+                              </h3>
+
+                              {/* Meta */}
+                              <div className="mt-3 space-y-1">
+                                {timeline.weddingDate && (
+                                  <p className="alto-label text-stone">{formatDate(timeline.weddingDate)}</p>
+                                )}
+                                {timeline.description && (
+                                  <p className="font-mono text-[11px] text-stone leading-relaxed line-clamp-2">{timeline.description}</p>
+                                )}
+                              </div>
+
+                              {/* Collaborator avatars */}
+                              {(timeline.collaborators?.length ?? 0) > 0 && (
+                                <div className="flex items-center gap-1 mt-4">
+                                  {(timeline.collaborators || []).slice(0, 4).map((c: any, i: number) => (
+                                    <Avatar key={i} initials={(c.name || c.email || 'U').slice(0, 2)} size={24} />
+                                  ))}
+                                  {(timeline.collaborators?.length ?? 0) > 4 && (
+                                    <Avatar initials="" overflow={(timeline.collaborators?.length ?? 0) - 4} size={24} />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Invite button */}
+                            <div className="border-t-[1px] border-ink/20 px-5 py-3">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-center"
+                                onClick={e => { e.stopPropagation(); handleOpenInviteModal(timeline._id, timeline.title); }}
+                              >
+                                <UserPlus size={12} strokeWidth={1.5} />
+                                {t('dashboard.inviteCollaborators')}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Shared Timelines ── */}
+            {sharedTimelines.length > 0 && (
+              <div className="mb-12">
+                <div className="flex items-center gap-3 mb-6 pb-3 border-b-[1px] border-ink/20">
+                  <Share2 size={16} strokeWidth={1.5} className="text-stone" />
+                  <span className="font-display font-bold text-[18px] tracking-[-0.02em] text-ink">
+                    {t('dashboard.sharedTimelines').toUpperCase()}
+                  </span>
+                </div>
+                {Object.entries(groupedShared).map(([monthKey, timelinesInMonth]) => (
+                  <div key={monthKey} className="mb-6">
+                    <p className="alto-label text-stone mb-3">{getMonthLabel(monthKey)}</p>
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                      {timelinesInMonth.map((timeline) => (
+                        <div
+                          key={timeline._id}
+                          className="border-[1.5px] border-ink bg-fog hover:bg-paper transition-colors duration-snap cursor-pointer p-5"
+                          onClick={() => navigate(`/timeline/${timeline._id}`)}
+                        >
+                          <div className="flex items-center gap-2 mb-3">
+                            <Tag variant="default">SHARED</Tag>
+                          </div>
+                          <h3 className="font-display font-bold text-[20px] tracking-[-0.02em] leading-tight text-ink mb-1">
+                            {(timeline.title || 'Untitled').toUpperCase()}
+                          </h3>
+                          {timeline.weddingDate && (
+                            <p className="alto-label text-stone mt-2">{formatDate(timeline.weddingDate)}</p>
+                          )}
+                          <p className="alto-label text-stone mt-1">
+                            {t('dashboard.ownedBy', { name: timeline.owner?.name || t('common.unknown') })}
+                          </p>
+                          {timeline.weddingDate && (
+                            <div className="mt-3">
+                              <CountdownTimer targetDate={timeline.weddingDate} compact />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Empty state ── */}
+            {ownedTimelines.length === 0 && sharedTimelines.length === 0 && !isLoading && (
+              <div className="border-[1.5px] border-ink p-12 text-center">
+                <div className="flex justify-center mb-6">
+                  <Ticket size={64} content="0" rotate={-6} />
+                </div>
+                <h3 className="font-display font-bold text-[24px] tracking-[-0.03em] text-ink mb-3">
+                  {t('dashboard.noProjects').toUpperCase()}
+                </h3>
+                <p className="font-mono text-[12px] text-stone mb-8 max-w-sm mx-auto leading-relaxed">
+                  {isCreatorRole(user?.role) ? t('dashboard.photographerEmptyState') : t('dashboard.guestEmptyState')}
+                </p>
+                {isCreatorRole(user?.role) && (
+                  <Button variant="accent" onClick={() => setIsCreateModalOpen(true)} arrow>
+                    <Plus size={14} />
+                    {t('dashboard.createFirstProject')}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Loading state */}
+            {isLoading && (
+              <div className="border-[1px] border-ink/20 p-8 text-center">
+                <p className="alto-label text-stone">LOADING ·</p>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+
+      {/* ── Create Project Modal ── */}
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t('dashboard.createNewProject').toUpperCase()}>
+        <form onSubmit={handleCreateProject} className="flex flex-col gap-4">
+          <Input
+            label={t('dashboard.projectTitle')}
+            type="text"
+            value={newProject.title}
+            onChange={e => setNewProject(prev => ({ ...prev, title: e.target.value }))}
+            required
+          />
+          <div className="flex flex-col gap-[6px]">
+            <span className="alto-label text-ink">{t('dashboard.description')}</span>
+            <textarea
+              value={newProject.description}
+              onChange={e => setNewProject(prev => ({ ...prev, description: e.target.value }))}
+              required
+              className="w-full border-[1.5px] border-ink bg-fog px-[14px] py-[12px] font-mono text-[14px] text-ink min-h-[80px] resize-y focus:outline-none focus:outline-[2px] focus:outline-lavender"
+            />
+          </div>
+          <div className="flex flex-col gap-[6px]">
+            <span className="alto-label text-ink">{t('dashboard.eventDate')}</span>
+            <input
+              type="date"
+              value={newProject.date}
+              onChange={e => setNewProject(prev => ({ ...prev, date: e.target.value }))}
+              required
+              min="2000-01-01"
+              className="w-full border-[1.5px] border-ink bg-fog px-[14px] py-[12px] font-mono font-bold text-[14px] text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender"
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setIsCreateModalOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" variant="accent" className="flex-1" arrow>
+              {t('dashboard.createProject')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Invite Modal ── */}
+      {selectedTimelineForInvite && (
+        <InviteModal
+          isOpen={isInviteModalOpen}
+          onClose={handleCloseInviteModal}
+          timelineId={selectedTimelineForInvite.id}
+          timelineTitle={selectedTimelineForInvite.title}
+        />
+      )}
+
+      {/* ── Delete Modal ── */}
+      <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal} title={t('dashboard.deleteTimeline').toUpperCase()}>
+        <div className="flex flex-col gap-4">
+          <div className="border-[1px] border-brick bg-brick/5 p-4">
+            <p className="font-mono text-[12px] text-ink mb-2">{t('dashboard.deleteConfirmation')}</p>
+            <p className="font-display font-bold text-[16px] tracking-[-0.02em] text-brick">
+              "{selectedTimelineForDelete?.title}"
+            </p>
+            <p className="alto-label text-stone mt-2">{t('dashboard.deleteConsequence')}</p>
+          </div>
+          <div className="flex gap-3">
+            <Button type="button" variant="secondary" className="flex-1" onClick={handleCloseDeleteModal}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="danger" className="flex-1" onClick={handleConfirmDelete}>
+              {t('dashboard.deletePermanently')}
             </Button>
           </div>
         </div>
+      </Modal>
 
-        {/* Pending Invitations Notification */}
-        {pendingInvitations.length > 0 && (
-          <div className="mb-6 sm:mb-10 p-6 sm:p-8 bg-white border border-accent border-opacity-30 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Bell size={18} className="text-blue-600" />
-              <h3 className="text-lg sm:text-xl font-heading text-text">
-                {t('dashboard.pendingInvitations', { count: pendingInvitations.length })}
-              </h3>
-            </div>
-            <div className="space-y-2">
-              {pendingInvitations.map((inv) => (
-                <div key={inv.timelineId} className="p-3 bg-white rounded-lg border border-blue-200">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm sm:text-base text-black">{inv.timelineTitle}</div>
-                      <div className="text-xs sm:text-sm text-primary-600 mt-1">
-                        {t('dashboard.invitedBy', { name: inv.invitedBy?.name })}
-                        {inv.weddingDate && ` • ${new Date(inv.weddingDate).toLocaleDateString()}`}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 sm:flex-shrink-0">
-                      <Button onClick={() => handleAcceptInvitation(inv.timelineId)} size="sm" className="flex-1 sm:flex-none">{t('dashboard.accept')}</Button>
-                      <Button onClick={() => handleDeclineInvitation(inv.timelineId)} size="sm" variant="outline" className="flex-1 sm:flex-none">{t('dashboard.decline')}</Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* My Projects */}
-        {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master') && ownedTimelines.length > 0 && (
-          <div className="mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-heading font-medium text-text-primary mb-4">{t('dashboard.myProjects')}</h2>
-            
-            {/* Search Bar */}
-            <div className="relative mb-6 sm:mb-8">
-              <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input
-                type="text"
-                placeholder={t('dashboard.searchProjects')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-ink-primary focus:ring-2 focus:ring-ink-primary/15 placeholder:text-text-muted text-text-primary transition-all duration-200"
-              />
-            </div>
-
-            {Object.entries(groupedOwnedTimelines).map(([monthKey, timelinesInMonth]) => (
-              <div key={monthKey} className="mb-6">
-                {/* Collapsible Month Header */}
-                <button
-                  onClick={() => toggleMonth(monthKey)}
-                  className="w-full flex items-center gap-2 text-left mb-4 group hover:opacity-80 transition-all duration-200"
-                >
-                  <span className={`text-text-muted transition-transform duration-200 ${collapsedMonths.has(monthKey) ? '' : 'rotate-90'}`}>
-                    <ChevronRight size={20} />
-                  </span>
-                  <h3 className="text-xl font-heading font-medium text-text-primary capitalize">
-                    {getMonthLabel(monthKey)}
-                  </h3>
-                  <span className="px-3 py-0.5 bg-ink-muted text-ink-primary text-sm font-medium rounded-full">
-                    {timelinesInMonth.length}
-                  </span>
-                </button>
-                
-                {/* Projects Grid - Only show if not collapsed */}
-                {!collapsedMonths.has(monthKey) && (
-                <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                  {timelinesInMonth.map((timeline) => (
-                <Card key={timeline._id} className="group relative overflow-hidden">
-                  {/* Decorative stripe */}
-                  <div className="h-1 bg-ink-muted" />
-                  <CardContent className="p-6">
-                    {/* Context menu button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenDeleteModal(timeline._id, timeline.title);
-                      }}
-                      className="absolute top-4 right-4 p-2 rounded-full opacity-0 group-hover:opacity-100 text-text-muted hover:text-red-400/70 hover:bg-red-50 transition-all duration-200"
-                      title={t('dashboard.deleteTimeline')}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                    <div className="cursor-pointer" onClick={() => navigate(`/timeline/${timeline._id}`)}>
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="pr-8">
-                          <h3 className="text-xl font-heading font-medium text-text-primary mb-3">{timeline.title || 'Untitled'}</h3>
-                          <p className="text-base text-text-secondary leading-relaxed">{timeline.description || ''}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 mb-3 text-sm text-text-secondary">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={16} className="text-ink-primary" />
-                          <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users size={16} className="text-ink-primary" />
-                          <span>{t('dashboard.collaboratorsCount', { count: timeline.collaborators?.length || 0 })}</span>
-                        </div>
-                      </div>
-                      {timeline.weddingDate && (
-                        <div className="mb-4">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-ink-muted text-ink-primary text-sm font-medium rounded-full">
-                            <CountdownTimer targetDate={timeline.weddingDate} compact showIcon={false} className="!p-0 !bg-transparent !text-ink-primary" />
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="pt-2">
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenInviteModal(timeline._id, timeline.title);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="w-full flex items-center justify-center gap-2"
-                      >
-                        <UserPlus size={16} />
-                        {t('dashboard.inviteCollaborators')}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                  ))}
-                </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Shared Timelines */}
-        {sharedTimelines.length > 0 && (
-          <div className="mb-8 sm:mb-12">
-            <div className="flex items-center gap-3 mb-6 sm:mb-8">
-              <Share2 size={24} className="text-ink-primary" />
-              <h2 className="text-2xl sm:text-3xl font-heading font-medium text-text-primary">{t('dashboard.sharedTimelines')}</h2>
-            </div>
-            {Object.entries(groupedSharedTimelines).map(([monthKey, timelinesInMonth]) => (
-              <div key={monthKey} className="mb-8">
-                <h3 className="text-xl font-heading font-medium text-text-primary mb-4 capitalize">
-                  {getMonthLabel(monthKey)}
-                </h3>
-                <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                  {timelinesInMonth.map((timeline) => (
-                <Card key={timeline._id} className="cursor-pointer overflow-hidden" onClick={() => navigate(`/timeline/${timeline._id}`)}>
-                  <div className="h-1 bg-ink-light" />
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-heading font-medium text-text-primary mb-2">{timeline.title || 'Untitled'}</h3>
-                        <p className="text-sm text-text-secondary leading-6">{timeline.description || ''}</p>
-                        <p className="text-xs text-text-muted mt-2">
-                          {t('dashboard.ownedBy', { name: timeline.owner?.name || t('common.unknown') })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 mb-3 text-sm text-text-secondary">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} className="text-ink-primary" />
-                        <span>{timeline.weddingDate ? new Date(timeline.weddingDate).toLocaleDateString() : ''}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users size={16} className="text-ink-primary" />
-                        <span>{timeline.collaborators?.length || 0} collaborators</span>
-                      </div>
-                    </div>
-                    {timeline.weddingDate && (
-                      <div className="mb-3">
-                        <CountdownTimer targetDate={timeline.weddingDate} compact />
-                      </div>
-                    )}
-                    <div className="p-3 bg-ink-ghost rounded-lg border border-ink-muted text-xs text-ink-medium">
-                      {t('dashboard.sharedWithYou')}
-                    </div>
-                  </CardContent>
-                </Card>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {ownedTimelines.length === 0 && sharedTimelines.length === 0 && !isLoading && (
-          <div className="text-center p-6 sm:p-12 glass-card">
-            <Calendar size={48} className="sm:w-16 sm:h-16 text-ink-light mx-auto mb-4 sm:mb-6" />
-            <h3 className="text-xl sm:text-2xl font-heading font-medium text-text-primary mb-3">{t('dashboard.noProjects')}</h3>
-            <p className="text-sm sm:text-base text-text-secondary mb-6 sm:mb-8 max-w-md mx-auto">
-              {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master')
-                ? t('dashboard.photographerEmptyState')
-                : t('dashboard.guestEmptyState')}
-            </p>
-            {(user?.role === 'photographer' || user?.role === 'planner' || user?.role === 'creator' || user?.role === 'master') && (
-              <Button onClick={() => setIsCreateModalOpen(true)} className="text-sm sm:text-base font-medium inline-flex items-center gap-2">
-                <Plus size={20} />
-                {t('dashboard.createFirstProject')}
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Create Project Modal */}
-        <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
-          <h2 className="text-xl font-heading font-medium text-text-primary mb-4">{t('dashboard.createNewProject')}</h2>
-          <form onSubmit={handleCreateProject} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">{t('dashboard.projectTitle')}</label>
-              <Input
-                type="text"
-                placeholder={t('dashboard.projectTitlePlaceholder')}
-                value={newProject.title}
-                onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">{t('dashboard.description')}</label>
-              <textarea
-                placeholder={t('dashboard.descriptionPlaceholder')}
-                value={newProject.description}
-                onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
-                required
-                className="w-full px-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-ink-primary focus:ring-2 focus:ring-ink-primary/15 placeholder:text-text-muted text-text-primary transition-all duration-200 min-h-[80px] resize-y"
-              />
-            </div>
-            <div className="overflow-hidden">
-              <label className="block text-sm font-medium text-text-primary mb-1">{t('dashboard.eventDate')}</label>
-              <input
-                type="date"
-                value={newProject.date}
-                onChange={(e) => setNewProject(prev => ({ ...prev, date: e.target.value }))}
-                required
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 rounded-[14px] bg-white/60 backdrop-blur-sm border border-border-soft focus:outline-none focus:border-ink-primary focus:ring-2 focus:ring-ink-primary/15 text-text-primary transition-all duration-200 box-border"
-              />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setIsCreateModalOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" className="flex-1">
-                {t('dashboard.createProject')}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-
-        {/* Invite Modal */}
-        {selectedTimelineForInvite && (
-          <InviteModal
-            isOpen={isInviteModalOpen}
-            onClose={handleCloseInviteModal}
-            timelineId={selectedTimelineForInvite.id}
-            timelineTitle={selectedTimelineForInvite.title}
-          />
-        )}
-
-        {/* Delete Confirmation Modal */}
-        <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal}>
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <Trash2 size={24} className="text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-black">{t('dashboard.deleteTimeline')}</h2>
-                <p className="text-sm text-primary-600">{t('dashboard.deleteWarning')}</p>
-              </div>
-            </div>
-            
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-900 mb-2">
-                {t('dashboard.deleteConfirmation')}
-              </p>
-              <p className="font-semibold text-red-900">
-                "{selectedTimelineForDelete?.title}"
-              </p>
-              <p className="text-xs text-red-700 mt-2">
-                {t('dashboard.deleteConsequence')}
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="flex-1" 
-                onClick={handleCloseDeleteModal}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button 
-                onClick={handleConfirmDelete}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-              >
-                {t('dashboard.deletePermanently')}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-
-        {/* Trial Expired Modal */}
-        <TrialExpiredModal
-          isOpen={isTrialExpiredModalOpen}
-          onClose={() => setIsTrialExpiredModalOpen(false)}
-          onViewPlans={() => navigate('/pricing')}
-        />
-        </div>
-      </div>
+      {/* ── Trial Expired Modal ── */}
+      <TrialExpiredModal
+        isOpen={isTrialExpiredModalOpen}
+        onClose={() => setIsTrialExpiredModalOpen(false)}
+        onViewPlans={() => navigate('/pricing')}
+      />
     </div>
   );
 }

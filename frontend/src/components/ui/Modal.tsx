@@ -1,5 +1,4 @@
 import { ReactNode, useEffect } from 'react';
-import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ModalProps {
@@ -10,51 +9,56 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
+const sizeMap = {
+  sm: 'max-w-md',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+};
+
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    document.body.style.overflow = isOpen ? 'hidden' : 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0"
+        style={{ backgroundColor: 'rgba(10,10,10,0.55)' }}
         onClick={onClose}
       />
+      {/* panel */}
       <div
         className={cn(
-          'relative glass-card w-full max-h-[85vh] overflow-y-auto overflow-x-hidden',
-          sizes[size]
+          'relative bg-paper border-[1.5px] border-ink w-full max-h-[85vh] overflow-y-auto overflow-x-hidden',
+          sizeMap[size]
         )}
       >
         {title && (
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border-soft sticky top-0 glass z-10 rounded-t-[20px]">
-            <h2 className="text-lg sm:text-xl font-heading font-medium text-text-primary">{title}</h2>
+          <div className="sticky top-0 z-10 flex items-center justify-between bg-paper border-b-[1.5px] border-ink px-6 py-4">
+            <h2 className="font-display text-[22px] font-bold tracking-[-0.02em] leading-none text-ink">{title}</h2>
             <button
               onClick={onClose}
-              className="text-text-muted hover:text-text-primary transition-colors duration-200 p-1"
+              className="alto-label text-stone hover:text-ink transition-colors duration-snap"
+              aria-label="Close"
             >
-              <X size={20} className="sm:w-6 sm:h-6" />
+              ESC ×
             </button>
           </div>
         )}
-        <div className="p-4 sm:p-6">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
