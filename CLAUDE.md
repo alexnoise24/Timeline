@@ -153,9 +153,70 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 - Sin librerías externas — usa browser print API
 - Keys i18n agregadas: `timelineView.exportPDF` en en.json y es.json
 
+## Cambios — 11 mayo 2026
+
+### Rediseño Alto Edition (completado)
+- Sistema de diseño "Alto" implementado: tokens en tailwind.config.js (PAPER, INK, LAVENDER, FOG, STONE, MOSS, EMBER, FIELD-*)
+- Componentes base creados: Ticket, Wordmark, Button, Tag, Input, Avatar
+- Navbar y Sidebar rediseñados con nuevo sistema visual
+- Dashboard rediseñado con grupos por año colapsables (ver abajo)
+
+### Dashboard — agrupación por año
+- Timelines agrupados por año con secciones colapsables
+- Solo el año actual está expandido por defecto
+- Títulos: "THE SEASON / 2026", "NEXT SEASON / 2027", años pasados "2025 /"
+- Al buscar, todos los años con resultados se expanden automáticamente
+- Tarjeta "próximo evento" en lavanda con tilt -0.8° y sombra offset
+
+### Dashboard — layout de filas
+- Mobile: 2 líneas (nombre de pareja arriba, fecha + tag abajo) — sin truncado
+- Desktop: columna descripción con ancho fijo (w-56 xl:w-96) + contenedor derecho fijo w-32 para tag+acciones — texto siempre al mismo margen
+
+### ShootList — modo boda (campo oscuro)
+- Prop `fieldMode` agregada a ShootList.tsx
+- En TimelineView.tsx se pasa `fieldMode` cuando está activo wedding mode en mobile
+- Tokens de color condicionales: text-field-text, bg-field-surface, border-white/10, etc.
+
+### Navbar — Wordmark siempre visible
+- Removida lógica de branding condicional (logo personalizado ya no aparece en navbar)
+- Siempre muestra `<Wordmark size={22} />` independiente del plan del usuario
+
+### BrandingSettings — simplificado
+- Removida sección de subida de logotipo
+- Solo queda campo "Nombre del estudio"
+
+### Favicon y PWA icons
+- favicon.svg creado: cuadrado lavanda rotado -6° con "L" en negro (coincide con Ticket)
+- index.html actualizado: título, theme-color #7B7FE0, apple-mobile-web-app-title "Lenzu"
+- manifest.json actualizado: name "Lenzu", colores, descripción
+- icon-192.png y icon-512.png regenerados con el ícono correcto del usuario
+
+### Ícono iOS + Watch + Splash
+- Ícono principal en `ios/App/App/Assets.xcassets/AppIcon.appiconset/` reemplazado con diseño final del usuario
+- Ícono Apple Watch en `ios/App/LenzuWatch Watch App/Assets.xcassets/AppIcon.appiconset/AppIcon.png` actualizado
+- Splash screens generados con `npx @capacitor/assets generate --ios` desde `resources/splash.png`
+- Imagen fuente en `frontend/resources/splash.png` (2732×2732 aprox)
+- Build enviado a TestFlight: build 5
+
+### i18n Pricing.tsx
+- Agregado `i18n` al destructure de useTranslation (faltaba, causaba error en locale de fechas)
+- FAQ reemplazado con keys i18n: plans.faq1q/a, plans.faq2q/a, plans.faq3q/a
+- plans.questions usada para texto de contacto
+
+## Reengagement — Mayo 2026
+
+- Email de reactivación enviado el 29 mayo 2026 a 8 usuarios con plan expirado (últimos 60 días)
+- Template: correo personal de Alex, botón "PRUÉBALO UN MES MÁS"
+- Endpoint: `GET /api/auth/extend-plan?token=xxx` — valida JWT tipo `reengagement`, extiende Studio 30d, redirige a `/login?extend=success`
+- Token JWT firmado con JWT_SECRET, expira en 7 días (link de un solo uso temporal)
+- Script: `backend/scripts/send-reengagement.js` — reutilizable para futuras campañas
+  - Dry run: `node scripts/send-reengagement.js --dry-run`
+  - Envío real: `node scripts/send-reengagement.js`
+- Login.tsx muestra mensaje de éxito cuando llegan tras hacer clic
+
 ## Pendiente
-- Cambio de ícono Liquid Glass en Xcode Assets
-- Set de screenshots en inglés para App Store
+- ~~Cambio de ícono en Xcode Assets~~ ✅ completado
+- Set de screenshots en inglés para App Store (pendiente)
 - Post Bundles feature
 - Recapturar screenshot de notificaciones en inglés
 - Email automático de invitación a proyecto (diseñado, no implementado)
