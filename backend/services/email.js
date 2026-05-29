@@ -395,8 +395,96 @@ const getBetaEndReminderTemplate = (user) => {
   `;
 };
 
+export const sendReengagementEmail = async (user, extendToken) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    console.log('Email not configured, skipping reengagement email for:', user.email);
+    return;
+  }
+
+  try {
+    const transporter = createTransporter();
+    const extendUrl = `https://lenzu.app/api/auth/extend-plan?token=${extendToken}`;
+
+    const mailOptions = {
+      from: `"Alex de Lenzu" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: '¿Cómo te fue con Lenzu?',
+      html: getReengagementTemplate(user, extendUrl)
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('Reengagement email sent to:', user.email);
+  } catch (error) {
+    console.error('Error sending reengagement email to', user.email, ':', error);
+  }
+};
+
+const getReengagementTemplate = (user, extendUrl) => {
+  const firstName = user.name ? user.name.split(' ')[0] : 'fotógrafo';
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: Georgia, 'Times New Roman', serif; background-color: #f4f1ec; margin: 0; padding: 20px;">
+      <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden;">
+
+        <!-- Header -->
+        <div style="background-color: #12112a; padding: 28px 40px;">
+          <p style="color: #f4f1ec; font-size: 22px; letter-spacing: 0.12em; margin: 0; font-family: Georgia, serif;">LENZU</p>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 40px;">
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 20px;">
+            Hola ${firstName},
+          </p>
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 20px;">
+            Hace unas semanas tuviste acceso completo a Lenzu. Quería preguntarte personalmente: ¿tuviste oportunidad de usarla en alguna boda o sesión?
+          </p>
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 20px;">
+            Si no le diste mucha vuelta todavía, no hay problema — te quiero dar un mes más para que la pruebes con calma, sin compromiso.
+          </p>
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 32px;">
+            Solo haz clic abajo y tu cuenta queda activa de nuevo por 30 días con acceso Studio completo.
+          </p>
+
+          <!-- CTA -->
+          <div style="text-align: center; margin-bottom: 36px;">
+            <a href="${extendUrl}"
+               style="display: inline-block; background-color: #12112a; color: #f4f1ec; text-decoration: none; padding: 14px 36px; border-radius: 3px; font-family: 'DM Sans', Arial, sans-serif; font-size: 14px; letter-spacing: 0.08em;">
+              PRUÉBALO UN MES MÁS
+            </a>
+          </div>
+
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 8px;">
+            Y si tienes feedback — qué te gustó, qué faltó, qué cambiarías — me encantaría leerlo. Puedes responder directo a este correo.
+          </p>
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0;">
+            Saludos,<br>
+            <strong>Alex</strong><br>
+            <span style="font-size: 13px; color: #888;">Lenzu · lenzu.app</span>
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f4f1ec; padding: 20px 40px; text-align: center;">
+          <p style="color: #aaa; font-size: 11px; margin: 0; font-family: Arial, sans-serif;">
+            © ${new Date().getFullYear()} Lenzu · Coordinación para fotógrafos de boda · lenzu.app
+          </p>
+        </div>
+
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 export default {
   sendWelcomeEmail,
   sendPasswordResetEmail,
-  sendBetaEndReminderEmail
+  sendBetaEndReminderEmail,
+  sendReengagementEmail
 };

@@ -1,10 +1,11 @@
 import express from 'express';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 import { generateToken, authenticate } from '../middleware/auth.js';
 import { MASTER_EMAIL, TRIAL_DURATION_DAYS } from '../config/constants.js';
-import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.js';
+import { sendWelcomeEmail, sendPasswordResetEmail, sendReengagementEmail } from '../services/email.js';
 import sendTelegramNotification from '../services/telegram.js';
 import { logActivity } from '../services/activityLogger.js';
 
@@ -291,5 +292,42 @@ router.post('/reset-password',
     }
   }
 );
+
+// Extend plan by 1 month via reengagement email link
+router.get('/extend-plan', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.redirect('https://lenzu.app/?extend=invalid');
+
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.redirect('https://lenzu.app/?extend=invalid');
+    }
+
+    if (payload.type !== 'reengagement') {
+      return res.redirect('https://lenzu.app/?extend=invalid');
+    }
+
+    const user = await User.findById(payload.userId);
+    if (!user) return res.redirect('https://lenzu.app/?extend=invalid');
+
+    const expiration = new Date();
+    expiration.setDate(expiration.getDate() + 30);
+
+    await User.findByIdAndUpdate(user._id, {
+      current_plan: 'studio',
+      plan_expiration_date: expiration,
+      is_trial_active: false
+    });
+
+    console.log(`Plan extended 30d for ${user.email} via reengagement link`);
+    res.redirect('https://lenzu.app/?extend=success');
+  } catch (error) {
+    console.error('Extend plan error:', error);
+    res.redirect('https://lenzu.app/?extend=invalid');
+  }
+});
 
 export default router;

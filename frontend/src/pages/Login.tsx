@@ -12,16 +12,20 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showExtended, setShowExtended] = useState(false);
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if we're coming from registration
   useEffect(() => {
     if (location.state?.from === 'register') {
       setShowWelcome(true);
-      // Clear the state to prevent showing the message on refresh
       window.history.replaceState({}, document.title);
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('extend') === 'success') {
+      setShowExtended(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [location]);
 
@@ -75,6 +79,15 @@ export default function Login() {
             {showWelcome && (
               <div className="border-[1px] border-moss bg-moss/5 p-4">
                 <p className="font-mono text-[12px] text-moss leading-relaxed">{t('auth.registrationSuccess')}</p>
+              </div>
+            )}
+
+            {/* Plan extended success message */}
+            {showExtended && (
+              <div className="border-[1px] border-moss bg-moss/5 p-4">
+                <p className="font-mono text-[12px] text-moss leading-relaxed">
+                  ¡Tu acceso ha sido activado por 30 días más! Inicia sesión para continuar.
+                </p>
               </div>
             )}
 
