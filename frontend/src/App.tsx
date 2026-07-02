@@ -118,11 +118,10 @@ function App() {
     return () => document.removeEventListener('touchmove', blockBounce);
   }, [isNative]);
 
-  // Read safe area inset for toast offset
-  const safeTop = isNative
-    ? parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0', 10) ||
-      (window.screen.height - window.innerHeight > 0 ? 59 : 0)
-    : 0;
+  // Toast offset: env(safe-area-inset-top) resolved by CSS keeps toasts below
+  // the Dynamic Island / notch. (getComputedStyle on a --var returns the raw
+  // "env(...)" string, never pixels — that's why the old JS calc gave 0.)
+  const toastOffset = { top: 'calc(env(safe-area-inset-top) + 12px)' };
 
   // Check auth status on app load
   useEffect(() => {
@@ -228,7 +227,7 @@ function App() {
     <BrandingProvider>
     <OfflineProvider>
       <BrowserRouter>
-        <Toaster position="top-center" offset={safeTop + 12} />
+        <Toaster position="top-center" offset={toastOffset} mobileOffset={toastOffset} />
         <NotificationHandler />
         <OfflineIndicator />
         <Routes>
