@@ -1,12 +1,12 @@
 {
-  "name": "LenzuApp",
+  "name": "Lenzu",
   "short_name": "Lenzu",
-  "description": "Plan your perfect event with collaborative timelines",
+  "description": "Timelines, shot lists and collaboration for wedding photographers.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#F2F1F0",
-  "theme_color": "#CDD973",
+  "background_color": "#F1EFEA",
+  "theme_color": "#7B7FE0",
   "orientation": "portrait-primary",
   "icons": [
     {

@@ -114,8 +114,11 @@ export default function Onboarding({ userRole, onComplete }: OnboardingProps) {
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* Skip button */}
-      <div className="flex justify-end p-4">
+      {/* Skip button — respect the top safe-area inset (notch / Dynamic Island) */}
+      <div
+        className="flex justify-end px-4 pb-4"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+      >
         <button
           onClick={handleSkip}
           className="text-text/50 hover:text-text text-sm font-medium transition-colors"
@@ -170,8 +173,11 @@ export default function Onboarding({ userRole, onComplete }: OnboardingProps) {
         )}
       </div>
 
-      {/* Navigation */}
-      <div className="p-6 pb-8">
+      {/* Navigation — respect the bottom safe-area inset (gesture bar) */}
+      <div
+        className="p-6"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)' }}
+      >
         {/* Progress dots */}
         <div className="flex justify-center gap-2 mb-6">
           {slides.map((_, index) => (

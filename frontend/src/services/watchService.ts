@@ -1,4 +1,6 @@
 import { Timeline } from '@/types'
+import { getActiveDay, hasFullAccess } from '@/lib/utils'
+import { useAuthStore } from '@/store/authStore'
 
 export interface WatchEvent {
   id: string
@@ -36,7 +38,24 @@ class WatchService {
     window.addEventListener('watchAction', (e: any) => this.handleWatchAction(e.detail))
   }
 
+  /** Apple Watch is a Pro feature — free/guest users get an empty sync so a
+   *  downgraded account doesn't keep stale timelines on the wrist. */
+  private hasWatchAccess(): boolean {
+    return hasFullAccess(useAuthStore.getState().user)
+  }
+
   syncTimelines(timelines: Timeline[]) {
+    if (!this.hasWatchAccess()) {
+      try {
+        ;(window as any).webkit?.messageHandlers?.watchBridge?.postMessage({
+          action: 'syncProjects',
+          data: '[]'
+        })
+      } catch (e) {
+        // Watch not available
+      }
+      return
+    }
     try {
       const watchProjects: WatchProject[] = timelines.map(timeline => ({
         id: timeline._id,
@@ -45,18 +64,17 @@ class WatchService {
           : timeline.title,
         date: timeline.weddingDate,
         location: timeline.location || '',
-        events: timeline.days
-          .sort((a, b) => a.order - b.order)
-          .flatMap(day =>
-            day.events.map(event => ({
-              id: event._id,
-              time: event.time || '00:00',
-              title: event.title,
-              category: event.category,
-              notes: event.location || null,
-              isCompleted: event.isCompleted
-            }))
-          )
+        // Only the active day's events — the Watch has no concept of days,
+        // so flattening every day would interleave itineraries by clock time
+        events: (getActiveDay(timeline.days)?.events || [])
+          .map(event => ({
+            id: event._id,
+            time: event.time || '00:00',
+            title: event.title,
+            category: event.category,
+            notes: event.location || null,
+            isCompleted: event.isCompleted
+          }))
           .sort((a, b) => {
             const timeA = parseInt(a.time.replace(':', ''))
             const timeB = parseInt(b.time.replace(':', ''))
@@ -82,6 +100,8 @@ class WatchService {
   }
 
   syncWeddingMode(projectId: string, active: boolean) {
+    // Deactivations always go through (cleanup); activations require Pro
+    if (active && !this.hasWatchAccess()) return
     try {
       ;(window as any).webkit?.messageHandlers?.watchBridge?.postMessage({
         action: 'syncWeddingMode',
@@ -94,6 +114,7 @@ class WatchService {
   }
 
   scheduleEventNotifications(events: { id: string; time: string; title: string }[]) {
+    if (!this.hasWatchAccess()) return
     console.log('🟡 scheduleEventNotifications called with', events.length, 'events')
     console.log('🟡 webkit available?', !!(window as any).webkit)
     console.log('🟡 messageHandlers available?', !!(window as any).webkit?.messageHandlers)

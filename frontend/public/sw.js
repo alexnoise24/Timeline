@@ -1,26 +1,32 @@
 // Timeline App - Native Web Push Service Worker
 // No Firebase dependency
 
-const CACHE_NAME = 'lenzu-app-v1';
+// Bump this on each release to invalidate old caches. The previous SW used
+// 'lenzu-app-v1' with a cache-FIRST strategy that precached '/' (index.html),
+// which served stale builds inside the Capacitor WKWebView (survived reinstall
+// and Xcode clean builds). v2 deletes that old cache and switches navigation to
+// network-first so the latest index.html (and its hashed JS) always loads online.
+const CACHE_NAME = 'lenzu-app-v2';
 const urlsToCache = [
-  '/',
+  // Only the offline fallback is precached. NEVER precache '/' or hashed assets:
+  // index.html must always come from the network so new builds are picked up.
   '/offline.html'
 ];
 
-// Install event - cache resources
+// Install event - cache only the offline fallback shell
 self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[Service Worker] Caching app shell');
+        console.log('[Service Worker] Caching offline fallback');
         return cache.addAll(urlsToCache);
       })
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean old caches
+// Activate event - delete every cache that is not the current version
 self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activating...');
   event.waitUntil(
@@ -37,16 +43,23 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event:
+// - Navigations (HTML): network-first → always get the freshest index.html;
+//   fall back to the cached offline page only when the network is unavailable.
+// - Everything else (hashed JS/CSS/assets, API calls): straight to network.
+//   Hashed filenames are self-busting, so there is no stale-asset risk.
 self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const isNavigation =
+    request.mode === 'navigate' ||
+    (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'));
+
+  if (!isNavigation) {
+    return; // default browser handling = network
+  }
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      })
+    fetch(request).catch(() => caches.match('/offline.html'))
   );
 });
 

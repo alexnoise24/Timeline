@@ -2,6 +2,7 @@ import express from 'express';
 import Message from '../models/Message.js';
 import Timeline from '../models/Timeline.js';
 import { authenticate, requireTimelineAccess } from '../middleware/auth.js';
+import { notifyTimelineMembers } from '../services/notifications.js';
 
 const router = express.Router();
 
@@ -116,6 +117,17 @@ router.post('/:timelineId', authenticate, requireTimelineAccess, async (req, res
 
     await message.save();
     await message.populate('sender', 'name email avatar');
+
+    // Notify all other project members (fire-and-forget)
+    notifyTimelineMembers(
+      timelineId,
+      req.userId,
+      {
+        title: message.sender.name,
+        body: content.trim().length > 80 ? content.trim().slice(0, 77) + '...' : content.trim(),
+      },
+      { url: `/timeline/${timelineId}?tab=messages` }
+    ).catch(() => {});
 
     res.status(201).json({ message });
   } catch (error) {

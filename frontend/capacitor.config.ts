@@ -10,9 +10,9 @@ const config: CapacitorConfig = {
     cleartext: false
   },
   ios: {
-    contentInset: 'automatic',
+    contentInset: 'never',
     allowsLinkPreview: true,
-    scrollEnabled: true
+    scrollEnabled: false
   },
   plugins: {
     SplashScreen: {

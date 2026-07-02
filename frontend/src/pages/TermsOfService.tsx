@@ -1,5 +1,22 @@
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { ArrowLeft } from 'lucide-react';
+
+// On the native app (Apple 3.1.1) legal pages must not mention price,
+// subscription, billing or renewal. Lines matching this are hidden on native;
+// the web keeps the full legal text intact.
+const NATIVE_HIDE = /suscrip|factura|renov|\$\s?\d|usd|\/mes|precio|per month|billing|subscription/i;
+
+// On native, neutralize the "Plans & payments" section so it reads coherently
+// without hinting at a paid plan (no "two plans" promise, no payment wording).
+const NATIVE_SECTION_OVERRIDE: Record<string, { title?: string; intro?: string | null; list?: string[] }> = {
+  '4. Planes y pagos': {
+    title: '4. Acceso',
+    intro: null,
+    // Neutral content: no trial/price/payment hint of any kind.
+    list: ['Lenzu te da acceso a las funciones de gestión de timelines, shot lists y colaboración de equipo.'],
+  },
+};
 
 const SECTIONS = [
   {
@@ -79,6 +96,7 @@ const SECTIONS = [
 
 export default function TermsOfService() {
   const navigate = useNavigate();
+  const isNative = Capacitor.isNativePlatform();
 
   const handleBack = () => {
     if (window.history.length > 1) navigate(-1);
@@ -107,15 +125,25 @@ export default function TermsOfService() {
 
         {/* Sections */}
         <div className="space-y-0 border-[1.5px] border-ink divide-y-[1px] divide-ink/15 mb-8">
-          {SECTIONS.map(({ title, body, intro, list, footer }) => (
+          {SECTIONS.map(({ title, body, intro, list, footer }) => {
+            // Section-level neutralization on native (title + intro + list).
+            const override = isNative ? NATIVE_SECTION_OVERRIDE[title] : undefined;
+            const displayTitle = override?.title ?? title;
+            const displayIntro = override && 'intro' in override ? override.intro : intro;
+            // Native: use the override list if provided, else strip price/sub lines.
+            const visibleList = override?.list
+              ? override.list
+              : (list && isNative ? list.filter((item) => !NATIVE_HIDE.test(item)) : list);
+            const showFooter = footer && !(isNative && NATIVE_HIDE.test(footer));
+            return (
             <div key={title} className="px-5 py-5">
-              <h2 className="font-mono font-bold text-[12px] text-ink mb-2 uppercase tracking-[0.02em]">{title}</h2>
-              {intro && (
-                <p className="font-mono text-[11px] text-stone leading-relaxed mb-2">{intro}</p>
+              <h2 className="font-mono font-bold text-[12px] text-ink mb-2 uppercase tracking-[0.02em]">{displayTitle}</h2>
+              {displayIntro && (
+                <p className="font-mono text-[11px] text-stone leading-relaxed mb-2">{displayIntro}</p>
               )}
-              {list && (
+              {visibleList && visibleList.length > 0 && (
                 <ul className="space-y-1 mb-2 border-l-[2px] border-ink/20 pl-3">
-                  {list.map((item, i) => (
+                  {visibleList.map((item, i) => (
                     <li key={i} className="font-mono text-[11px] text-stone leading-relaxed">{item}</li>
                   ))}
                 </ul>
@@ -123,11 +151,12 @@ export default function TermsOfService() {
               {body && (
                 <p className="font-mono text-[11px] text-stone leading-relaxed">{body}</p>
               )}
-              {footer && (
+              {showFooter && (
                 <p className="font-mono text-[11px] text-stone leading-relaxed mt-2">{footer}</p>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <p className="alto-label text-stone text-center">Lenzu · © 2026 Alex Obregon</p>

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { User } from '@/types';
 import api from '@/lib/api';
 import { initSocket, disconnectSocket } from '@/lib/socket';
+import { iapService } from '@/services/iapService';
 
 interface AuthState {
   user: User | null;
@@ -42,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
       initSocket(data.token);
+      iapService.init(data.user._id);
     } catch (error: any) {
       localStorage.removeItem('token');
       set({
@@ -90,7 +92,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       // Initialize socket connection
       initSocket(data.token);
-      
+      iapService.init(data.user._id);
+
       console.log('Registration and login successful');
       
       // Return the user data for the component to handle navigation
@@ -125,6 +128,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('token');
     disconnectSocket();
+    iapService.logout();
     set({
       user: null,
       token: null,
@@ -169,6 +173,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         
         // Initialize socket with the token
         initSocket(token);
+        iapService.init(data.user._id);
       } else {
         throw new Error('No user data received');
       }

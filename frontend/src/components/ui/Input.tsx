@@ -17,7 +17,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         className={cn(
           'w-full border-[1.5px] border-ink bg-fog px-[14px] py-[12px]',
-          'text-[14px] text-ink',
+          'text-[16px] text-ink',
           mono
             ? 'font-mono font-bold'
             : 'font-display font-[500]',

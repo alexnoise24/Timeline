@@ -55,6 +55,13 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // Where the current plan came from: 'apple' (IAP), 'stripe', or 'manual'
+  // (granted by admin). Apple webhook events only downgrade apple-sourced plans.
+  plan_source: {
+    type: String,
+    enum: ['apple', 'stripe', 'manual', null],
+    default: null
+  },
   // Stripe fields
   stripe_customer_id: {
     type: String,

@@ -96,7 +96,7 @@ export default function WeddingSwipeView({
   return (
     <div className="fixed inset-0 bg-field-bg flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 pt-[env(safe-area-inset-top)] px-2 pb-3 bg-field-surface border-b border-field-accent/20">
+      <div className="flex-shrink-0 px-2 pb-3 bg-field-surface border-b border-field-accent/20" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-between gap-2">
           {/* Back Button */}
           <button
@@ -164,7 +164,7 @@ export default function WeddingSwipeView({
       </div>
 
       {/* Bottom Navigation Dots */}
-      <div className="flex-shrink-0 pb-[env(safe-area-inset-bottom)] bg-field-surface border-t border-field-accent/20">
+      <div className="flex-shrink-0 bg-field-surface border-t border-field-accent/20" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex items-center justify-center gap-6 py-4">
           {panels.map((panel) => (
             <button

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Users, Trash2, X, Clock } from 'lucide-react';
+import { Users, Trash2, X, Clock, Copy, Check } from 'lucide-react';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { Timeline } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
+import { useInvitationsStore } from '@/store/invitationsStore';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 
@@ -25,10 +26,16 @@ interface PendingInvitation {
 export default function CollaboratorsModal({ isOpen, onClose, timeline }: CollaboratorsModalProps) {
   const { user } = useAuthStore();
   const { removeCollaborator } = useTimelineStore();
+  const { inviteGuest, createInviteLink } = useInvitationsStore();
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteStatus, setInviteStatus] = useState<string | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteUrlLoading, setInviteUrlLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const isOwner = user && timeline.owner._id === user._id;
 
@@ -49,6 +56,40 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
     } finally {
       setIsLoadingInvitations(false);
     }
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    try {
+      await inviteGuest(timeline._id, inviteEmail.trim());
+      setInviteStatus('Invitación enviada');
+      setInviteEmail('');
+      setTimeout(() => setInviteStatus(null), 3000);
+      fetchPendingInvitations();
+    } catch (err: any) {
+      setInviteStatus(err?.response?.data?.message || 'Error al enviar invitación');
+      setTimeout(() => setInviteStatus(null), 4000);
+    }
+  };
+
+  const handleGenerateLink = async () => {
+    setInviteUrlLoading(true);
+    try {
+      const token = await createInviteLink(timeline._id);
+      setInviteUrl(`${window.location.origin}/invite/${token}`);
+    } catch {
+      toast.error('Error al generar enlace');
+    } finally {
+      setInviteUrlLoading(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!inviteUrl) return;
+    navigator.clipboard.writeText(inviteUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleRemoveCollaborator = async (userId: string, userName: string) => {
@@ -90,6 +131,61 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Collaborators">
       <div className="space-y-4">
+
+        {/* Invite form — owner only */}
+        {isOwner && (
+          <div className="border-[1.5px] border-ink p-4">
+            <p className="alto-label text-ink mb-3">INVITAR COLABORADOR</p>
+            <form onSubmit={handleInvite} className="flex gap-2">
+              <input
+                type="email"
+                placeholder="correo@ejemplo.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                required
+                className="flex-1 border-[1.5px] border-ink bg-fog px-3 py-2 font-mono text-[13px] text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender placeholder:text-stone"
+              />
+              <Button type="submit" variant="accent">Invitar</Button>
+            </form>
+            {inviteStatus && (
+              <p className="font-mono text-[11px] text-stone mt-2">{inviteStatus}</p>
+            )}
+
+            {/* Share link */}
+            <div className="mt-3">
+              {!inviteUrl ? (
+                <button
+                  onClick={handleGenerateLink}
+                  disabled={inviteUrlLoading}
+                  className="alto-label text-lavender hover:text-lavender-deep transition-colors duration-[80ms] disabled:opacity-50"
+                >
+                  {inviteUrlLoading ? 'Generando...' : '+ Generar enlace de invitación'}
+                </button>
+              ) : (
+                <div>
+                  <p className="alto-label text-stone mb-1">ENLACE DE INVITACIÓN</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={inviteUrl}
+                      onFocus={(e) => e.target.select()}
+                      className="flex-1 border-[1.5px] border-ink bg-fog px-3 py-2 font-mono text-[11px] text-stone focus:outline-none"
+                    />
+                    <button
+                      onClick={handleCopyLink}
+                      className="border-[1.5px] border-ink px-3 flex items-center gap-1.5 alto-label text-ink hover:bg-fog transition-colors duration-[80ms]"
+                    >
+                      {copied ? <Check size={12} strokeWidth={2} className="text-moss" /> : <Copy size={12} strokeWidth={1.5} />}
+                      {copied ? 'Copiado' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Owner */}
         <div>
           <h3 className="text-sm font-medium text-gray-700 mb-2">Owner</h3>
@@ -164,9 +260,6 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
           <div className="text-center py-8">
             <Users size={48} className="text-gray-300 mx-auto mb-3" />
             <p className="text-gray-600">No collaborators yet</p>
-            {isOwner && (
-              <p className="text-sm text-gray-500 mt-1">Invite guests using the form above</p>
-            )}
           </div>
         )}
 

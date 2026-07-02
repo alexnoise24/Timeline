@@ -69,12 +69,32 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 ## Estado actual (Abril 2026)
 
 ### iOS / TestFlight
-- Build iOS: v1.1.0 build 6 — aprobado por Apple ✅
+- Build iOS: v1.1.0 build 8 — **Pendiente de revisión App Store** (enviado 2026-06-20) ✅
 - Link público activo: https://testflight.apple.com/join/UbSPGPQ2
 - Botón "Probar gratis en iPhone" visible en landing (etiqueta: TESTFLIGHT_BUTTON para comentar/descomentar)
 - 51 sesiones registradas en TestFlight
-- Usuario Apple Review creado en MongoDB: apple.review@lenzu.app / LenzuReview2026! (plan studio, sin expiración)
-- Ícono Liquid Glass generado — pendiente de implementar en Xcode Assets
+- Usuario Apple Review creado en MongoDB: apple.review@lenzu.app / LenzuReview2026! (plan **pro**, sin expiración)
+- ~~Ícono Liquid Glass generado — pendiente de implementar en Xcode Assets~~ ✅ completado
+- App configurada como **iPhone only** (removido iPad y Mac de Supported Destinations)
+- Capacitor config actualizado: `contentInset: 'never'`, `scrollEnabled: false` (fix definitivo del bounce nativo)
+
+### App Store Connect (configurado 2026-06-20)
+- Categoría principal: **Productivity**
+- Precio: **Gratis ($0.00)** en todos los países
+- Política de privacidad: https://lenzu.app/privacy
+- Clasificación por edades: **4+**
+- Derechos sobre contenido: No (contenido creado por usuarios propios)
+- Privacy Nutrition Label completado — datos declarados:
+  - Nombre y Email → Funcionalidad + Marketing del desarrollador, vinculados al usuario
+  - Mensajes → Funcionalidad, vinculados al usuario
+  - Fotos → Funcionalidad, vinculados al usuario
+  - Otro contenido (timelines, shot lists) → Funcionalidad, vinculados al usuario
+  - ID de usuario → Funcionalidad + Análisis, vinculado al usuario
+  - ID del dispositivo (FCM token) → Funcionalidad, vinculado al usuario
+  - Interacción con el producto (Activity Log) → Análisis, vinculado al usuario
+  - Ningún dato usado para seguimiento ni compartido con terceros
+- Contacto de revisión: Alejandro Obregon Hernandez / alexnoise24@gmail.com
+- Publicación: automática al aprobar
 
 ### Landing page
 - Sección "La app, en acción" con 5 screenshots integrada y en producción
@@ -216,19 +236,12 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 
 ## Pendiente
 - ~~Cambio de ícono en Xcode Assets~~ ✅ completado
-- Set de screenshots en inglés para App Store (pendiente)
+- ~~Set de screenshots en inglés para App Store~~ ✅ screenshots en español subidos (primary language ES)
 - Post Bundles feature
-- Recapturar screenshot de notificaciones en inglés
+- ~~Recapturar screenshot de notificaciones en inglés~~ ✅ mockup generado
 - Email automático de invitación a proyecto (diseñado, no implementado)
 - Configurar DNS wildcard *.lenzu.app para subdominios personalizados
-- **Restricción Apple Watch por plan (implementar antes de mayo 2026)**
-  * Actualmente cualquier usuario puede usar el Watch sin importar su plan
-  * La restricción solo existe en marketing (Pricing.tsx) pero no en código
-  * Cuando implementar: verificar user.current_plan en App.tsx y
-    TimelineView.tsx antes de llamar watchService
-  * Planes con acceso: pro, studio, master, lifetime
-  * Planes bloqueados: free, starter, trial, none
-  * Mostrar modal de upgrade si el plan no tiene acceso
+- ~~Restricción Apple Watch por plan~~ ✅ implementado 2026-07-02 (ver sección "Cambios — 2 julio 2026")
 - **Notificaciones push Community Chat (implementar en horario de baja actividad)**
   * Cuando el master escribe en Community → push a todos los demás usuarios
   * Cuando otros usuarios escriben → no mandar push (ya llega por Telegram)
@@ -277,6 +290,56 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 - El log de wedding.activate/deactivate es best-effort: si no hay señal, la llamada falla silenciosamente
 - Pendiente futuro: sync de eventos offline al recuperar conexión, y/o dashboard de "bodas en vivo" en admin
 
+## Cambios — Junio 2026
+
+### iOS Safe Area / Dynamic Island (fix definitivo)
+- `#root { position: fixed; inset: 0; background: #F1EFEA; overflow: hidden; }` — ancla el root al viewport exacto, elimina drift de height%
+- `*, *::before, *::after { overscroll-behavior: none; }` — bloquea bounce en todos los scroll containers
+- `html, body { height: 100%; overflow: hidden; }` — el documento nunca scrollea, solo scrollean los containers internos
+- `#root::after` pseudo-elemento cubre el inset nativo del WKScrollView con color crema (parche CSS hasta rebuild con config nuevo)
+- JS en App.tsx: `blockBounce` listener en touchmove — cancela el evento a nivel documento salvo que venga de un scroll container real
+- Todas las páginas cambiadas de `h-screen` → `h-full` para que dimensionen relativo a `#root`
+- Cada scroll container recibe `paddingBottom: calc(env(safe-area-inset-bottom) + 1.5rem)` en iOS
+
+### Capacitor config (requería rebuild — ya aplicado en build 8)
+- `contentInset: 'never'` (antes: 'automatic') — elimina el inset nativo del WKScrollView que causaba el margen blanco
+- `scrollEnabled: false` (antes: true) — desactiva el bounce elástico nativo del WKWebView
+- Archivos: `frontend/capacitor.config.ts` + `frontend/ios/App/App/capacitor.config.json`
+
+### Pro Gate overlay (Modo Boda)
+- Reemplazado toast (bloqueado por Dynamic Island) por overlay centrado con blur
+- Fondo: `backdrop-filter: blur(8px)` + `rgba(10,10,10,0.55)`
+- Card: `bg-paper border-ink`, símbolo ✦, título "FUNCIÓN PRO", instrucciones para ir a Safari
+- Toca fuera o botón Cerrar para descartar
+- Estado: `showProGate` en TimelineView.tsx
+- i18n: `plans.proFeature` agregada en es.json y en.json
+
+### App Store — Planes
+- Trial eliminado completamente: nuevos fotógrafos entran en plan `free`
+- Planes activos: `free` y `pro` (studio/starter se mantienen en BD para usuarios existentes)
+- Usuarios invitados: `current_plan: 'guest'`, se muestra como "INVITADO"/"GUEST" en UI
+
+### App Store — Submission (build 8) — enviado a revisión 2026-06-20
+- App configurada como iPhone only (TARGETED_DEVICE_FAMILY = 1)
+- Screenshots: 5 capturas en español, 1284×2778px (iPhone 15 Plus simulator)
+- Watch screenshot: 396×484px (`frontend/src/assets/screenshots/screenshot-watch-46mm.png`)
+- Descripción, texto promocional y palabras clave en español agregados
+- Cuenta reviewer: apple.review@lenzu.app / LenzuReview2026! (plan pro, sin expiración)
+- Notas para Apple: credenciales + explicación de que pagos son solo en lenzu.app/Safari (Guideline 3.1.1)
+- Categoría: Productivity · Precio: Gratis · Clasificación: 4+
+- Privacy Nutrition Label completado (ver sección "App Store Connect" en Estado actual)
+- Publicación configurada como automática al aprobar
+
+### Fix — PrivacyPolicy scroll (2026-06-20)
+- `frontend/src/pages/PrivacyPolicy.tsx`: `min-h-screen` → `h-full overflow-y-auto`
+- El CSS global `#root { overflow: hidden }` del fix iOS bloqueaba el scroll de la página de privacidad
+- Patrón a aplicar en cualquier página standalone que necesite scroll propio
+
+### Notificaciones push — Mensajes de proyecto
+- `backend/routes/messages.js`: llama `notifyTimelineMembers()` al guardar cada mensaje
+- Solo mensajes de proyecto (no Community Chat) generan push
+- Fire-and-forget: nunca bloquea la respuesta al usuario
+
 ## Capacitor Native Detection
 
 To detect if the app is running inside the Capacitor native app (iOS), use this exact condition:
@@ -290,6 +353,123 @@ const isNativeApp =
 
 Use this pattern whenever you need to show/hide elements depending on whether
 the user is in the browser vs the native app.
+
+## ⚠️ ARQUITECTURA CRÍTICA — La app iOS carga de lenzu.app (server.url)
+
+**`frontend/capacitor.config.ts` tiene `server.url: 'https://lenzu.app'`.** Esto significa que la app de iOS **NO ejecuta el `dist/` empaquetado en el binario** — carga el sitio web en vivo `https://lenzu.app` dentro del WebView nativo.
+
+Consecuencias (memorizar para no perder horas):
+- **Los cambios de frontend NO viven en el binario.** Viven en lo desplegado en lenzu.app. `npm run build` + `npx cap sync ios` + clean build en Xcode **no cambian el comportamiento** de la app: sigue cargando el frontend remoto.
+- Para que un fix de frontend llegue a la app iOS hay que **desplegar el frontend a lenzu.app** (ver "Deploy solo frontend" abajo). El efecto es inmediato (carga remota), sin binario nuevo.
+- `Capacitor.isNativePlatform()` **es `true`** aunque cargue de lenzu.app (el bridge se inyecta igual). No confundir "veo la versión web dentro de la app" con "isNative es false" — es que la app literalmente carga la web.
+- El binario nuevo solo hace falta para cambios **nativos** (íconos, Watch, `TARGETED_DEVICE_FAMILY`, plugins, etc.).
+- API y Socket ya usan URL **absoluta** (`VITE_API_URL`/`VITE_SOCKET_URL = https://lenzu.app`), y el CORS del backend ya incluye `capacitor://localhost`. Es decir: migrar a app autocontenida (quitar `server.url` + empaquetar `dist/`) es viable a futuro, pero requiere re-test a fondo (safe-area CSS, OAuth/redirects, push, deep links pasarían a origen `capacitor://localhost`). Apple a veces penaliza wrappers remotos puros (Guideline 4.2).
+
+## Deploy solo frontend (a lenzu.app, sin tocar backend)
+
+Nginx sirve el frontend desde `root /var/www/timeline/frontend/dist` (server block `lenzu.app` en `/etc/nginx/sites-available/timeline`, habilitado por symlink).
+
+```bash
+cd "/Volumes/T7/Web APP/Timeline/frontend"
+npm run build                                    # tsc && vite build → regenera dist/
+scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
+  alexobregon@192.168.100.150:/var/www/timeline/frontend/dist/
+```
+- NO ejecutar `deploy-production.sh` si solo quieres frontend (ese hace git push + rsync backend + pm2 restart).
+- Verificación post-deploy: `curl -s https://lenzu.app/ | grep -oE "assets/index-[A-Za-z0-9_-]+\.js"` debe mostrar un hash **distinto** al anterior.
+- No reinicia pm2 (no hace falta para assets estáticos).
+
+## Cambios — 22 junio 2026 (3 rechazos de Apple resueltos)
+
+### Rechazo Guideline 2.1a — login del usuario demo rebotaba
+- Causa: el usuario demo no existía en la BD `wedding-timeline`. No era bug de código.
+- **Usuario demo PERMANENTE creado** (vía script Mongoose `new User()` + `.save()` para que el hook pre-save hashee con bcrypt — NUNCA `insertOne` directo):
+  - email: `appreview@lenzu.app` · password: en App Store Connect → App Review Information (lleva `$` al final)
+  - role: `creator` · current_plan: `pro` · permanente (sin expiración, `is_payment_required: false`)
+  - Timeline de ejemplo asociado con contenido visible: "Sofia & Daniel - Tulum Wedding" (9 eventos + 10 shot-list items). Apple rechaza cuentas demo vacías.
+- Verificado: login real `POST https://lenzu.app/api/auth/login` → 200 + token; password hasheado en BD; password incorrecto → 401.
+- **No borrar este usuario ni su timeline, ni bajar su plan.** Es con el que Apple revisa.
+
+### Rechazo Guideline 4 (Design) — ícono Apple Watch con fondo negro
+- watchOS recorta los íconos en círculo y no admite transparencia.
+- Fix en `ios/App/LenzuWatch Watch App/Assets.xcassets/AppIcon.appiconset/AppIcon.png`: logo (cuadro lavanda #7B7FE0 rotado -6° + L negra) sobre **fondo crema sólido #F1EBE0**, 1024×1024, **sin canal alfa** (`hasAlpha: no`), con margen de seguridad para el recorte circular.
+- Es un cambio **nativo** → requiere binario nuevo (subir build number en Xcode antes de archivar).
+
+### Rechazo Guideline 3.1.1 — acceso a Plan Pro sin IAP
+- Decisión de producto: NO implementar IAP. En su lugar, **ocultar en iOS** todo rastro de pago/planes (gating por `isNative`; en web TODO queda igual).
+- Patrón: condicionar con `isNative` (`usePlatform()` / `Capacitor.isNativePlatform()`) — ocultar en nativo, mantener en web.
+- Casos resueltos en frontend:
+  1. **Inspiración**: gating cambiado a **plan del DUEÑO del timeline** (`ownerHasPro` = `FULL_ACCESS_PLANS.includes(currentTimeline.owner.current_plan)`), no del usuario logueado. Así un guest free en proyecto de dueño Pro SÍ ve Inspiración; dueño free → oculta para todos. En nativo+dueño no-Pro, la tab se filtra (sin candado).
+  2. Modo Boda: botón oculto en nativo si `!hasPro`.
+  3. Overlay ProGate eliminado por completo.
+  4. Branding: en nativo redirige a `/settings` sin botón "ver planes".
+  5. Navbar: ítem "Mi Plan" oculto en nativo.
+  6. Rutas `/pricing` y `/my-plan`: `<Navigate to="/dashboard">` duro y temprano en nativo (App.tsx).
+  7. Support: link "Ver planes" + FAQ de suscripción filtrados en nativo.
+  8. TrialBanner / TrialExpiredModal: no se muestran en nativo.
+  9. Badges de plan en Community/CommunityChat: `null` en nativo.
+  10. AccountSettings: etiqueta de plan oculta en nativo.
+  11. Login/Register: no navegan a `/pricing` en nativo.
+  12. Páginas legales (Terms/Privacy) **siguen accesibles** pero sin menciones de precio/suscripción/facturación/renovación en nativo (regex + override por línea; sección 4 de Terms neutralizada a "Acceso"). En web, texto legal completo.
+- master y lifetime siguen en `hasPro`/`FULL_ACCESS_PLANS` → conservan acceso completo en web e iOS.
+- **Backend (único cambio, ya desplegado a prod):** `backend/routes/timeline.js` — añadido `current_plan` al `select` de los 7 `populate('owner', ...)`. Necesario para el gating de Inspiración por dueño. Verificado en prod: `GET /timelines` y `/timelines/:id` devuelven `owner.current_plan`, sin filtrar password.
+
+### Fix Service Worker (`frontend/public/sw.js`) — servía builds viejos
+- El SW viejo (`lenzu-app-v1`) era **cache-first** y precacheaba `'/'` (index.html) con nombre de caché fijo que nunca se invalidaba → servía código viejo dentro del WebView, sobreviviendo a reinstalar y a clean build.
+- Fix v2: `CACHE_NAME = 'lenzu-app-v2'` (el `activate` borra la caché vieja), ya no precachea `'/'` ni assets, **navegación = network-first** (siempre trae index.html fresco), resto a red directa (assets hasheados se auto-bustean). Se auto-sana en cada build futuro.
+
+### Fix safe area — onboarding (`frontend/src/components/Onboarding.tsx`)
+- El botón "Omitir" se encimaba con el reloj/Dynamic Island. Header ahora usa `paddingTop: calc(env(safe-area-inset-top) + 1rem)`; navegación inferior usa `paddingBottom: calc(env(safe-area-inset-bottom) + 1.5rem)` (mismo patrón que el resto de la app). `index.html` ya tenía `viewport-fit=cover`.
+
+### Estado de despliegue (22 jun 2026)
+- Backend: desplegado a prod (solo `routes/timeline.js`, vía scp + pm2 restart; los otros archivos backend dirty NO se desplegaron).
+- Frontend: desplegado a lenzu.app (build + scp de `dist/`), incluye gating 3.1.1, legal, sw.js v2 y fix de onboarding.
+- **Pendiente: binario nuevo en Xcode** (solo por el ícono del Watch) → subir build number → Archive → TestFlight/App Store.
+
+## Cambios — 2 julio 2026
+
+### Fix modo boda multi-día
+- Bug: con 2 días de cobertura, el modo boda mezclaba ambos itinerarios (Watch los entrelazaba por hora, las notificaciones del día 1 se disparaban el día 2, el teléfono mostraba ambos días)
+- Nuevo helper `getActiveDay(days)` en `frontend/src/lib/utils.ts`: día cuya fecha = hoy; si no, el próximo futuro; si todos pasaron, el último (cubre bodas pasada la medianoche)
+- Aplicado en: `watchService.syncTimelines()` (Watch recibe solo el día activo), notificaciones locales en TimelineView.tsx, y panel de timeline del WeddingSwipeView
+- Fix 100% frontend — no requiere binario
+
+### ⭐ DECISIÓN DE ESTRATEGIA: FREE-FOR-ALL (2 julio 2026)
+- **Todo el producto es GRATIS para todos** (web e iOS) mientras se construye base de usuarios. Motivo: Alex no puede darse de alta fiscalmente → no puede firmar el Paid Apps Agreement → no puede ofrecer IAP → la única salida 100% limpia al rechazo 3.1.1 es que no exista nada que comprar en ningún lado
+- Flag central: `FREE_FOR_ALL = true` en `frontend/src/lib/utils.ts` — con el flag activo `hasFullAccess()` devuelve true para cualquier usuario logueado (Modo Boda, Watch, Inspiración abiertos para todos)
+- UI de planes oculta con el flag (web Y nativo): rutas /pricing y /my-plan redirigen, "Mi Plan" fuera del Navbar, banners/modales de trial, etiqueta de plan en AccountSettings, badges de plan en Community/CommunityChat, FAQ y link "Ver planes" en Support, sección de precios y links "Precios" en Landing (muestra "GRATIS. ASÍ DE SIMPLE.")
+- **Para re-monetizar**: poner `FREE_FOR_ALL = false` + configurar RevenueCat/ASC (ver IAP-SETUP.md) + env var `VITE_REVENUECAT_IOS_KEY` — todo el flujo IAP está construido y dormido
+- Notas de review para Apple: "Lenzu es una app gratuita; todas las funciones están disponibles para todos los usuarios" — ahora es literalmente cierto
+- NO se firmó el Paid Apps Agreement ni se creó el producto en ASC (pausado; no necesario mientras sea gratis)
+
+### In-App Purchase — Plan Pro $4.99/mes (CONSTRUIDO PERO DORMIDO — ver decisión arriba)
+- **Guía completa de setup: `deployment/IAP-SETUP.md`** (pasos manuales en App Store Connect + RevenueCat + Xcode)
+- Plugin: `@revenuecat/purchases-capacitor` (SPM, requiere binario nuevo + capability In-App Purchase)
+- `frontend/src/services/iapService.ts` — configure con `appUserID = user._id` (hooked en authStore login/register/checkAuth/logout), purchase, restore, entitlement `pro`
+- `/my-plan` ahora SÍ disponible en nativo: paywall IAP (suscribirse, restaurar compras, disclosure de auto-renovación). `/pricing` (Stripe) sigue bloqueado en nativo → redirige a /my-plan
+- Navbar: "Mi Plan" visible también en nativo; botón Modo Boda sin Pro → /my-plan en nativo
+- Key `plans.nativeUpgradeMsg` ("visita lenzu.app en Safari") ELIMINADA — era steering prohibido por 3.1.1
+- Backend: `backend/routes/iap.js` — `POST /api/iap/webhook` (eventos RevenueCat, auth por header vs `REVENUECAT_WEBHOOK_SECRET`) + `POST /api/iap/verify` (activación inmediata post-compra vía REST API con `REVENUECAT_SECRET_KEY`)
+- Modelo User: nuevo campo aditivo `plan_source: 'apple'|'stripe'|'manual'|null` — los eventos de Apple solo bajan planes con source 'apple'; nunca tocan planes manuales (beta testers), master ni lifetime
+- Env vars nuevas (NO configuradas aún): backend `REVENUECAT_WEBHOOK_SECRET`, `REVENUECAT_SECRET_KEY`; frontend `VITE_REVENUECAT_IOS_KEY`
+
+### Restricción Apple Watch por plan (pendiente de abril, cerrado)
+- `hasFullAccess(user)` + `FULL_ACCESS_PLANS` centralizados en `frontend/src/lib/utils.ts` (role master o plan pro/master/lifetime + legacy studio/starter; bloqueados: free, none, guest). TimelineView y Dashboard ahora importan de ahí (antes tenían copias locales)
+- `watchService.syncTimelines()`: sin acceso → manda lista vacía al Watch (limpia timelines viejos de cuentas degradadas)
+- `watchService.syncWeddingMode()`: activaciones requieren Pro; desactivaciones siempre pasan (cleanup)
+- `watchService.scheduleEventNotifications()`: gated
+- App.tsx `handleStartWedding` (modo boda iniciado DESDE el Watch): rechazado sin Pro + resetea el estado del Watch
+- 100% frontend, no requiere binario
+
+### Acceso a Configuración + eliminación de cuenta (rechazo 5.1.1)
+- El flujo de eliminar cuenta ya existía y está en prod, pero solo era accesible vía sidebar → Configuración (por eso Apple no lo encontró)
+- Navbar: menú del avatar ahora incluye "Configuración" como primer item → /settings
+- Modal de eliminación en nativo: la línea "Tu suscripción será cancelada" cambia a aviso de cancelar la suscripción de Apple en Ajustes › Suscripciones (`settings.deleteItemAppleSub`) — las suscripciones de Apple no se pueden cancelar server-side
+
+### Rechazos App Review 24 jun 2026 (submission 2857bca6)
+- 5.1.1 eliminación de cuenta: YA EXISTE (Ajustes → Danger Zone, endpoint DELETE /users/account) y está en producción — responder a Apple con screen recording del flujo (cuenta desechable, no la demo)
+- Guideline 4 ícono Watch: el PNG local ya es el correcto (crema) pero el build 10 no lo incluyó — commitear, clean build, verificar en Organizer antes de subir
+- 3.1.1: resuelto con IAP (arriba)
 
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal

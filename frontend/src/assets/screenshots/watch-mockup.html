@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 396px;
+    height: 484px;
+    background: #000;
+    font-family: -apple-system, 'SF Pro Display', sans-serif;
+    overflow: hidden;
+  }
+
+  .screen {
+    width: 396px;
+    height: 484px;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: relative;
+  }
+
+  /* Header */
+  .header {
+    padding: 18px 20px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.12);
+  }
+
+  .app-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #7B7FE0;
+  }
+
+  .couple {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .live-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #7B7FE0;
+  }
+
+  .current-time {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  /* Events list */
+  .events {
+    flex: 1;
+    overflow: hidden;
+    padding: 8px 0;
+  }
+
+  .event {
+    display: flex;
+    align-items: stretch;
+    padding: 9px 20px;
+    gap: 12px;
+    position: relative;
+  }
+
+  .event.active {
+    background: rgba(123, 127, 224, 0.15);
+  }
+
+  .event-time {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.04em;
+    min-width: 34px;
+    padding-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .event.active .event-time {
+    color: #7B7FE0;
+  }
+
+  .event-bar {
+    width: 2px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+
+  .event.active .event-bar {
+    background: #7B7FE0;
+  }
+
+  .event-info {
+    flex: 1;
+  }
+
+  .event-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .event.active .event-title {
+    color: #fff;
+  }
+
+  .event-location {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+
+  .active-badge {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #7B7FE0;
+    background: rgba(123,127,224,0.18);
+    padding: 2px 6px;
+    border-radius: 3px;
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  /* Scroll indicator */
+  .scroll-indicator {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+  }
+
+  .scroll-thumb {
+    width: 3px;
+    height: 24px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 2px;
+    margin-top: 6px;
+  }
+
+  /* Bottom bar */
+  .bottom-bar {
+    padding: 8px 20px 14px;
+    border-top: 0.5px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .next-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    font-weight: 600;
+  }
+
+  .next-time {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.04em;
+  }
+
+  .crown-time {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="header">
+    <span class="app-label">LENZU · EN VIVO</span>
+    <span class="couple">Sofía & Mateo</span>
+    <div class="time-row">
+      <div class="live-dot"></div>
+      <span class="current-time">19:47 · Sáb 14 Jun</span>
+    </div>
+  </div>
+
+  <div class="events">
+    <div class="event">
+      <span class="event-time">18:30</span>
+      <div class="event-bar"></div>
+      <div class="event-info">
+        <div class="event-title">Preparativos</div>
+        <div class="event-location">Hotel Marqués</div>
+      </div>
+    </div>
+
+    <div class="event active">
+      <span class="event-time">19:30</span>
+      <div class="event-bar"></div>
+      <div class="event-info">
+        <div class="event-title">Ceremonia</div>
+        <div class="event-location">Jardín Central</div>
+      </div>
+      <span class="active-badge">AHORA</span>
+    </div>
+
+    <div class="event">
+      <span class="event-time">20:15</span>
+      <div class="event-bar"></div>
+      <div class="event-info">
+        <div class="event-title">Coctel</div>
+        <div class="event-location">Terraza Norte</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <span class="event-time">21:00</span>
+      <div class="event-bar"></div>
+      <div class="event-info">
+        <div class="event-title">Recepción</div>
+        <div class="event-location">Salón Principal</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <span class="event-time">22:30</span>
+      <div class="event-bar"></div>
+      <div class="event-info">
+        <div class="event-title">Primer Baile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <div class="scroll-thumb"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div>
+      <div class="next-label">SIGUIENTE</div>
+      <div class="next-time">20:15 · Coctel</div>
+    </div>
+    <div class="crown-time">19:47</div>
+  </div>
+</div>
+</body>
+</html>

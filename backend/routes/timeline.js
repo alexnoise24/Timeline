@@ -29,13 +29,13 @@ router.get('/', authenticate, async (req, res) => {
 
     // Timelines owned by the user
     const ownedTimelines = await Timeline.find({ owner: userId })
-      .populate('owner', 'name email avatar')
+      .populate('owner', 'name email avatar current_plan')
       .populate('collaborators.user', 'name email avatar')
       .sort({ updatedAt: -1 });
 
     // Timelines the user is in the collaborators array directly
     const collaboratorTimelines = await Timeline.find({ 'collaborators.user': userId })
-      .populate('owner', 'name email avatar')
+      .populate('owner', 'name email avatar current_plan')
       .populate('collaborators.user', 'name email avatar')
       .sort({ updatedAt: -1 });
 
@@ -44,7 +44,7 @@ router.get('/', authenticate, async (req, res) => {
     const user = await User.findById(userId).populate({
       path: 'invitedTimelines.timelineId',
       populate: [
-        { path: 'owner', select: 'name email avatar' },
+        { path: 'owner', select: 'name email avatar current_plan' },
         { path: 'collaborators.user', select: 'name email avatar' }
       ]
     });
@@ -75,7 +75,7 @@ router.get('/', authenticate, async (req, res) => {
 router.get('/:id', authenticate, requireTimelineAccess, async (req, res) => {
   try {
     let timeline = await Timeline.findById(req.params.id)
-      .populate('owner', 'name email avatar')
+      .populate('owner', 'name email avatar current_plan')
       .populate('collaborators.user', 'name email avatar')
       .populate('events.createdBy', 'name email avatar')
       .populate('events.notes.author', 'name email avatar')
@@ -110,7 +110,7 @@ router.get('/:id', authenticate, requireTimelineAccess, async (req, res) => {
       
       // Re-fetch with populates
       timeline = await Timeline.findById(req.params.id)
-        .populate('owner', 'name email avatar')
+        .populate('owner', 'name email avatar current_plan')
         .populate('collaborators.user', 'name email avatar')
         .populate('changeLogs.user', 'name email avatar')
         .populate('shotList.createdBy', 'name email avatar')
@@ -159,7 +159,7 @@ router.post('/', authenticate, requirePhotographer, async (req, res) => {
     });
 
     await timeline.save();
-    await timeline.populate('owner', 'name email avatar');
+    await timeline.populate('owner', 'name email avatar current_plan');
 
     logActivity(req.userId, req.user.name, 'wedding.create', { timelineId: timeline._id, title: timeline.title }, req);
 
@@ -195,7 +195,7 @@ router.put('/:id', authenticate, requireTimelineAccess, async (req, res) => {
     });
 
     await timeline.save();
-    await timeline.populate('owner', 'name email avatar');
+    await timeline.populate('owner', 'name email avatar current_plan');
 
     res.json({ timeline });
   } catch (error) {
@@ -1318,6 +1318,12 @@ router.delete('/:id', authenticate, requireTimelineOwner, async (req, res) => {
     if (!timeline) {
       return res.status(404).json({ message: 'Timeline not found' });
     }
+
+    // Delete uploaded files for this project
+    const inspirationDir = path.join(__dirname, `../uploads/inspiration/${id}`);
+    const photographersDir = path.join(__dirname, `../uploads/photographers/${id}`);
+    fs.rmSync(inspirationDir, { recursive: true, force: true });
+    fs.rmSync(photographersDir, { recursive: true, force: true });
 
     // Delete the timeline
     await Timeline.findByIdAndDelete(id);

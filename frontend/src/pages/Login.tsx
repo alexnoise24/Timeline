@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -35,7 +36,8 @@ export default function Login() {
 
     try {
       await login(email, password);
-      if (useAuthStore.getState().trialExpired) {
+      // Web only: trial-expired users land on pricing. Native never sees pricing.
+      if (useAuthStore.getState().trialExpired && !Capacitor.isNativePlatform()) {
         navigate('/pricing', { state: { trialExpired: true } });
         return;
       }

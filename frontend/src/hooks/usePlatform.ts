@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 
 interface PlatformInfo {
@@ -8,25 +7,14 @@ interface PlatformInfo {
   isWeb: boolean;
 }
 
+// Capacitor.getPlatform() is synchronous — no useEffect needed
 export function usePlatform(): PlatformInfo {
-  const [platform, setPlatform] = useState<PlatformInfo>({
-    isNative: false,
-    isIOS: false,
-    isAndroid: false,
-    isWeb: true,
-  });
-
-  useEffect(() => {
-    const isNative = Capacitor.isNativePlatform();
-    const currentPlatform = Capacitor.getPlatform();
-    
-    setPlatform({
-      isNative,
-      isIOS: currentPlatform === 'ios',
-      isAndroid: currentPlatform === 'android',
-      isWeb: currentPlatform === 'web',
-    });
-  }, []);
-
-  return platform;
+  const isNative = Capacitor.isNativePlatform();
+  const currentPlatform = Capacitor.getPlatform();
+  return {
+    isNative,
+    isIOS: currentPlatform === 'ios',
+    isAndroid: currentPlatform === 'android',
+    isWeb: currentPlatform === 'web',
+  };
 }

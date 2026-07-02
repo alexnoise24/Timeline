@@ -2,26 +2,25 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, ArrowLeft, Loader2, Settings2, ExternalLink } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import Button from '@/components/ui/Button';
 import Logo from '@/components/ui/Logo';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
 
-const ALL_FEATURES = [
-  'Proyectos ilimitados',
-  'Invitados ilimitados',
-  'Shot lists',
-  'Notificaciones push',
-  'Apple Watch sync',
-  'Modo campo (Día de boda)',
-  'Branding personalizado',
-  'Comunidad de fotógrafos',
-  'Soporte prioritario',
+const FREE_FEATURE_KEYS = [
+  'plans.freeFeature1', 'plans.freeFeature2', 'plans.freeFeature3',
+  'plans.freeFeature4', 'plans.freeFeature5', 'plans.freeFeature6',
+];
+
+const PRO_FEATURE_KEYS = [
+  'plans.proFeature1', 'plans.proFeature2', 'plans.proFeature3',
+  'plans.proFeature4',
 ];
 
 export default function Pricing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -79,6 +78,7 @@ export default function Pricing() {
   };
 
   const isPro = ['pro', 'studio', 'master', 'lifetime', 'starter'].includes(user?.current_plan || '');
+  const isNative = Capacitor.isNativePlatform();
 
   return (
     <div className="min-h-screen bg-paper">
@@ -116,12 +116,11 @@ export default function Pricing() {
         {/* Page header */}
         <div className="mb-14 border-b-[1.5px] border-ink pb-8">
           <p className="alto-label text-stone mb-3">LENZU · PLANES</p>
-          <h1 className="font-display font-bold text-[42px] sm:text-[60px] tracking-[-0.04em] leading-none text-ink">
-            SIMPLE.<br />SIN SORPRESAS.
+          <h1 className="font-display font-bold text-[42px] sm:text-[60px] tracking-[-0.04em] leading-none text-ink whitespace-pre-line">
+            {t('plans.headline')}
           </h1>
           <p className="font-mono text-[13px] text-stone mt-4 max-w-lg leading-relaxed">
-            Lenzu es para fotógrafos de bodas que quieren herramientas serias.
-            30 días para probar todo. Después, $5 al mes.
+            {t('plans.subheadline')}
           </p>
         </div>
 
@@ -131,21 +130,21 @@ export default function Pricing() {
           {/* ── Free Trial ── */}
           <div className="p-8 border-b-[1.5px] md:border-b-0 md:border-r-[1.5px] border-ink">
             <div className="mb-6">
-              <p className="alto-label text-stone mb-2">PLAN GRATIS</p>
+              <p className="alto-label text-stone mb-2">{t('plans.freePlanLabel')}</p>
               <div className="flex items-baseline gap-2">
                 <span className="font-display font-bold text-[48px] tracking-[-0.04em] leading-none text-ink">$0</span>
-                <span className="alto-label text-stone">/ 30 días</span>
+                <span className="alto-label text-stone">{t('plans.freeDuration')}</span>
               </div>
               <p className="font-mono text-[11px] text-stone mt-2 leading-relaxed">
-                Acceso completo durante tu período de prueba. Sin tarjeta de crédito.
+                {t('plans.freeDesc')}
               </p>
             </div>
 
             <ul className="space-y-2 mb-8">
-              {ALL_FEATURES.map((f) => (
-                <li key={f} className="flex items-center gap-2">
+              {FREE_FEATURE_KEYS.map((key) => (
+                <li key={key} className="flex items-center gap-2">
                   <Check size={13} strokeWidth={2.5} className="text-moss flex-shrink-0" />
-                  <span className="font-mono text-[12px] text-ink">{f}</span>
+                  <span className="font-mono text-[12px] text-ink">{t(key)}</span>
                 </li>
               ))}
             </ul>
@@ -157,18 +156,18 @@ export default function Pricing() {
                 onClick={() => navigate('/register')}
                 arrow
               >
-                Crear cuenta gratis
+                {t('plans.createFreeAccount')}
               </Button>
             ) : isPro ? (
               <div className="border-[1px] border-ink/20 px-4 py-3">
-                <p className="alto-label text-stone text-center">Plan activo: PRO</p>
+                <p className="alto-label text-stone text-center">{t('plans.activePlan')}</p>
               </div>
             ) : (
               <div className="border-[1px] border-moss/40 bg-moss/5 px-4 py-3">
                 <p className="alto-label text-moss text-center">
                   {user?.trial_end_date
-                    ? `Prueba activa · termina ${new Date(user.trial_end_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                    : 'Prueba activa'}
+                    ? t('plans.trialActiveEnds', { date: new Date(user.trial_end_date).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) })
+                    : t('plans.trialActive')}
                 </p>
               </div>
             )}
@@ -178,33 +177,37 @@ export default function Pricing() {
           <div className="p-8 bg-ink">
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
-                <p className="alto-label text-paper/60">PLAN PRO</p>
+                <p className="alto-label text-paper/60">{t('plans.proPlanLabel')}</p>
                 <span className="border-[1px] border-lavender/50 bg-lavender/15 px-1.5 py-0.5 font-mono font-bold text-[9px] text-lavender uppercase tracking-[0.08em]">
-                  RECOMENDADO
+                  {t('plans.recommended')}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="font-display font-bold text-[48px] tracking-[-0.04em] leading-none text-paper">$5</span>
-                <span className="alto-label text-paper/60">/ mes</span>
+                <span className="alto-label text-paper/60">{t('myPlan.perMonth').toLowerCase()}</span>
               </div>
               <p className="font-mono text-[11px] text-paper/60 mt-2 leading-relaxed">
-                Acceso completo, para siempre. Cancela cuando quieras.
+                {t('plans.proDesc')}
               </p>
             </div>
 
             <ul className="space-y-2 mb-8">
-              {ALL_FEATURES.map((f) => (
-                <li key={f} className="flex items-center gap-2">
+              {PRO_FEATURE_KEYS.map((key) => (
+                <li key={key} className="flex items-center gap-2">
                   <Check size={13} strokeWidth={2.5} className="text-lavender flex-shrink-0" />
-                  <span className="font-mono text-[12px] text-paper/80">{f}</span>
+                  <span className="font-mono text-[12px] text-paper/80">{t(key)}</span>
                 </li>
               ))}
             </ul>
 
             {isPro ? (
               <div className="border-[1px] border-lavender/40 bg-lavender/10 px-4 py-3">
-                <p className="alto-label text-lavender text-center">Plan actual</p>
+                <p className="alto-label text-lavender text-center">{t('plans.currentPlanActive')}</p>
               </div>
+            ) : isNative ? (
+              // Unreachable: /pricing redirects to /dashboard in native (App.tsx).
+              // In-app purchases live in /my-plan.
+              null
             ) : (
               <Button
                 variant="accent"
@@ -215,7 +218,7 @@ export default function Pricing() {
               >
                 {loadingPlan === 'pro'
                   ? <Loader2 size={14} strokeWidth={1.5} className="animate-spin" />
-                  : 'Activar plan Pro'}
+                  : t('plans.activatePro')}
               </Button>
             )}
 
@@ -223,14 +226,14 @@ export default function Pricing() {
             <div className="mt-4 border-[1px] border-paper/10 px-3 py-2.5 flex items-start gap-2">
               <ExternalLink size={12} strokeWidth={1.5} className="text-paper/40 mt-0.5 flex-shrink-0" />
               <p className="font-mono text-[10px] text-paper/40 leading-relaxed">
-                Miembro de Patreon? Escríbenos y te activamos el plan Pro directo.
+                {t('plans.patreonNote')}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Manage subscription */}
-        {user?.stripe_subscription_id && (
+        {/* Manage subscription — hidden on native (Apple guideline 3.1.1) */}
+        {!isNative && user?.stripe_subscription_id && (
           <div className="mb-10 flex justify-center">
             <Button
               variant="ghost"
@@ -248,23 +251,14 @@ export default function Pricing() {
 
         {/* FAQ strip */}
         <div className="border-t-[1.5px] border-ink pt-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[
-            {
-              q: '¿Qué pasa al terminar el trial?',
-              a: 'Tu cuenta se pausa. Tus datos se conservan 30 días adicionales. Activa Pro para recuperar el acceso.',
-            },
-            {
-              q: '¿Puedo cancelar en cualquier momento?',
-              a: 'Sí. Cancelas desde el portal de suscripción y no se te cobra el siguiente mes.',
-            },
-            {
-              q: '¿Hay descuento para Patreon?',
-              a: 'Sí. Los miembros de nuestro Patreon obtienen el plan Pro incluido. Escríbenos a support@lenzu.app.',
-            },
-          ].map(({ q, a }) => (
-            <div key={q}>
-              <p className="font-mono font-bold text-[12px] text-ink mb-1">{q}</p>
-              <p className="font-mono text-[11px] text-stone leading-relaxed">{a}</p>
+          {([
+            { qKey: 'plans.faq1q', aKey: 'plans.faq1a' },
+            { qKey: 'plans.faq2q', aKey: 'plans.faq2a' },
+            { qKey: 'plans.faq3q', aKey: 'plans.faq3a' },
+          ] as const).map(({ qKey, aKey }) => (
+            <div key={qKey}>
+              <p className="font-mono font-bold text-[12px] text-ink mb-1">{t(qKey)}</p>
+              <p className="font-mono text-[11px] text-stone leading-relaxed">{t(aKey)}</p>
             </div>
           ))}
         </div>
@@ -272,7 +266,7 @@ export default function Pricing() {
         {/* Contact */}
         <div className="mt-10 text-center">
           <p className="alto-label text-stone">
-            ¿Preguntas?{' '}
+            {t('plans.questions')}{' '}
             <a
               href="mailto:support@lenzu.app"
               className="text-lavender hover:text-lavender-deep transition-colors duration-[80ms]"

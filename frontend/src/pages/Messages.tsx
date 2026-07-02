@@ -88,7 +88,7 @@ export default function Messages() {
   };
 
   return (
-    <div className="flex h-screen bg-paper">
+    <div className="flex h-full bg-paper">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">

@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Upload, Trash2, Save, Loader2 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
@@ -22,11 +23,9 @@ export default function BrandingSettings() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, checkAuth } = useAuthStore();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [branding, setBranding] = useState<BrandingData>({
     enabled: true,
     studioName: null,
@@ -60,46 +59,9 @@ export default function BrandingSettings() {
     }
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error(t('branding.logoTooLarge'));
-      return;
-    }
-
-    setUploadingLogo(true);
-    const formData = new FormData();
-    formData.append('logo', file);
-
-    try {
-      const response = await api.post('/branding/logo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setBranding(prev => ({ ...prev, logo: response.data.logo }));
-      toast.success(t('branding.logoUploaded'));
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t('branding.logoUploadError'));
-    } finally {
-      setUploadingLogo(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const handleDeleteLogo = async () => {
-    try {
-      await api.delete('/branding/logo');
-      setBranding(prev => ({ ...prev, logo: null }));
-      toast.success(t('branding.logoDeleted'));
-    } catch {
-      toast.error(t('branding.logoDeleteError'));
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex h-screen bg-paper">
+      <div className="flex h-full bg-paper">
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <Navbar />
@@ -112,8 +74,12 @@ export default function BrandingSettings() {
   }
 
   if (!canUseBranding) {
+    // Native app: no plan/pricing prompt — bounce to settings.
+    if (Capacitor.isNativePlatform()) {
+      return <Navigate to="/settings" replace />;
+    }
     return (
-      <div className="flex h-screen bg-paper">
+      <div className="flex h-full bg-paper">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Navbar />
@@ -134,7 +100,7 @@ export default function BrandingSettings() {
   }
 
   return (
-    <div className="flex h-screen bg-paper">
+    <div className="flex h-full bg-paper">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -162,7 +128,7 @@ export default function BrandingSettings() {
             </div>
 
             {/* Studio Name */}
-            <div className="border-[1.5px] border-ink bg-paper mb-4">
+            <div className="border-[1.5px] border-ink bg-paper mb-8">
               <div className="px-5 py-3 border-b-[1px] border-ink/20">
                 <h2 className="alto-label text-ink">{t('branding.studioName').toUpperCase()}</h2>
                 <p className="font-mono text-[11px] text-stone mt-0.5">{t('branding.studioNameDescription')}</p>
@@ -175,57 +141,6 @@ export default function BrandingSettings() {
                   placeholder={t('branding.studioNamePlaceholder')}
                   className="w-full border-[1.5px] border-ink bg-paper px-[14px] py-[12px] font-mono font-bold text-[14px] text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender placeholder:text-stone placeholder:font-normal"
                 />
-              </div>
-            </div>
-
-            {/* Logo */}
-            <div className="border-[1.5px] border-ink bg-paper mb-8">
-              <div className="px-5 py-3 border-b-[1px] border-ink/20">
-                <h2 className="alto-label text-ink">{t('branding.logo').toUpperCase()}</h2>
-                <p className="font-mono text-[11px] text-stone mt-0.5">{t('branding.logoDescription')}</p>
-              </div>
-              <div className="px-5 py-5">
-                {branding.logo ? (
-                  <div className="flex items-center gap-4">
-                    <div className="border-[1.5px] border-ink/20 bg-fog p-3">
-                      <img
-                        src={`${import.meta.env.VITE_API_URL || ''}${branding.logo}`}
-                        alt="Logo"
-                        className="h-14 w-auto object-contain"
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      onClick={handleDeleteLogo}
-                      className="flex items-center gap-2 hover:text-brick hover:border-brick/40"
-                    >
-                      <Trash2 size={13} strokeWidth={1.5} />
-                      {t('branding.deleteLogo')}
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="secondary"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingLogo}
-                      className="flex items-center gap-2"
-                    >
-                      {uploadingLogo
-                        ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
-                        : <Upload size={13} strokeWidth={1.5} />}
-                      {t('branding.uploadLogo')}
-                    </Button>
-                    <p className="font-mono text-[10px] text-stone mt-2">{t('branding.logoRequirements')}</p>
-                  </div>
-                )}
               </div>
             </div>
 

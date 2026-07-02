@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Calendar, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle, ChevronRight, Sparkles, FileDown } from 'lucide-react';
+import { Plus, Calendar, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle, ChevronRight, Sparkles, FileDown, MoreHorizontal } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { exportTimelinePDF } from '@/components/TimelinePDFExport';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useAuthStore } from '@/store/authStore';
@@ -14,7 +15,7 @@ import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 // Card import removed — no longer used in Alto redesign
 import CountdownTimer from '@/components/CountdownTimer';
-import { formatDate, formatDateTime, getCategoryLabel, getInitials } from '@/lib/utils';
+import { formatDate, formatDateTime, getActiveDay, getCategoryLabel, getInitials, hasFullAccess } from '@/lib/utils';
 import Overview from '@/components/Overview';
 import ShootList from '@/components/ShootList';
 import Inspiration from '@/components/Inspiration';
@@ -46,7 +47,13 @@ export default function TimelineView() {
     timelines
   } = useTimelineStore();
   const { user } = useAuthStore();
-  const { inviteGuest, createInviteLink } = useInvitationsStore();
+  useInvitationsStore();
+  // Wedding-mode / Watch are gated by the CURRENT user's plan
+  const hasPro = hasFullAccess(user);
+  // Inspiration is gated by the timeline OWNER's plan (so a free guest on a
+  // Pro owner's project still sees it; a free owner hides it for everyone).
+  const ownerHasPro = hasFullAccess(currentTimeline?.owner as any);
+  const isNative = Capacitor.isNativePlatform();
   usePlatform(); // keep hook call for side-effects, isIOS no longer used in Alto layout
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isEditingEvent, setIsEditingEvent] = useState(false);
@@ -61,6 +68,7 @@ export default function TimelineView() {
     location: '',
     category: 'other' as Event['category'],
   });
+  const [openEventMenuId, setOpenEventMenuId] = useState<string | null>(null);
   // Day modal state
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
   const [isEditingDay, setIsEditingDay] = useState(false);
@@ -70,10 +78,6 @@ export default function TimelineView() {
     label: '',
   });
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteStatus, setInviteStatus] = useState<string | null>(null);
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
-  const [inviteUrlLoading, setInviteUrlLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isCollaboratorsModalOpen, setIsCollaboratorsModalOpen] = useState(false);
   
@@ -93,42 +97,56 @@ export default function TimelineView() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Close event context menu on outside click
+  useEffect(() => {
+    if (!openEventMenuId) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-event-menu]')) setOpenEventMenuId(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openEventMenuId]);
+
   // Toggle field-mode class on document root and persist to localStorage
   useEffect(() => {
     if (fieldModeActive) {
       document.documentElement.classList.add('field-mode');
       if (id) {
         localStorage.setItem(`lenzu-wedding-mode-${id}`, 'true');
-        watchService.syncWeddingMode(id, true);
+        if (hasPro) {
+          watchService.syncWeddingMode(id, true);
 
-        // Sync all timelines to Watch
-        if (timelines && timelines.length > 0) {
-          watchService.syncTimelines(timelines);
-        } else {
-          watchService.syncTimelines([currentTimeline].filter(Boolean) as any);
-        }
+          // Sync all timelines to Watch
+          if (timelines && timelines.length > 0) {
+            watchService.syncTimelines(timelines);
+          } else {
+            watchService.syncTimelines([currentTimeline].filter(Boolean) as any);
+          }
 
-        // Schedule iOS local notifications for all events
-        if (currentTimeline?.days) {
-          const events = currentTimeline.days
-            .flatMap(day => day.events || [])
-            .filter(event => event.time)
-            .map(event => ({
-              id: event._id,
-              time: event.time!,
-              title: event.title,
-            }));
-          watchService.scheduleEventNotifications(events);
+          // Schedule iOS local notifications only for the active day's events
+          // (the native scheduler assumes "today" — other days' events would fire on the wrong date)
+          if (currentTimeline?.days) {
+            const activeDay = getActiveDay(currentTimeline.days);
+            const events = (activeDay?.events || [])
+              .filter(event => event.time)
+              .map(event => ({
+                id: event._id,
+                time: event.time!,
+                title: event.title,
+              }));
+            watchService.scheduleEventNotifications(events);
+          }
         }
       }
     } else {
       document.documentElement.classList.remove('field-mode');
       if (id) {
         localStorage.removeItem(`lenzu-wedding-mode-${id}`);
-        watchService.syncWeddingMode(id, false);
-        
-        // Cancel iOS local notifications
-        watchService.cancelAllNotifications();
+        if (hasPro) {
+          watchService.syncWeddingMode(id, false);
+          watchService.cancelAllNotifications();
+        }
       }
     }
     return () => document.documentElement.classList.remove('field-mode');
@@ -382,38 +400,6 @@ export default function TimelineView() {
     }
   };
 
-  const handleGenerateLink = async () => {
-    if (!id) return;
-    setInviteUrlLoading(true);
-    try {
-      const token = await createInviteLink(id);
-      setInviteUrl(`${window.location.origin}/invite/${token}`);
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.message;
-      const detail = serverMsg ? `Server error ${status}: ${serverMsg}` : err?.message || 'Unknown error';
-      console.error('[handleGenerateLink] failed to generate invite link:', detail, err);
-    } finally {
-      setInviteUrlLoading(false);
-    }
-  };
-
-  const canInvite = !!(user && currentTimeline && user.role === 'photographer' && currentTimeline.owner && currentTimeline.owner._id === user._id);
-
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!id || !inviteEmail.trim()) return;
-    try {
-      await inviteGuest(id, inviteEmail.trim());
-      setInviteStatus(t('timelineView.invitationSent'));
-      setInviteEmail('');
-      setTimeout(() => setInviteStatus(null), 3000);
-    } catch (err: any) {
-      setInviteStatus(err?.response?.data?.message || t('timelineView.invitationFailed'));
-      setTimeout(() => setInviteStatus(null), 4000);
-    }
-  };
-
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !selectedEvent || !selectedDayId || !noteContent.trim()) return;
@@ -468,7 +454,7 @@ export default function TimelineView() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-paper">
+      <div className="flex h-full bg-paper">
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <Navbar />
@@ -482,7 +468,7 @@ export default function TimelineView() {
 
   if (accessDenied) {
     return (
-      <div className="flex h-screen bg-paper">
+      <div className="flex h-full bg-paper">
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <Navbar />
@@ -502,7 +488,7 @@ export default function TimelineView() {
 
   if (!currentTimeline) {
     return (
-      <div className="flex h-screen bg-paper">
+      <div className="flex h-full bg-paper">
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <Navbar />
@@ -521,13 +507,16 @@ export default function TimelineView() {
 
   // Mobile field mode - render WeddingSwipeView
   if (fieldModeActive && isMobile) {
+    // Wedding mode shows only the active day so multi-day itineraries don't mix
+    const activeDay = getActiveDay(sortedDays);
+    const weddingDays = activeDay ? [activeDay] : sortedDays;
     return (
       <WeddingSwipeView
         timeline={currentTimeline}
         activeEventId={activeEventId}
         timelineContent={
           <div className="space-y-4">
-            {sortedDays.map((day) => (
+            {weddingDays.map((day) => (
               <div key={day._id} className="bg-field-surface rounded-xl p-4">
                 <h3 className="text-field-text font-medium mb-3">
                   {formatDate(day.date, i18n.language)}
@@ -570,7 +559,7 @@ export default function TimelineView() {
             ))}
           </div>
         }
-        shotListContent={<ShootList timeline={currentTimeline} />}
+        shotListContent={<ShootList timeline={currentTimeline} fieldMode />}
         inspirationContent={<Inspiration timeline={currentTimeline} />}
         onExitWeddingMode={() => handleToggleFieldMode(false)}
       />
@@ -578,11 +567,12 @@ export default function TimelineView() {
   }
 
   return (
-    <div className={`flex h-screen ${fieldModeActive ? 'bg-field-bg' : 'bg-paper'}`}>
+    <div className={`flex h-full ${fieldModeActive ? 'bg-field-bg' : 'bg-paper'}`}>
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+          style={isNative ? { paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)' } : undefined}>
           <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8 lg:max-w-7xl lg:mx-auto">
 
         {/* Header */}
@@ -625,70 +615,40 @@ export default function TimelineView() {
                     <Users size={13} strokeWidth={1.5} />
                     {t('dashboard.collaboratorsCount', { count: currentTimeline.collaborators.length + 1 })}
                   </button>
-                  {/* Wedding Day Mode Button */}
-                  <button
-                    onClick={() => handleToggleFieldMode(!fieldModeActive)}
-                    className={`sm:ml-auto flex items-center gap-2 px-4 py-[10px] min-h-[44px] font-mono font-bold text-[11px] uppercase tracking-[0.08em] border transition-colors duration-[80ms] ${
-                      fieldModeActive
-                        ? 'border-field-accent text-field-accent bg-transparent hover:bg-field-accent/10'
-                        : 'border-ink text-ink bg-transparent hover:bg-fog'
-                    }`}
-                  >
-                    <Camera size={14} strokeWidth={1.5} />
-                    {fieldModeActive ? t('timelineView.finishWeddingDay') : t('timelineView.startWeddingDay')}
-                  </button>
+                  {/* Wedding Day Mode Button — without Pro it routes to the
+                      upgrade flow: /my-plan (IAP) in native, /pricing on web. */}
+                  {(
+                    <button
+                      onClick={() => {
+                        if (!hasPro && !fieldModeActive) {
+                          navigate(isNative ? '/my-plan' : '/pricing');
+                          return;
+                        }
+                        handleToggleFieldMode(!fieldModeActive);
+                      }}
+                      className={`sm:ml-auto flex items-center gap-2 px-4 py-[10px] min-h-[44px] font-mono font-bold text-[11px] uppercase tracking-[0.08em] border transition-colors duration-[80ms] ${
+                        fieldModeActive
+                          ? 'border-field-accent text-field-accent bg-transparent hover:bg-field-accent/10'
+                          : 'border-ink text-ink bg-transparent hover:bg-fog'
+                      }`}
+                    >
+                      <Camera size={14} strokeWidth={1.5} />
+                      {fieldModeActive ? t('timelineView.finishWeddingDay') : t('timelineView.startWeddingDay')}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {canInvite && activeTab === 'timeline' && (
-                <div className="w-full lg:w-auto">
-                  <form onSubmit={handleInvite} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <Input
-                      type="email"
-                      placeholder={t('timelineView.inviteByEmail')}
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      required
-                      className="flex-1 sm:w-64"
-                    />
-                    <div className="flex gap-2">
-                      <Button type="submit" variant="accent" className="flex-1 sm:flex-none">{t('timelineView.invite')}</Button>
-                      {!inviteUrl && (
-                        <Button
-                          variant="secondary"
-                          onClick={handleGenerateLink}
-                          disabled={inviteUrlLoading}
-                          className="flex-1 sm:flex-none"
-                        >
-                          {inviteUrlLoading ? t('timelineView.generating') : t('timelineView.shareLink')}
-                        </Button>
-                      )}
-                    </div>
-                  </form>
-                  {inviteStatus && (
-                    <p className="font-mono text-[11px] text-stone mt-2">{inviteStatus}</p>
-                  )}
-                  {inviteUrl && (
-                    <div className="mt-2">
-                      <p className="alto-label text-stone mb-1">{t('timelineView.shareLinkLabel')}</p>
-                      <input
-                        type="text"
-                        readOnly
-                        value={inviteUrl}
-                        onFocus={(e) => e.target.select()}
-                        style={{ width: '100%' }}
-                        className="px-3 py-2 font-mono text-[11px] border-[1.5px] border-ink bg-fog text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
           {/* Tab Navigation */}
           <div className="flex items-center overflow-x-auto scrollbar-none">
-            {(['overview', 'timeline', 'shotlist', 'inspiration'] as TabType[]).map((tab) => {
+            {(['overview', 'timeline', 'shotlist', 'inspiration'] as TabType[])
+              // On native, hide the Inspiration tab entirely when the owner is
+              // not Pro (no lock UI, no plan mention). Web keeps the tab.
+              .filter((tab) => !(tab === 'inspiration' && isNative && !ownerHasPro))
+              .map((tab) => {
               const icons: Record<TabType, React.ReactNode> = {
                 overview: <Clipboard size={13} strokeWidth={1.5} />,
                 timeline: <Calendar size={13} strokeWidth={1.5} />,
@@ -729,7 +689,33 @@ export default function TimelineView() {
         )}
 
         {activeTab === 'inspiration' && (
-          <Inspiration timeline={currentTimeline} />
+          ownerHasPro ? (
+            <Inspiration timeline={currentTimeline} />
+          ) : isNative ? (
+            // Native + owner not Pro: tab is filtered out above; render nothing
+            // as a safety guard (no lock, no plan mention).
+            null
+          ) : (
+            // Web only: keep the blurred upgrade overlay (gated by owner plan).
+            <div className="relative">
+              <div className="pointer-events-none select-none opacity-30 blur-[2px]">
+                <Inspiration timeline={currentTimeline} />
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-paper/60">
+                <div className="text-center max-w-xs">
+                  <p className="font-mono font-bold text-[13px] text-ink uppercase tracking-[0.06em] mb-1">
+                    {t('plans.upgradeTitle')}
+                  </p>
+                  <p className="font-mono text-[12px] text-stone leading-relaxed mb-4">
+                    {t('plans.upgradeDesc')}
+                  </p>
+                  <Button variant="accent" onClick={() => navigate('/pricing')} arrow>
+                    {t('plans.upgradeCta')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
         )}
 
         {activeTab === 'timeline' && (
@@ -897,28 +883,38 @@ export default function TimelineView() {
                                           )}
                                         </div>
                                       </div>
-                                      <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-[80ms]">
+                                      <div className="relative flex-shrink-0" data-event-menu>
                                         <button
-                                          onClick={() => openEditEventModal(event, day._id)}
+                                          onClick={() => setOpenEventMenuId(openEventMenuId === event._id ? null : event._id)}
                                           className="p-1.5 text-stone hover:text-ink hover:bg-fog transition-colors duration-[80ms]"
-                                          title={t('timelineView.editEvent')}
                                         >
-                                          <Edit2 size={13} strokeWidth={1.5} />
+                                          <MoreHorizontal size={15} strokeWidth={1.5} />
                                         </button>
-                                        <button
-                                          onClick={() => handleDeleteEvent(day._id, event._id, event.title)}
-                                          className="p-1.5 text-stone hover:text-brick hover:bg-brick/5 transition-colors duration-[80ms]"
-                                          title={t('timelineView.deleteEvent')}
-                                        >
-                                          <Trash2 size={13} strokeWidth={1.5} />
-                                        </button>
-                                        <button
-                                          onClick={() => openNoteModal(event, day._id)}
-                                          className="p-1.5 text-stone hover:text-ink hover:bg-fog transition-colors duration-[80ms]"
-                                          title={t('timelineView.addNote')}
-                                        >
-                                          <MessageSquare size={13} strokeWidth={1.5} />
-                                        </button>
+                                        {openEventMenuId === event._id && (
+                                          <div className="absolute right-0 top-full mt-0.5 w-40 bg-paper border-[1.5px] border-ink z-50 shadow-md">
+                                            <button
+                                              onClick={() => { setOpenEventMenuId(null); openEditEventModal(event, day._id); }}
+                                              className="w-full flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] text-ink hover:bg-fog transition-colors duration-[80ms] border-b border-ink/15"
+                                            >
+                                              <Edit2 size={12} strokeWidth={1.5} />
+                                              {t('timelineView.editEvent')}
+                                            </button>
+                                            <button
+                                              onClick={() => { setOpenEventMenuId(null); openNoteModal(event, day._id); }}
+                                              className="w-full flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] text-ink hover:bg-fog transition-colors duration-[80ms] border-b border-ink/15"
+                                            >
+                                              <MessageSquare size={12} strokeWidth={1.5} />
+                                              {t('timelineView.addNote')}
+                                            </button>
+                                            <button
+                                              onClick={() => { setOpenEventMenuId(null); handleDeleteEvent(day._id, event._id, event.title); }}
+                                              className="w-full flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] text-brick hover:bg-brick/5 transition-colors duration-[80ms]"
+                                            >
+                                              <Trash2 size={12} strokeWidth={1.5} />
+                                              {t('timelineView.deleteEvent')}
+                                            </button>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
 
@@ -1175,6 +1171,7 @@ export default function TimelineView() {
         onClose={() => setIsCollaboratorsModalOpen(false)}
         timeline={currentTimeline}
       />
+
           </div>
         </div>
       </div>

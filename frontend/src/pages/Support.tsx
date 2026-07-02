@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
+import { FREE_FOR_ALL } from '@/lib/utils';
 import { ArrowLeft, Mail, ChevronRight, Shield, FileText } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
@@ -56,7 +58,12 @@ export default function Support() {
   const { i18n } = useTranslation();
   const { isAuthenticated } = useAuthStore();
   const isEs = i18n.language === 'es';
-  const faq = isEs ? FAQ_ES : FAQ_EN;
+  const isNative = Capacitor.isNativePlatform();
+  // While fully free (and always in native), drop any FAQ that mentions
+  // plans/subscription/pricing.
+  const faq = (isEs ? FAQ_ES : FAQ_EN).filter(
+    (f) => !(FREE_FOR_ALL || isNative) || !/suscrip|subscription|mi plan|my plan|cancel/i.test(f.q + f.a)
+  );
 
   const content = (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
@@ -126,7 +133,7 @@ export default function Support() {
             { label: isEs ? 'Política de privacidad' : 'Privacy Policy', path: '/privacy', icon: <Shield size={12} strokeWidth={1.5} /> },
             { label: isEs ? 'Términos de servicio' : 'Terms of Service', path: '/terms', icon: <FileText size={12} strokeWidth={1.5} /> },
             { label: isEs ? 'Ver planes' : 'View plans', path: '/pricing', icon: <ChevronRight size={12} strokeWidth={1.5} /> },
-          ].map(({ label, path, icon }) => (
+          ].filter((l) => !(FREE_FOR_ALL || isNative) || l.path !== '/pricing').map(({ label, path, icon }) => (
             <button
               key={path}
               onClick={() => navigate(path)}
@@ -158,7 +165,7 @@ export default function Support() {
   }
 
   return (
-    <div className="flex h-screen bg-paper">
+    <div className="flex h-full bg-paper">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />

@@ -10,10 +10,9 @@ interface TrialBannerProps {
 export default function TrialBanner({ user, onViewPlans }: TrialBannerProps) {
   const { t } = useTranslation();
 
-  // Master and lifetime users don't see trial banner
-  if (user.role === 'master' || user.current_plan === 'lifetime' || user.current_plan === 'master') return null;
-
-  // Only show for users with active trial
+  // Only show for actual trial plan — not free, guest, paid or master
+  if (['master', 'lifetime', 'free', 'guest', 'none', 'pro', 'studio', 'starter'].includes(user.current_plan || '')) return null;
+  if (user.role === 'master') return null;
   if (!user.is_trial_active || !user.trial_end_date) return null;
 
   const trialEndDate = new Date(user.trial_end_date);

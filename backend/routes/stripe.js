@@ -62,7 +62,7 @@ router.get('/prices', (req, res) => {
     },
     pro: {
       priceId: STRIPE_PRICES.pro,
-      amount: 1900, // $19.00 in cents
+      amount: 500, // $5.00 in cents
       currency: 'usd',
     },
     studio: {
@@ -163,9 +163,9 @@ router.post('/cancel-subscription', authenticate, async (req, res) => {
     // Cancel the subscription in Stripe
     await cancelSubscription(user.stripe_subscription_id);
 
-    // Update user to free plan
+    // Downgrade user to free plan
     await User.findByIdAndUpdate(user._id, {
-      current_plan: 'none',
+      current_plan: 'free',
       stripe_subscription_id: null,
       plan_expiration_date: null,
       is_trial_active: false,
@@ -242,7 +242,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       const isActive = ['active', 'trialing'].includes(subscription.status);
 
       await User.findByIdAndUpdate(userId, {
-        current_plan: isActive ? planName : 'none',
+        current_plan: isActive ? planName : 'free',
         plan_expiration_date: new Date(subscription.current_period_end * 1000),
       });
 
@@ -259,7 +259,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         const user = await User.findOne({ stripe_customer_id: subscription.customer });
         if (user) {
           await User.findByIdAndUpdate(user._id, {
-            current_plan: 'none',
+            current_plan: 'free',
             stripe_subscription_id: null,
             plan_expiration_date: null,
           });
@@ -267,7 +267,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         }
       } else {
         await User.findByIdAndUpdate(userId, {
-          current_plan: 'none',
+          current_plan: 'free',
           stripe_subscription_id: null,
           plan_expiration_date: null,
         });

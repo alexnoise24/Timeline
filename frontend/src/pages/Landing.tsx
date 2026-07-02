@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '@/components/ui/Logo';
+import { FREE_FOR_ALL } from '@/lib/utils';
 import Ticket from '@/components/ui/Ticket';
-import screenshot01 from '../assets/screenshots/screenshot-01-dashboard.jpg';
-import screenshot02 from '../assets/screenshots/screenshot-02-timeline.jpg';
-import screenshot03 from '../assets/screenshots/screenshot-03-shotlist.jpg';
+import screenshot01 from '../assets/screenshots/dashboard.jpg';
+import screenshot02 from '../assets/screenshots/timeline.jpg';
+import screenshot03 from '../assets/screenshots/shotlist.jpg';
 import screenshot04 from '../assets/screenshots/screenshot-04-notif.jpg';
 import screenshot05 from '../assets/screenshots/screenshot-05-watch.png';
 
@@ -125,28 +126,44 @@ export default function Landing() {
           .screenshots-grid { grid-template-columns: 1fr !important; }
           .steps-grid { grid-template-columns: 1fr !important; }
         }
+        /* Safe area + mobile layout */
+        .landing-nav {
+          padding: env(safe-area-inset-top) 3rem 0;
+          height: calc(60px + env(safe-area-inset-top));
+        }
+        .hero-section { padding-top: calc(60px + env(safe-area-inset-top)); }
+        @media (max-width: 768px) {
+          .landing-nav { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+          .hero-inner { padding: 2.5rem 1.25rem 3rem !important; }
+          .hero-grid { grid-template-columns: 1fr !important; }
+          .hero-ticket { display: none !important; }
+          .section-pad { padding: 3.5rem 1.25rem !important; }
+          .cta-pad { padding: 5rem 1.25rem !important; }
+          .footer-pad { padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom)) !important; }
+        }
       `}</style>
 
       {/* ── NAV ── */}
-      <nav style={{
+      <nav className="landing-nav" style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 3rem', height: '60px',
         background: '#F1EFEA',
         borderBottom: '1.5px solid #0A0A0A',
       }}>
         <Link to="/"><Logo size="sm" variant="paper" /></Link>
         <ul className="nav-links-desktop" style={{ display: 'flex', gap: '2.5rem', listStyle: 'none', margin: 0, padding: 0 }}>
           <li><a href="#como" className="alto-label-sm" style={{ color: '#6B6B6B', textDecoration: 'none' }}>Cómo funciona</a></li>
-          <li><Link to="/pricing" className="alto-label-sm" style={{ color: '#6B6B6B', textDecoration: 'none' }}>Precios</Link></li>
+          {!FREE_FOR_ALL && (
+            <li><Link to="/pricing" className="alto-label-sm" style={{ color: '#6B6B6B', textDecoration: 'none' }}>Precios</Link></li>
+          )}
           <li><Link to="/login" className="alto-label-sm" style={{ color: '#6B6B6B', textDecoration: 'none' }}>Iniciar sesión</Link></li>
         </ul>
         <Link to="/register" className="landing-btn-accent">Comenzar gratis →</Link>
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: '60px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem', width: '100%', display: 'grid', gridTemplateColumns: '1fr auto', gap: '4rem', alignItems: 'center' }}>
+      <section className="hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+        <div className="hero-inner hero-grid" style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem', width: '100%', display: 'grid', gridTemplateColumns: '1fr auto', gap: '4rem', alignItems: 'center' }}>
           <div>
             <span className="alto-label-sm" style={{ color: '#6B6B6B', display: 'block', marginBottom: '1.5rem' }}>
               LENZU · APP PARA FOTÓGRAFOS DE BODAS
@@ -182,7 +199,7 @@ export default function Landing() {
             </div>
           </div>
           {/* Ticket hero stamp */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', opacity: 0.9 }}>
+          <div className="hero-ticket" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', opacity: 0.9 }}>
             <Ticket size={120} content="L" rotate={-6} shadow />
             <span className="alto-label-sm" style={{ color: '#6B6B6B', textAlign: 'center', lineHeight: 1.5 }}>
               PARA FOTÓGRAFOS<br />Y EVENT PLANNERS
@@ -195,7 +212,7 @@ export default function Landing() {
       <div style={{ borderTop: '1.5px solid #0A0A0A' }} />
 
       {/* ── SCREENSHOTS ── */}
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '6rem 2rem' }}>
+      <div className="section-pad" style={{ maxWidth: 1280, margin: '0 auto', padding: '6rem 2rem' }}>
         <div className="fade-up" style={{ marginBottom: '2.5rem' }}>
           <span className="alto-label-sm" style={{ color: '#6B6B6B' }}>LA APP · EN ACCIÓN</span>
         </div>
@@ -235,7 +252,7 @@ export default function Landing() {
       <div style={{ borderTop: '1.5px solid #0A0A0A' }} />
 
       {/* ── PROBLEM ── */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem' }}>
+      <div className="section-pad" style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem' }}>
         <div className="problem-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5rem', alignItems: 'start' }}>
           <div className="fade-up">
             <span className="alto-label-sm" style={{ color: '#6B6B6B', display: 'block', marginBottom: '1rem' }}>EL PROBLEMA REAL</span>
@@ -267,7 +284,7 @@ export default function Landing() {
 
       {/* ── FEATURES ── */}
       <div style={{ background: '#F7F5F0', borderBottom: '1.5px solid #0A0A0A' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem' }}>
+        <div className="section-pad" style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem' }}>
           <div className="fade-up" style={{ marginBottom: '3rem' }}>
             <span className="alto-label-sm" style={{ color: '#6B6B6B', display: 'block', marginBottom: '0.75rem' }}>LA SOLUCIÓN</span>
             <h2 style={{ fontFamily: '"Inter Tight", sans-serif', fontWeight: 700, fontSize: 'clamp(1.8rem, 3vw, 2.8rem)', letterSpacing: '-0.04em', lineHeight: 0.95, color: '#0A0A0A' }}>
@@ -298,7 +315,7 @@ export default function Landing() {
       </div>
 
       {/* ── QUOTE ── */}
-      <section style={{ background: '#0A0A0A', padding: '6rem 3rem', textAlign: 'center', borderBottom: '1.5px solid #0A0A0A' }}>
+      <section className="cta-pad" style={{ background: '#0A0A0A', padding: '6rem 3rem', textAlign: 'center', borderBottom: '1.5px solid #0A0A0A' }}>
         <div className="fade-up" style={{ maxWidth: 680, margin: '0 auto' }}>
           <blockquote style={{
             fontFamily: '"Inter Tight", sans-serif',
@@ -318,7 +335,7 @@ export default function Landing() {
       </section>
 
       {/* ── HOW ── */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem' }} id="como">
+      <div className="section-pad" style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem' }} id="como">
         <div className="fade-up" style={{ marginBottom: '3rem' }}>
           <span className="alto-label-sm" style={{ color: '#6B6B6B', display: 'block', marginBottom: '0.75rem' }}>CÓMO FUNCIONA</span>
           <h2 style={{ fontFamily: '"Inter Tight", sans-serif', fontWeight: 700, fontSize: 'clamp(1.8rem, 3vw, 2.8rem)', letterSpacing: '-0.04em', lineHeight: 0.95, color: '#0A0A0A' }}>
@@ -350,7 +367,7 @@ export default function Landing() {
 
       {/* ── STORY ── */}
       <div style={{ background: '#F7F5F0', borderBottom: '1.5px solid #0A0A0A' }}>
-        <div className="story-grid" style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '5rem', alignItems: 'center' }}>
+        <div className="story-grid section-pad" style={{ maxWidth: 1100, margin: '0 auto', padding: '6rem 3rem', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '5rem', alignItems: 'center' }}>
           <div className="fade-up">
             <span className="alto-label-sm" style={{ color: '#6B6B6B', display: 'block', marginBottom: '1rem' }}>HECHA POR UN FOTÓGRAFO MEXICANO</span>
             <h2 style={{ fontFamily: '"Inter Tight", sans-serif', fontWeight: 700, fontSize: 'clamp(1.6rem, 2.8vw, 2.4rem)', letterSpacing: '-0.04em', lineHeight: 0.95, color: '#0A0A0A', marginBottom: '1.5rem' }}>
@@ -385,46 +402,61 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── PRICING TEASER ── */}
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '6rem 3rem', textAlign: 'center' }}>
+      {/* ── PRICING TEASER — free-for-all: everything is free, no plan tiers ── */}
+      <div className="section-pad" style={{ maxWidth: 860, margin: '0 auto', padding: '6rem 3rem', textAlign: 'center' }}>
         <div className="fade-up">
-          <span className="alto-label-sm" style={{ color: '#6B6B6B', display: 'block', marginBottom: '0.75rem' }}>PRECIOS</span>
-          <h2 style={{ fontFamily: '"Inter Tight", sans-serif', fontWeight: 700, fontSize: 'clamp(1.8rem, 3vw, 2.8rem)', letterSpacing: '-0.04em', lineHeight: 0.95, color: '#0A0A0A', marginBottom: '1.2rem' }}>
-            EMPIEZA GRATIS<span style={{ color: '#7B7FE0' }}>.</span><br />CRECE CUANDO ESTÉS LISTO<span style={{ color: '#7B7FE0' }}>.</span>
-          </h2>
-          <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', color: '#6B6B6B', lineHeight: 1.8, marginBottom: '2rem' }}>
-            Los invitados siempre son gratis. Solo pagas por el número de proyectos activos.
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-            {[
-              { label: 'GRATIS / 2 PROYECTOS', accent: false },
-              { label: 'STARTER $9/MES / 15 PROYECTOS', accent: false },
-              { label: 'PRO $19/MES / ILIMITADO', accent: true },
-              { label: 'STUDIO $39/MES / EQUIPOS', accent: false },
-            ].map(p => (
-              <span
-                key={p.label}
-                className="alto-label-sm"
-                style={{
-                  padding: '6px 12px',
-                  border: p.accent ? '1.5px solid #0A0A0A' : '1px solid #0A0A0A',
-                  background: p.accent ? '#7B7FE0' : 'transparent',
-                  color: '#0A0A0A',
-                }}
-              >
-                {p.label}
-              </span>
-            ))}
-          </div>
-          <Link to="/pricing" className="landing-btn-ghost">Ver precios completos →</Link>
-          <p className="alto-label-sm" style={{ color: '#6B6B6B', marginTop: '1.2rem' }}>
-            NO NECESITAS TARJETA PARA EMPEZAR · 7 DÍAS DE PRUEBA GRATIS EN PLANES DE PAGO
-          </p>
+          {FREE_FOR_ALL ? (
+            <>
+              <span className="alto-label-sm" style={{ color: '#6B6B6B', display: 'block', marginBottom: '0.75rem' }}>PRECIO</span>
+              <h2 style={{ fontFamily: '"Inter Tight", sans-serif', fontWeight: 700, fontSize: 'clamp(1.8rem, 3vw, 2.8rem)', letterSpacing: '-0.04em', lineHeight: 0.95, color: '#0A0A0A', marginBottom: '1.2rem' }}>
+                GRATIS<span style={{ color: '#7B7FE0' }}>.</span><br />ASÍ DE SIMPLE<span style={{ color: '#7B7FE0' }}>.</span>
+              </h2>
+              <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', color: '#6B6B6B', lineHeight: 1.8, marginBottom: '2rem' }}>
+                Proyectos ilimitados, colaboradores ilimitados, Apple Watch y moodboard de inspiración. Todo incluido.
+              </p>
+              <p className="alto-label-sm" style={{ color: '#6B6B6B', marginTop: '1.2rem' }}>
+                NO NECESITAS TARJETA · SOLO CREA TU CUENTA
+              </p>
+            </>
+          ) : (
+            <>
+              <span className="alto-label-sm" style={{ color: '#6B6B6B', display: 'block', marginBottom: '0.75rem' }}>PRECIOS</span>
+              <h2 style={{ fontFamily: '"Inter Tight", sans-serif', fontWeight: 700, fontSize: 'clamp(1.8rem, 3vw, 2.8rem)', letterSpacing: '-0.04em', lineHeight: 0.95, color: '#0A0A0A', marginBottom: '1.2rem' }}>
+                DOS PLANES<span style={{ color: '#7B7FE0' }}>.</span><br />SIN COMPLICACIONES<span style={{ color: '#7B7FE0' }}>.</span>
+              </h2>
+              <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', color: '#6B6B6B', lineHeight: 1.8, marginBottom: '2rem' }}>
+                Proyectos ilimitados en ambos planes. Pro agrega Apple Watch y el moodboard de inspiración.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+                {[
+                  { label: 'GRATIS / PROYECTOS ILIMITADOS', accent: false },
+                  { label: 'PRO $5/MES / WATCH + INSPIRACIÓN', accent: true },
+                ].map(p => (
+                  <span
+                    key={p.label}
+                    className="alto-label-sm"
+                    style={{
+                      padding: '6px 12px',
+                      border: p.accent ? '1.5px solid #0A0A0A' : '1px solid #0A0A0A',
+                      background: p.accent ? '#7B7FE0' : 'transparent',
+                      color: '#0A0A0A',
+                    }}
+                  >
+                    {p.label}
+                  </span>
+                ))}
+              </div>
+              <Link to="/pricing" className="landing-btn-ghost">Ver precios completos →</Link>
+              <p className="alto-label-sm" style={{ color: '#6B6B6B', marginTop: '1.2rem' }}>
+                NO NECESITAS TARJETA PARA EMPEZAR · 30 DÍAS DE PRUEBA GRATIS
+              </p>
+            </>
+          )}
         </div>
       </div>
 
       {/* ── CTA ── */}
-      <section style={{ background: '#0A0A0A', padding: '8rem 3rem', textAlign: 'center', borderTop: '1.5px solid #0A0A0A', borderBottom: '1.5px solid #0A0A0A' }}>
+      <section className="cta-pad" style={{ background: '#0A0A0A', padding: '8rem 3rem', textAlign: 'center', borderTop: '1.5px solid #0A0A0A', borderBottom: '1.5px solid #0A0A0A' }}>
         <div className="fade-up" style={{ maxWidth: 600, margin: '0 auto' }}>
           <h2 style={{ fontFamily: '"Inter Tight", sans-serif', fontWeight: 700, fontSize: 'clamp(2rem, 5vw, 3.8rem)', letterSpacing: '-0.04em', lineHeight: 0.92, color: '#F1EFEA', marginBottom: '1.5rem' }}>
             TU PRÓXIMA BODA<span style={{ color: '#7B7FE0' }}>.</span><br />
@@ -438,11 +470,13 @@ export default function Landing() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: '#F7F5F0', borderTop: '1.5px solid #0A0A0A', padding: '1.5rem 3rem' }}>
+      <footer className="footer-pad" style={{ background: '#F7F5F0', borderTop: '1.5px solid #0A0A0A', padding: '1.5rem 3rem' }}>
         <div className="footer-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <Logo size="sm" variant="paper" />
           <ul style={{ display: 'flex', gap: '2rem', listStyle: 'none', margin: 0, padding: 0 }}>
+            {!FREE_FOR_ALL && (
             <li><Link to="/pricing" className="alto-label-sm" style={{ color: '#6B6B6B', textDecoration: 'none' }}>Precios</Link></li>
+          )}
             <li><Link to="/login" className="alto-label-sm" style={{ color: '#6B6B6B', textDecoration: 'none' }}>Iniciar sesión</Link></li>
             <li><Link to="/register" className="alto-label-sm" style={{ color: '#6B6B6B', textDecoration: 'none' }}>Registrarse</Link></li>
             <li><Link to="/privacy" className="alto-label-sm" style={{ color: '#6B6B6B', textDecoration: 'none' }}>Privacidad</Link></li>

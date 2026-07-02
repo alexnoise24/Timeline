@@ -3,7 +3,7 @@ import User from '../models/User.js';
 
 // Issue JWT tokens for authenticated users
 export const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '90d' });
 };
 
 export const authenticate = async (req, res, next) => {

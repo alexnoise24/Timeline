@@ -1,5 +1,16 @@
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { ArrowLeft } from 'lucide-react';
+
+// On the native app (Apple 3.1.1) legal pages must not mention price,
+// subscription, billing or renewal. These bullets get a native-safe variant
+// (null = removed on native). The web keeps the full legal text intact.
+const NATIVE_LIST_OVERRIDE: Record<string, string | null> = {
+  'Información de pago: datos de facturación procesados de forma segura a través de Stripe (no almacenamos números de tarjeta).': null,
+  'Procesar transacciones y gestionar suscripciones.': 'Procesar transacciones.',
+  'Proveedores de servicio: utilizamos terceros (Stripe para pagos, servicios de email) que procesan datos en nuestro nombre.':
+    'Proveedores de servicio: utilizamos terceros que procesan datos en nuestro nombre.',
+};
 
 const SECTIONS = [
   {
@@ -75,6 +86,7 @@ const SECTIONS = [
 
 export default function PrivacyPolicy() {
   const navigate = useNavigate();
+  const isNative = Capacitor.isNativePlatform();
 
   const handleBack = () => {
     if (window.history.length > 1) navigate(-1);
@@ -82,7 +94,7 @@ export default function PrivacyPolicy() {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="h-full overflow-y-auto bg-paper">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Header */}
@@ -103,15 +115,24 @@ export default function PrivacyPolicy() {
 
         {/* Sections */}
         <div className="space-y-0 border-[1.5px] border-ink divide-y-[1px] divide-ink/15 mb-8">
-          {SECTIONS.map(({ title, body, intro, list, footer }) => (
+          {SECTIONS.map(({ title, body, intro, list, footer }) => {
+            // Apply native-safe overrides to list items (drop nulls).
+            const visibleList = list
+              ? list
+                  .map((item) =>
+                    isNative && item in NATIVE_LIST_OVERRIDE ? NATIVE_LIST_OVERRIDE[item] : item
+                  )
+                  .filter((item): item is string => item !== null)
+              : list;
+            return (
             <div key={title} className="px-5 py-5">
               <h2 className="font-mono font-bold text-[12px] text-ink mb-2 uppercase tracking-[0.02em]">{title}</h2>
               {intro && (
                 <p className="font-mono text-[11px] text-stone leading-relaxed mb-2">{intro}</p>
               )}
-              {list && (
+              {visibleList && visibleList.length > 0 && (
                 <ul className="space-y-1 mb-2 border-l-[2px] border-ink/20 pl-3">
-                  {list.map((item, i) => (
+                  {visibleList.map((item, i) => (
                     <li key={i} className="font-mono text-[11px] text-stone leading-relaxed">{item}</li>
                   ))}
                 </ul>
@@ -123,7 +144,8 @@ export default function PrivacyPolicy() {
                 <p className="font-mono text-[11px] text-ink font-bold mt-2">{footer}</p>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <p className="alto-label text-stone text-center">Lenzu · © 2026 Alex Obregon</p>

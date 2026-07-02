@@ -14,6 +14,7 @@ export const isMaster = (user) => {
 // Plan types
 export const PLANS = {
   NONE: 'none',
+  GUEST: 'guest',
   TRIAL: 'trial',
   FREE: 'free',
   STARTER: 'starter',
@@ -36,10 +37,11 @@ export const TRIAL_DURATION_DAYS = 7;
 // Plan limits
 export const PLAN_LIMITS = {
   none: { timelines: 0, collaborators: 0 },
-  trial: { timelines: 2, collaborators: 5 },
-  free: { timelines: 1, collaborators: 2 },
-  starter: { timelines: 5, collaborators: 10 },
-  pro: { timelines: 20, collaborators: 50 },
+  guest: { timelines: Infinity, collaborators: Infinity },
+  trial: { timelines: Infinity, collaborators: Infinity },
+  free: { timelines: Infinity, collaborators: Infinity },
+  starter: { timelines: Infinity, collaborators: Infinity },
+  pro: { timelines: Infinity, collaborators: Infinity },
   studio: { timelines: Infinity, collaborators: Infinity },
   master: { timelines: Infinity, collaborators: Infinity }
 };

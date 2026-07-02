@@ -1,14 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, ChevronDown, CreditCard, Palette, KeyRound, LogOut } from 'lucide-react';
+import { Menu, ChevronDown, CreditCard, Palette, KeyRound, LogOut, Settings } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useMobileMenu } from '@/context/MobileMenuContext';
-import { useBranding } from '@/context/BrandingContext';
 import { usePlatform } from '@/hooks/usePlatform';
+import { FREE_FOR_ALL } from '@/lib/utils';
 import LanguageSelector from './LanguageSelector';
 import ChangePasswordModal from './ChangePasswordModal';
-import Logo from '@/components/ui/Logo';
 import Wordmark from '@/components/ui/Wordmark';
 import Avatar from '@/components/ui/Avatar';
 
@@ -17,7 +16,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { toggleSidebar } = useMobileMenu();
-  const { branding } = useBranding();
   const { isIOS } = usePlatform();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -35,6 +33,7 @@ export default function Navbar() {
 
   const handleChangePassword = () => { setIsUserMenuOpen(false); setIsChangePasswordOpen(true); };
   const handleViewPlan = () => { setIsUserMenuOpen(false); navigate('/my-plan'); };
+  const handleAccountSettings = () => { setIsUserMenuOpen(false); navigate('/settings'); };
   const handleBranding = () => { setIsUserMenuOpen(false); navigate('/branding'); };
   const handleLogout = () => { setIsUserMenuOpen(false); logout(); };
 
@@ -47,8 +46,8 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-[9999] bg-paper border-b-[1.5px] border-ink pt-[env(safe-area-inset-top)] ${isIOS ? 'ios-navbar' : ''}`}
-        style={{ transform: 'translateZ(0)' }}
+        className={`fixed top-0 left-0 right-0 z-[9999] bg-paper border-b-[1.5px] border-ink ${isIOS ? 'ios-navbar' : ''}`}
+        style={{ paddingTop: 'env(safe-area-inset-top)', transform: 'translateZ(0)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`flex justify-between items-center ${isIOS ? 'h-14' : 'h-16'}`}>
@@ -64,17 +63,7 @@ export default function Navbar() {
               </button>
 
               <Link to="/" className="flex items-center">
-                {branding?.enabled && branding.logo ? (
-                  <img
-                    src={`${import.meta.env.VITE_API_URL || ''}${branding.logo}`}
-                    alt={branding.studioName || 'Logo'}
-                    className="h-7 w-auto object-contain"
-                  />
-                ) : branding?.enabled && branding.studioName ? (
-                  <Wordmark size={22} />
-                ) : (
-                  <Logo size="sm" variant="paper" />
-                )}
+                <Wordmark size={22} />
               </Link>
             </div>
 
@@ -95,13 +84,25 @@ export default function Navbar() {
 
                   {isUserMenuOpen && (
                     <div className="absolute right-0 mt-0 w-52 bg-paper border-[1.5px] border-ink z-[100]">
+                      {/* Account settings first — also where account deletion lives (App Review 5.1.1) */}
                       <button
-                        onClick={handleViewPlan}
+                        onClick={handleAccountSettings}
                         className="w-full flex items-center gap-3 px-4 py-3 alto-label text-ink border-b border-ink/20 hover:bg-fog transition-colors duration-snap"
                       >
-                        <CreditCard size={14} strokeWidth={1.5} />
-                        {t('nav.myPlan')}
+                        <Settings size={14} strokeWidth={1.5} />
+                        {t('sidebar.settings')}
                       </button>
+                      {/* "My Plan" hidden while the product is fully free; when
+                          monetization returns it shows everywhere (IAP in native) */}
+                      {!FREE_FOR_ALL && (
+                        <button
+                          onClick={handleViewPlan}
+                          className="w-full flex items-center gap-3 px-4 py-3 alto-label text-ink border-b border-ink/20 hover:bg-fog transition-colors duration-snap"
+                        >
+                          <CreditCard size={14} strokeWidth={1.5} />
+                          {t('nav.myPlan')}
+                        </button>
+                      )}
                       {canUseBranding && (
                         <button
                           onClick={handleBranding}

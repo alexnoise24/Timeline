@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { ArrowLeft, User, Trash2, AlertTriangle, Loader2, Mail, Shield, FileText, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
@@ -8,6 +9,7 @@ import Sidebar from '@/components/Sidebar';
 import Button from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
+import { FREE_FOR_ALL } from '@/lib/utils';
 
 export default function AccountSettings() {
   const { t } = useTranslation();
@@ -44,6 +46,7 @@ export default function AccountSettings() {
   };
 
   const planLabel = (plan: string) => {
+    if (plan === 'none' || plan === 'guest') return t('plans.guestLabel');
     const labels: Record<string, string> = {
       free: 'GRATIS', trial: 'PRUEBA', starter: 'STARTER',
       pro: 'PRO', studio: 'STUDIO', master: 'MASTER', lifetime: 'LIFETIME',
@@ -52,7 +55,7 @@ export default function AccountSettings() {
   };
 
   return (
-    <div className="flex h-screen bg-paper">
+    <div className="flex h-full bg-paper">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -99,15 +102,18 @@ export default function AccountSettings() {
                     {user?.role === 'guest' ? t('auth.guest').toUpperCase() : user?.role?.toUpperCase()}
                   </span>
                 </div>
-                <div className="flex items-center justify-between px-5 py-4">
-                  <div className="flex items-center gap-2 alto-label text-stone">
-                    <FileText size={12} strokeWidth={1.5} />
-                    {t('settings.plan').toUpperCase()}
+                {/* Plan label hidden while fully free, and always in native (no plan mentions) */}
+                {!FREE_FOR_ALL && !Capacitor.isNativePlatform() && (
+                  <div className="flex items-center justify-between px-5 py-4">
+                    <div className="flex items-center gap-2 alto-label text-stone">
+                      <FileText size={12} strokeWidth={1.5} />
+                      {t('settings.plan').toUpperCase()}
+                    </div>
+                    <span className="border-[1px] border-lavender/50 bg-lavender/10 px-2 py-0.5 font-mono font-bold text-[10px] text-ink">
+                      {planLabel(user?.current_plan || 'free')}
+                    </span>
                   </div>
-                  <span className="border-[1px] border-lavender/50 bg-lavender/10 px-2 py-0.5 font-mono font-bold text-[10px] text-ink">
-                    {planLabel(user?.current_plan || 'free')}
-                  </span>
-                </div>
+                )}
               </div>
             </div>
 
@@ -181,7 +187,8 @@ export default function AccountSettings() {
               </p>
 
               <ul className="space-y-1 border-l-[2px] border-brick/30 pl-3">
-                {['deleteItem1', 'deleteItem2', 'deleteItem3', 'deleteItem4'].map(key => (
+                {/* Apple subscriptions can't be canceled server-side — point native users to iOS Settings */}
+                {['deleteItem1', 'deleteItem2', Capacitor.isNativePlatform() ? 'deleteItemAppleSub' : 'deleteItem3', 'deleteItem4'].map(key => (
                   <li key={key} className="font-mono text-[11px] text-stone">
                     {t(`settings.${key}`)}
                   </li>

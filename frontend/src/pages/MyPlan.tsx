@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, FolderOpen, Users, Check, ArrowUpRight, Loader2, Settings2, X } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Users, Check, ArrowUpRight, Loader2, Settings2, X, RotateCcw } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
+import type { PurchasesPackage } from '@revenuecat/purchases-capacitor';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import Button from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
+import { iapService } from '@/services/iapService';
 import api from '@/lib/api';
 
 interface UsageData {
@@ -14,40 +17,47 @@ interface UsageData {
   collaborators: number;
 }
 
-const ALL_FEATURES = [
-  'Proyectos ilimitados',
-  'Invitados ilimitados',
-  'Shot lists',
-  'Notificaciones push',
-  'Apple Watch sync',
-  'Modo campo (Día de boda)',
-  'Branding personalizado',
-  'Comunidad de fotógrafos',
-  'Soporte prioritario',
+const FREE_FEATURE_KEYS = [
+  'plans.freeFeature1', 'plans.freeFeature2', 'plans.freeFeature3',
+  'plans.freeFeature4', 'plans.freeFeature5', 'plans.freeFeature6',
+];
+
+const PRO_FEATURE_KEYS = [
+  'plans.proFeature1', 'plans.proFeature2', 'plans.proFeature3',
+  'plans.proFeature4',
 ];
 
 const PLAN_LABELS: Record<string, string> = {
+  none: 'INVITADO', guest: 'INVITADO',
   free: 'GRATIS', trial: 'PRUEBA', starter: 'PRO',
   pro: 'PRO', studio: 'PRO', master: 'MASTER', lifetime: 'LIFETIME',
 };
 
 const PLAN_PRICES: Record<string, string> = {
+  none: '$0', guest: '$0',
   free: '$0', trial: '$0', starter: '$5',
   pro: '$5', studio: '$5', master: '∞', lifetime: '∞',
 };
 
 export default function MyPlan() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, checkAuth } = useAuthStore();
   const [usage, setUsage] = useState<UsageData>({ timelines: 0, collaborators: 0 });
   const [loading, setLoading] = useState(true);
   const [managingSubscription, setManagingSubscription] = useState(false);
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
 
+  // In-App Purchase state (native only)
+  const [proPackage, setProPackage] = useState<PurchasesPackage | null>(null);
+  const [hasAppleSub, setHasAppleSub] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+
   const currentPlan = user?.current_plan || 'free';
   const isPaid = ['starter', 'pro', 'studio', 'master', 'lifetime'].includes(currentPlan);
   const isTrial = currentPlan === 'trial' || currentPlan === 'free';
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
     api.get('/users/usage')
@@ -55,6 +65,58 @@ export default function MyPlan() {
       .catch(e => console.error('Error fetching usage:', e))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!isNative) return;
+    iapService.getProPackage().then(setProPackage);
+    iapService.hasActiveEntitlement().then(setHasAppleSub);
+  }, [isNative]);
+
+  const refreshPlanFromServer = async () => {
+    try {
+      await api.post('/iap/verify');
+    } catch {
+      // webhook will still update the plan server-side
+    }
+    await checkAuth();
+    iapService.hasActiveEntitlement().then(setHasAppleSub);
+  };
+
+  const handlePurchasePro = async () => {
+    if (!proPackage) {
+      toast.error(t('plans.iapUnavailable'));
+      return;
+    }
+    setPurchasing(true);
+    try {
+      const active = await iapService.purchasePro(proPackage);
+      if (active) {
+        await refreshPlanFromServer();
+        toast.success(t('plans.iapSuccess'));
+      }
+    } catch {
+      toast.error(t('plans.iapError'));
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    setRestoring(true);
+    try {
+      const active = await iapService.restorePurchases();
+      if (active) {
+        await refreshPlanFromServer();
+        toast.success(t('plans.iapSuccess'));
+      } else {
+        toast.info(t('plans.iapRestoreNone'));
+      }
+    } catch {
+      toast.error(t('plans.iapError'));
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   const handleManageSubscription = async () => {
     if (!user?.stripe_customer_id) { toast.error(t('pricing.noSubscription')); return; }
@@ -87,7 +149,7 @@ export default function MyPlan() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-paper">
+      <div className="flex h-full bg-paper">
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <Navbar />
@@ -100,7 +162,7 @@ export default function MyPlan() {
   }
 
   return (
-    <div className="flex h-screen bg-paper">
+    <div className="flex h-full bg-paper">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -128,16 +190,18 @@ export default function MyPlan() {
             <div className={`border-[1.5px] mb-4 ${isPaid ? 'border-ink bg-ink' : 'border-ink bg-paper'}`}>
               <div className="px-6 py-6 flex items-end justify-between">
                 <div>
-                  <p className={`alto-label mb-1 ${isPaid ? 'text-paper/50' : 'text-stone'}`}>PLAN ACTUAL</p>
+                  <p className={`alto-label mb-1 ${isPaid ? 'text-paper/50' : 'text-stone'}`}>{t('myPlan.currentPlanLabel')}</p>
                   <h2 className={`font-display font-bold text-[40px] tracking-[-0.04em] leading-none ${isPaid ? 'text-paper' : 'text-ink'}`}>
-                    {PLAN_LABELS[currentPlan] || currentPlan.toUpperCase()}
+                    {(currentPlan === 'none' || currentPlan === 'guest')
+                      ? t('plans.guestLabel')
+                      : (PLAN_LABELS[currentPlan] || currentPlan.toUpperCase())}
                   </h2>
                 </div>
                 <div className="text-right">
                   <span className={`font-display font-bold text-[36px] tracking-[-0.04em] leading-none ${isPaid ? 'text-paper' : 'text-ink'}`}>
                     {PLAN_PRICES[currentPlan] || '$0'}
                   </span>
-                  <span className={`alto-label ml-1 ${isPaid ? 'text-paper/50' : 'text-stone'}`}>/MES</span>
+                  <span className={`alto-label ml-1 ${isPaid ? 'text-paper/50' : 'text-stone'}`}>{t('myPlan.perMonth')}</span>
                 </div>
               </div>
 
@@ -145,9 +209,9 @@ export default function MyPlan() {
               {isTrial && user?.trial_end_date && (
                 <div className="mx-4 mb-4 border-[1px] border-ember/40 bg-ember/8 px-4 py-3">
                   <p className="font-mono text-[11px] text-ink leading-relaxed">
-                    Prueba activa · termina el{' '}
+                    {t('myPlan.trialActive')}{' '}
                     <span className="font-bold">
-                      {new Date(user.trial_end_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {new Date(user.trial_end_date).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </span>
                   </p>
                 </div>
@@ -188,11 +252,11 @@ export default function MyPlan() {
                 <h3 className="alto-label text-ink">{t('myPlan.featuresIncluded').toUpperCase()}</h3>
               </div>
               <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {ALL_FEATURES.map((feature) => (
-                  <div key={feature} className="flex items-center gap-2">
+                {(isPaid ? PRO_FEATURE_KEYS : FREE_FEATURE_KEYS).map((key) => (
+                  <div key={key} className="flex items-center gap-2">
                     <Check size={12} strokeWidth={2.5} className={isPaid ? 'text-moss' : 'text-stone'} />
                     <span className={`font-mono text-[12px] ${isPaid ? 'text-ink' : 'text-stone'}`}>
-                      {feature}
+                      {t(key)}
                     </span>
                   </div>
                 ))}
@@ -200,54 +264,104 @@ export default function MyPlan() {
               {!isPaid && (
                 <div className="px-5 pb-4">
                   <p className="font-mono text-[11px] text-stone">
-                    Todas las funciones disponibles durante la prueba.
+                    {t('myPlan.allFeaturesDuringTrial')}
                   </p>
                 </div>
               )}
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              {!isPaid && (
-                <Button
-                  variant="accent"
-                  onClick={() => navigate('/pricing')}
-                  className="flex-1 flex items-center justify-center gap-2"
-                  arrow
-                >
-                  <ArrowUpRight size={13} strokeWidth={1.5} />
-                  Activar plan Pro · $5/mes
-                </Button>
-              )}
+            {isNative ? (
+              <div className="space-y-3">
+                {!isPaid && (
+                  <>
+                    <Button
+                      variant="accent"
+                      onClick={handlePurchasePro}
+                      disabled={purchasing}
+                      className="w-full flex items-center justify-center gap-2"
+                      arrow
+                    >
+                      {purchasing
+                        ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                        : <ArrowUpRight size={13} strokeWidth={1.5} />}
+                      {t('plans.iapSubscribe', { price: proPackage?.product.priceString || '$4.99' })}
+                    </Button>
+                    <p className="font-mono text-[10px] text-stone leading-relaxed">
+                      {t('plans.iapAutoRenew')}{' '}
+                      <button onClick={() => navigate('/terms')} className="underline">{t('settings.termsOfService')}</button>
+                      {' · '}
+                      <button onClick={() => navigate('/privacy')} className="underline">{t('settings.privacyPolicy')}</button>
+                    </p>
+                  </>
+                )}
 
-              {user?.stripe_customer_id && (
-                <Button
-                  variant="secondary"
-                  onClick={handleManageSubscription}
-                  disabled={managingSubscription}
-                  className="flex-1 flex items-center justify-center gap-2"
-                >
-                  {managingSubscription
-                    ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
-                    : <Settings2 size={13} strokeWidth={1.5} />}
-                  {t('myPlan.manageSubscription')}
-                </Button>
-              )}
+                {isPaid && hasAppleSub && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => window.open('https://apps.apple.com/account/subscriptions', '_blank')}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <Settings2 size={13} strokeWidth={1.5} />
+                    {t('myPlan.manageSubscription')}
+                  </Button>
+                )}
 
-              {user?.stripe_subscription_id && (
                 <Button
                   variant="ghost"
-                  onClick={handleCancelSubscription}
-                  disabled={cancelingSubscription}
-                  className="flex-1 flex items-center justify-center gap-2 hover:text-brick hover:border-brick/40"
+                  onClick={handleRestorePurchases}
+                  disabled={restoring}
+                  className="w-full flex items-center justify-center gap-2"
                 >
-                  {cancelingSubscription
+                  {restoring
                     ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
-                    : <X size={13} strokeWidth={1.5} />}
-                  {t('myPlan.cancelPlan')}
+                    : <RotateCcw size={13} strokeWidth={1.5} />}
+                  {t('plans.iapRestore')}
                 </Button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2">
+                {!isPaid && (
+                  <Button
+                    variant="accent"
+                    onClick={() => navigate('/pricing')}
+                    className="flex-1 flex items-center justify-center gap-2"
+                    arrow
+                  >
+                    <ArrowUpRight size={13} strokeWidth={1.5} />
+                    {t('myPlan.activateProPlan')}
+                  </Button>
+                )}
+
+                {user?.stripe_customer_id && (
+                  <Button
+                    variant="secondary"
+                    onClick={handleManageSubscription}
+                    disabled={managingSubscription}
+                    className="flex-1 flex items-center justify-center gap-2"
+                  >
+                    {managingSubscription
+                      ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                      : <Settings2 size={13} strokeWidth={1.5} />}
+                    {t('myPlan.manageSubscription')}
+                  </Button>
+                )}
+
+                {user?.stripe_subscription_id && (
+                  <Button
+                    variant="ghost"
+                    onClick={handleCancelSubscription}
+                    disabled={cancelingSubscription}
+                    className="flex-1 flex items-center justify-center gap-2 hover:text-brick hover:border-brick/40"
+                  >
+                    {cancelingSubscription
+                      ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                      : <X size={13} strokeWidth={1.5} />}
+                    {t('myPlan.cancelPlan')}
+                  </Button>
+                )}
+              </div>
+            )}
 
           </div>
         </div>

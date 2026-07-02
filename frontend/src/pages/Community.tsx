@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
+import { FREE_FOR_ALL } from '@/lib/utils';
 import { Send, Loader2, Trash2, Users, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
@@ -106,7 +108,7 @@ export default function Community() {
   };
 
   return (
-    <div className="flex h-screen bg-paper">
+    <div className="flex h-full bg-paper">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -155,7 +157,10 @@ export default function Community() {
                 ) : (
                   messages.map((msg) => {
                     const isOwn = msg.user._id === user?._id;
-                    const badge = getPlanBadge(msg.user.current_plan, msg.user.role);
+                    // No plan badges while fully free, nor in the native app.
+                    const badge = FREE_FOR_ALL || Capacitor.isNativePlatform()
+                      ? null
+                      : getPlanBadge(msg.user.current_plan, msg.user.role);
 
                     return (
                       <div

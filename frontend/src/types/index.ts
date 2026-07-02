@@ -14,7 +14,7 @@ export interface User {
   trial_start_date?: string;
   trial_end_date?: string;
   is_trial_active?: boolean;
-  current_plan?: 'none' | 'trial' | 'free' | 'starter' | 'pro' | 'studio' | 'master' | 'lifetime';
+  current_plan?: 'none' | 'guest' | 'trial' | 'free' | 'starter' | 'pro' | 'studio' | 'master' | 'lifetime';
   plan_expiration_date?: string;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;

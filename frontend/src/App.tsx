@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import Ticket from './components/ui/Ticket';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
@@ -10,6 +12,7 @@ import { OfflineProvider } from './context/OfflineContext';
 import NotificationHandler from './components/NotificationHandler';
 import OfflineIndicator from './components/OfflineIndicator';
 import { watchService } from './services/watchService';
+import { hasFullAccess, FREE_FOR_ALL } from './lib/utils';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -71,31 +74,55 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function TrialExpiredGuard({ children }: { children: React.ReactNode }) {
-  const { user } = useAuthStore();
-  const paid = ['starter', 'pro', 'studio', 'master', 'lifetime'];
-  const expired =
-    user &&
-    user.role !== 'guest' &&
-    !paid.includes(user.current_plan || '') &&
-    (user.current_plan === 'none' ||
-      (!!user.trial_end_date && new Date(user.trial_end_date) < new Date()));
-  if (expired) {
-    return <Navigate to="/pricing" state={{ trialExpired: true }} replace />;
-  }
-  return <>{children}</>;
-}
 
 function HomeRoute() {
   const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <Landing />;
 }
 
 function App() {
   const { checkAuth, isLoading: isAuthLoading } = useAuthStore();
   const { timelines, fetchTimelines } = useTimelineStore();
-  const { t } = useTranslation();
+  useTranslation();
   const [isInitialized, setIsInitialized] = useState(false);
+  const isNative = Capacitor.isNativePlatform();
+  const [splashVisible, setSplashVisible] = useState(isNative);
+  const [splashFading, setSplashFading] = useState(false);
+  const splashDone = useRef(false);
+
+  useEffect(() => {
+    if (!isNative || splashDone.current) return;
+    splashDone.current = true;
+    const fadeTimer = setTimeout(() => setSplashFading(true), 1800);
+    const hideTimer = setTimeout(() => setSplashVisible(false), 2200);
+    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+  }, [isNative]);
+
+  // Block document-level touchmove on iOS to prevent elastic bounce shifting fixed elements.
+  // Allows touchmove only when the event originates inside an actual scroll container.
+  useEffect(() => {
+    if (!isNative) return;
+    const blockBounce = (e: TouchEvent) => {
+      let el = e.target as HTMLElement | null;
+      while (el && el !== document.documentElement) {
+        const { overflowY } = getComputedStyle(el);
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+          return;
+        }
+        el = el.parentElement;
+      }
+      e.preventDefault();
+    };
+    document.addEventListener('touchmove', blockBounce, { passive: false });
+    return () => document.removeEventListener('touchmove', blockBounce);
+  }, [isNative]);
+
+  // Read safe area inset for toast offset
+  const safeTop = isNative
+    ? parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0', 10) ||
+      (window.screen.height - window.innerHeight > 0 ? 59 : 0)
+    : 0;
 
   // Check auth status on app load
   useEffect(() => {
@@ -127,11 +154,17 @@ function App() {
 
     const handleStartWedding = (e: Event) => {
       const { projectId } = (e as CustomEvent).detail;
+      // Wedding mode is a Pro feature — reject activations coming from the
+      // Watch for free/guest users and reset the Watch's state.
+      if (!hasFullAccess(useAuthStore.getState().user)) {
+        watchService.syncWeddingMode(projectId, false);
+        return;
+      }
       localStorage.setItem(
         `lenzu-wedding-mode-${projectId}`,
         'true'
       );
-      window.dispatchEvent(new CustomEvent('weddingModeChanged', 
+      window.dispatchEvent(new CustomEvent('weddingModeChanged',
         { detail: { projectId, active: true } }));
     };
 
@@ -159,21 +192,43 @@ function App() {
   // Show loading state while initializing
   if (!isInitialized || isAuthLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-2 text-gray-600">{t('auth.loadingApp')}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F1EFEA' }}>
+        {isNative
+          ? null
+          : <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-lavender" />}
       </div>
     );
   }
 
   return (
+    <>
+    {splashVisible && (
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: '#F1EFEA',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.25rem',
+          transition: 'opacity 0.4s ease',
+          opacity: splashFading ? 0 : 1,
+          pointerEvents: splashFading ? 'none' : 'all',
+        }}
+      >
+        <Ticket size={80} content="L" rotate={-6} shadow />
+        <span style={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontWeight: 700, fontSize: '11px',
+          letterSpacing: '0.16em', textTransform: 'uppercase',
+          color: '#6B6B6B',
+        }}>
+          LENZU
+        </span>
+      </div>
+    )}
     <MobileMenuProvider>
     <BrandingProvider>
     <OfflineProvider>
       <BrowserRouter>
-        <Toaster position="top-center" />
+        <Toaster position="top-center" offset={safeTop + 12} />
         <NotificationHandler />
         <OfflineIndicator />
         <Routes>
@@ -230,22 +285,30 @@ function App() {
             path="/dashboard"
             element={
               <PrivateRoute>
-                <TrialExpiredGuard>
-                  <Dashboard />
-                </TrialExpiredGuard>
+                <Dashboard />
               </PrivateRoute>
             }
           />
-<Route path="/pricing" element={<Pricing />} />
+{/* FREE_FOR_ALL: no plan/pricing pages anywhere (web or native) while the
+              product is fully free. When monetization returns: /pricing = Stripe
+              (web only, blocked in native per Apple 3.1.1), /my-plan = IAP paywall. */}
+          <Route
+            path="/pricing"
+            element={
+              FREE_FOR_ALL
+                ? <Navigate to="/" replace />
+                : Capacitor.isNativePlatform() ? <Navigate to="/my-plan" replace /> : <Pricing />
+            }
+          />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/support" element={<Support />} />
           <Route
             path="/my-plan"
             element={
-              <PrivateRoute>
-                <MyPlan />
-              </PrivateRoute>
+              FREE_FOR_ALL
+                ? <Navigate to="/dashboard" replace />
+                : <PrivateRoute><MyPlan /></PrivateRoute>
             }
           />
           <Route
@@ -288,6 +351,7 @@ function App() {
     </OfflineProvider>
     </BrandingProvider>
     </MobileMenuProvider>
+    </>
   );
 }
 

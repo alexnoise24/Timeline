@@ -45,12 +45,11 @@ router.post('/register',
       // Create user
       const user = new User({ name, email, password, role });
 
-      // Assign trial to photographers/planners/creators
+      // Photographers/planners/creators start on free; guests get plan 'guest'
       if (role === 'photographer' || role === 'planner' || role === 'creator') {
-        user.trial_start_date = new Date();
-        user.trial_end_date = new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
-        user.is_trial_active = true;
-        user.current_plan = 'trial';
+        user.current_plan = 'free';
+      } else if (role === 'guest') {
+        user.current_plan = 'guest';
       }
 
       await user.save();

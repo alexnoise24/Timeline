@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { Check, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useInvitationsStore } from '@/store/invitationsStore';
@@ -48,12 +49,6 @@ const Register: React.FC = () => {
     i18n.changeLanguage(i18n.language === 'es' ? 'en' : 'es');
   };
 
-  // Beta badge: "30 días gratis" during beta (until May 8, 2026), then normal trialBadge
-  const betaDeadline = new Date('2026-05-08T23:59:59');
-  const isBeta = new Date() < betaDeadline;
-  const trialBadgeText = isBeta
-    ? (i18n.language === 'es' ? '30 días gratis' : '30 days free')
-    : t('auth.trialBadge');
 
   // Password validation requirements
   const getPasswordRequirements = (password: string): PasswordRequirement[] => {
@@ -113,8 +108,9 @@ const Register: React.FC = () => {
         }
       }
       
-      // Redirect photographers to pricing, guests to dashboard
-      if (formData.role === 'photographer') {
+      // Redirect photographers to pricing (web only), everyone else to dashboard.
+      // Native never sees pricing (Apple 3.1.1).
+      if (formData.role === 'photographer' && !Capacitor.isNativePlatform()) {
         navigate('/pricing', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
@@ -241,9 +237,6 @@ const Register: React.FC = () => {
                 <div className="overflow-hidden">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono font-bold text-[12px] uppercase text-ink">{t('auth.photographer')}</span>
-                    <span className="border-[1px] border-lavender bg-lavender/10 text-ink font-mono font-bold text-[9px] uppercase tracking-[0.10em] px-2 py-0.5">
-                      {trialBadgeText}
-                    </span>
                   </div>
                   <p className="font-mono text-[11px] text-stone mt-1 leading-relaxed">{t('auth.photographerDesc')}</p>
                 </div>
