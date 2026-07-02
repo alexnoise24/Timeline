@@ -69,7 +69,7 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 ## Estado actual (Abril 2026)
 
 ### iOS / TestFlight
-- Build iOS: v1.1.0 build 8 — **Pendiente de revisión App Store** (enviado 2026-06-20) ✅
+- Build iOS: v1.1.0 build 11 — **En revisión App Store** (resubmitido 2026-07-02 tras resolver los 3 rechazos; ver "Resubmisión" en Cambios — 2 julio 2026)
 - Link público activo: https://testflight.apple.com/join/UbSPGPQ2
 - Botón "Probar gratis en iPhone" visible en landing (etiqueta: TESTFLIGHT_BUTTON para comentar/descomentar)
 - 51 sesiones registradas en TestFlight
@@ -251,6 +251,10 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
   * Falta: lógica en routes/community.js para disparar según role
   * Limpiar tokens inválidos si FCM devuelve registration-token-not-registered
 - Android: al menos 2 personas lo pidieron en TikTok (sin fecha definida)
+- Próximo build de Xcode: agregar `ITSAppUsesNonExemptEncryption = NO` (Boolean) al Info.plist del target App para saltarse el diálogo de export compliance
+- UX menor: contraseña incorrecta en el modal de eliminar cuenta → el interceptor de axios trata el 401 como sesión expirada y manda al login en vez de mostrar "contraseña incorrecta"
+- Si Apple borra la cuenta demo probando el flujo de eliminación → recrearla (script Mongoose con `new User()` + `.save()`, nunca insertOne) con su timeline de ejemplo
+- Re-monetización futura: `FREE_FOR_ALL = false` en utils.ts + pasos de deployment/IAP-SETUP.md (requiere resolver alta fiscal — de Alex o cuenta nueva a nombre de Dani)
 
 ## Beta Launch — Abril 2026
 
@@ -469,7 +473,25 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 ### Rechazos App Review 24 jun 2026 (submission 2857bca6)
 - 5.1.1 eliminación de cuenta: YA EXISTE (Ajustes → Danger Zone, endpoint DELETE /users/account) y está en producción — responder a Apple con screen recording del flujo (cuenta desechable, no la demo)
 - Guideline 4 ícono Watch: el PNG local ya es el correcto (crema) pero el build 10 no lo incluyó — commitear, clean build, verificar en Organizer antes de subir
-- 3.1.1: resuelto con IAP (arriba)
+- 3.1.1: resuelto con FREE-FOR-ALL (app 100% gratuita — ver decisión de estrategia arriba)
+
+### Fix toast tapado por Dynamic Island (desplegado)
+- El offset del Toaster se calculaba con `getComputedStyle(...).getPropertyValue('--sat')` que devuelve el string literal "env(...)" (parseInt → NaN → offset 0) → el toast quedaba bajo el Dynamic Island
+- Fix en App.tsx: offset como `calc(env(safe-area-inset-top) + 12px)` directo a sonner, en `offset` Y `mobileOffset` (sonner v2 ignora `offset` en viewports <600px)
+
+### Deploy 2 jul 2026 (COMPLETO — frontend + backend)
+- Commits `d39130b` (83 archivos: todo lo de arriba + backend pendiente de sesiones previas) y `254fda2` (toast fix), pusheados a GitHub
+- `deploy-production.sh` ejecutado completo: frontend a lenzu.app + backend rsync + pm2 restart — verificado (bundle nuevo, health OK, ruta /api/iap viva y protegida, logs limpios)
+- El modo gratis-total quedó vivo también en la app iOS al instante (carga lenzu.app remoto)
+
+### Resubmisión a App Review — ENVIADA 2 jul 2026
+- **Build 1.1.0 (11)** archivado y subido — incluye ícono Watch crema (verificado visualmente en Assets antes de archivar)
+- **Watch target sincronizado**: estaba en Version 1.0 / Build 4 (probable causa del "Version reviewed: 1.0" en rechazos) → ahora 1.1.0 / 11 igual que la app
+- Export compliance: "Ninguno de los algoritmos" (solo HTTPS del sistema = exento)
+- Notes de App Review reescritas SIN mencionar plan Pro ni pagos (la mención de "pagos en lenzu.app/Safari" de junio fue probablemente lo que causó el segundo rechazo 3.1.1)
+- Video del flujo de eliminación adjunto: `lenzu-account-deletion.mp4` (ojo: ASC rechaza extensiones en MAYÚSCULAS/.MP4 y nombres con espacios)
+- Cuenta demo verificada contra prod el mismo día: appreview@lenzu.app / password en ASC → login OK, proyecto "Sofia & Daniel - Tulum Wedding" (9 eventos, 10 shots)
+- App Store Connect: Paid Apps Agreement quedó aceptado pero SIN banco ni formularios fiscales — estado "pendiente" indefinido, inofensivo, NO completarlo mientras la app sea gratis; DSA declarado "No soy comerciante / no distribuyo en UE"
 
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
