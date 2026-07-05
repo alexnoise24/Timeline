@@ -69,7 +69,8 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 ## Estado actual (Abril 2026)
 
 ### iOS / TestFlight
-- Build iOS: v1.1.0 build 11 — **En revisión App Store** (resubmitido 2026-07-02 tras resolver los 3 rechazos; ver "Resubmisión" en Cambios — 2 julio 2026)
+- Build iOS: v1.1.0 build 11 — **✅ APROBADA para el App Store (2026-07-05)** tras resolver los 3 rechazos (5.1.1 eliminación de cuenta, 3.1.1 free-for-all, Guideline 4 ícono Watch). Publicación automática; visible en el store en ~24h desde la aprobación
+- App ID de App Store Connect: 6761141674 → link del store: https://apps.apple.com/app/id6761141674
 - Link público activo: https://testflight.apple.com/join/UbSPGPQ2
 - Botón "Probar gratis en iPhone" visible en landing (etiqueta: TESTFLIGHT_BUTTON para comentar/descomentar)
 - 51 sesiones registradas en TestFlight
