@@ -148,7 +148,7 @@ const Register: React.FC = () => {
             </h2>
             <p className="alto-label text-stone mt-2">
               {t('auth.hasAccount')}{' '}
-              <Link to="/login" className="text-lavender hover:text-lavender-deep transition-colors duration-snap">
+              <Link to={inviteToken ? `/login?invite=${inviteToken}` : '/login'} className="text-lavender hover:text-lavender-deep transition-colors duration-snap">
                 {t('auth.login')}
               </Link>
             </p>

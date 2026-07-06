@@ -5,10 +5,24 @@ import User from '../models/User.js';
 import Timeline from '../models/Timeline.js';
 import { authenticate, requirePhotographer, requireTimelineOwner } from '../middleware/auth.js';
 import { sendPushNotification } from '../services/notifications.js';
+import { sendProjectInvitationEmail } from '../services/email.js';
 import { io } from '../server.js';
 import { logActivity } from '../services/activityLogger.js';
 
 const router = express.Router();
+
+// Base URL for building invite links inside emails (frontend origin)
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://lenzu.app';
+
+// Build a targeted, single-use-ish JWT invite token bound to the invited email
+const buildInviteUrl = (timelineId, invitedBy, email) => {
+  const token = jwt.sign(
+    { timelineId, invitedBy, email: email.toLowerCase() },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+  return `${FRONTEND_URL}/invite/${token}`;
+};
 
 // Create invite link (JWT token) for a timeline
 router.post('/create-link/:timelineId',
@@ -77,7 +91,14 @@ router.post('/accept-invite-token',
         console.error('User not found:', req.user._id);
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
+      // Targeted email invites are bound to a specific address; open "copy link"
+      // tokens carry no email and skip this check.
+      if (payload.email && payload.email.toLowerCase() !== user.email.toLowerCase()) {
+        console.warn('Invite token email mismatch:', payload.email, 'vs', user.email);
+        return res.status(403).json({ message: 'This invitation was sent to a different email address.' });
+      }
+
       console.log('User found:', user.email);
 
       // Ensure invitedTimelines entry exists and set accepted
@@ -150,11 +171,29 @@ router.post('/invite/:timelineId',
       const { timelineId } = req.params;
       const { email, message } = req.body;
 
-      // Find the user (they must already be registered)
+      // Find the user — may or may not be registered yet
       const invitedUser = await User.findOne({ email: email.toLowerCase() });
 
+      // Not registered → send an email invitation with a token that auto-joins
+      // them to the project once they register (no manual link-sharing needed).
       if (!invitedUser) {
-        return res.status(404).json({ message: 'User not found. They must register first.' });
+        const timeline = await Timeline.findById(timelineId);
+        if (!timeline) {
+          return res.status(404).json({ message: 'Timeline not found' });
+        }
+
+        const inviteUrl = buildInviteUrl(timelineId, req.userId, email);
+        sendProjectInvitationEmail(email.toLowerCase(), req.user, timeline, inviteUrl)
+          .catch(err => console.error('Error sending project invitation email:', err));
+
+        logActivity(req.userId, req.user.name, 'collaborator.invite', {
+          timelineId, invitedEmail: email.toLowerCase(), timelineTitle: timeline.title, via: 'email-unregistered'
+        }, req);
+
+        return res.json({
+          message: 'Invitation email sent',
+          invitation: { email: email.toLowerCase(), timelineId, status: 'email_sent', registered: false }
+        });
       }
 
       // Check if user is trying to invite themselves
@@ -219,6 +258,12 @@ router.post('/invite/:timelineId',
             title: timeline.title
           });
 
+          // Email with a deep link straight to the project
+          sendProjectInvitationEmail(
+            invitedUser.email, req.user, timeline,
+            buildInviteUrl(timelineId, req.userId, invitedUser.email)
+          ).catch(err => console.error('Error sending project invitation email:', err));
+
           return res.json({
             message: 'Invitation sent successfully',
             invitation: { email: invitedUser.email, timelineId, status: 'pending' }
@@ -249,6 +294,12 @@ router.post('/invite/:timelineId',
         timelineId: timelineId.toString(),
         title: timeline.title
       });
+
+      // Email with a deep link straight to the project
+      sendProjectInvitationEmail(
+        invitedUser.email, req.user, timeline,
+        buildInviteUrl(timelineId, req.userId, invitedUser.email)
+      ).catch(err => console.error('Error sending project invitation email:', err));
 
       logActivity(req.userId, req.user.name, 'collaborator.invite', { timelineId, invitedEmail: invitedUser.email, timelineTitle: timeline.title }, req);
 

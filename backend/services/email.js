@@ -482,9 +482,111 @@ const getReengagementTemplate = (user, extendUrl) => {
   `;
 };
 
+// Send project (timeline) collaboration invitation
+// inviteUrl points to /invite/:token — handles both registered and new users.
+export const sendProjectInvitationEmail = async (invitedEmail, inviter, timeline, inviteUrl) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    console.log('Email not configured, skipping project invitation email for:', invitedEmail);
+    return;
+  }
+
+  try {
+    const transporter = createTransporter();
+    const inviterName = inviter?.name || 'Un fotógrafo';
+
+    const mailOptions = {
+      from: `"Lenzu" <${process.env.EMAIL_USER}>`,
+      to: invitedEmail,
+      subject: `${inviterName} te invitó a colaborar en Lenzu`,
+      html: getProjectInvitationTemplate(inviter, timeline, inviteUrl)
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('Project invitation email sent to:', invitedEmail);
+  } catch (error) {
+    console.error('Error sending project invitation email to', invitedEmail, ':', error);
+    // Don't throw — email failure shouldn't block the invitation flow
+  }
+};
+
+const getProjectInvitationTemplate = (inviter, timeline, inviteUrl) => {
+  const inviterName = inviter?.name || 'Un fotógrafo';
+  const projectTitle = timeline?.title || 'un proyecto';
+  const customFooter = inviter?.branding?.emailFooter;
+
+  let dateLine = '';
+  if (timeline?.weddingDate) {
+    try {
+      const formatted = new Date(timeline.weddingDate).toLocaleDateString('es-MX', {
+        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Mexico_City'
+      });
+      dateLine = `<p style="color: #12112a; font-size: 15px; line-height: 1.7; margin: 0 0 20px;">📅 ${formatted}</p>`;
+    } catch (_) { /* fecha inválida — se omite */ }
+  }
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: Georgia, 'Times New Roman', serif; background-color: #f4f1ec; margin: 0; padding: 20px;">
+      <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden;">
+
+        <!-- Header -->
+        <div style="background-color: #12112a; padding: 28px 40px;">
+          <p style="color: #f4f1ec; font-size: 22px; letter-spacing: 0.12em; margin: 0; font-family: Georgia, serif;">LENZU</p>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 40px;">
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 20px;">
+            Hola,
+          </p>
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 20px;">
+            <strong>${inviterName}</strong> te invitó a colaborar en el proyecto
+            <strong>${projectTitle}</strong> en Lenzu.
+          </p>
+          ${dateLine}
+          <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 32px;">
+            Lenzu mantiene a todo el equipo sincronizado el día de la boda: timeline del día,
+            shot list, locaciones y notificaciones antes de cada momento. Acepta la invitación
+            para ver el proyecto.
+          </p>
+
+          <!-- CTA -->
+          <div style="text-align: center; margin-bottom: 36px;">
+            <a href="${inviteUrl}"
+               style="display: inline-block; background-color: #12112a; color: #f4f1ec; text-decoration: none; padding: 14px 36px; border-radius: 3px; font-family: 'DM Sans', Arial, sans-serif; font-size: 14px; letter-spacing: 0.08em;">
+              VER EL PROYECTO
+            </a>
+          </div>
+
+          <p style="color: #888; font-size: 13px; line-height: 1.7; margin: 0;">
+            Si aún no tienes cuenta, podrás crear una en segundos y unirte automáticamente al proyecto.
+            Si el botón no funciona, copia y pega este enlace:<br>
+            <a href="${inviteUrl}" style="color: #12112a; word-break: break-all;">${inviteUrl}</a>
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f4f1ec; padding: 20px 40px; text-align: center;">
+          <p style="color: #aaa; font-size: 11px; margin: 0; font-family: Arial, sans-serif;">
+            ${customFooter ? `${customFooter}<br>` : ''}© ${new Date().getFullYear()} Lenzu · Coordinación para fotógrafos de boda · lenzu.app
+          </p>
+        </div>
+
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 export default {
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendBetaEndReminderEmail,
-  sendReengagementEmail
+  sendReengagementEmail,
+  sendProjectInvitationEmail
 };

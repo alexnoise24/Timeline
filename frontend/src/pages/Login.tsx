@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { useAuthStore } from '@/store/authStore';
+import { useInvitationsStore } from '@/store/invitationsStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Logo from '@/components/ui/Logo';
@@ -15,8 +16,10 @@ export default function Login() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showExtended, setShowExtended] = useState(false);
   const { login, isLoading } = useAuthStore();
+  const { acceptInviteToken } = useInvitationsStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const inviteToken = new URLSearchParams(window.location.search).get('invite');
 
   useEffect(() => {
     if (location.state?.from === 'register') {
@@ -36,6 +39,21 @@ export default function Login() {
 
     try {
       await login(email, password);
+
+      // If arriving from a project invitation, accept it and go straight to the project
+      if (inviteToken) {
+        try {
+          const result = await acceptInviteToken(inviteToken);
+          if (result?.timelineId) {
+            navigate(`/timeline/${result.timelineId}`, { replace: true });
+            return;
+          }
+        } catch (inviteError) {
+          console.error('Failed to accept invitation after login:', inviteError);
+          // Fall through to the normal redirect — they're logged in regardless
+        }
+      }
+
       // Web only: trial-expired users land on pricing. Native never sees pricing.
       if (useAuthStore.getState().trialExpired && !Capacitor.isNativePlatform()) {
         navigate('/pricing', { state: { trialExpired: true } });
