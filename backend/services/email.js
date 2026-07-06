@@ -499,7 +499,8 @@ const getReengagementTemplate = (user, extendUrl) => {
 
 // Send project (timeline) collaboration invitation
 // inviteUrl points to /invite/:token — handles both registered and new users.
-export const sendProjectInvitationEmail = async (invitedEmail, inviter, timeline, inviteUrl) => {
+// lang: 'en' | 'es' (default) — chosen by the inviting photographer per client.
+export const sendProjectInvitationEmail = async (invitedEmail, inviter, timeline, inviteUrl, lang = 'es') => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
     console.log('Email not configured, skipping project invitation email for:', invitedEmail);
     return;
@@ -507,16 +508,28 @@ export const sendProjectInvitationEmail = async (invitedEmail, inviter, timeline
 
   try {
     const transporter = createTransporter();
-    const inviterName = inviter?.name || 'Un fotógrafo';
-    const projectTitle = timeline?.title || 'un proyecto';
+    const en = lang === 'en';
+    const inviterName = inviter?.name || (en ? 'A photographer' : 'Un fotógrafo');
+    const projectTitle = timeline?.title || (en ? 'a project' : 'un proyecto');
 
-    const mailOptions = {
-      from: `"Lenzu" <${process.env.EMAIL_USER}>`,
-      to: invitedEmail,
-      replyTo: inviter?.email || process.env.EMAIL_USER,
-      subject: `${inviterName} te invitó a colaborar en Lenzu`,
-      // Plain-text alternative — reduces spam scoring vs HTML-only emails
-      text: `Hola,
+    const subject = en
+      ? `${inviterName} invited you to collaborate on Lenzu`
+      : `${inviterName} te invitó a colaborar en Lenzu`;
+
+    const text = en
+      ? `Hi,
+
+${inviterName} invited you to collaborate on the project "${projectTitle}" on Lenzu.
+
+Lenzu keeps your whole team in sync on the wedding day: day-of timeline, shot list, locations and reminders before each moment.
+
+Open the project here:
+${inviteUrl}
+
+If you don't have an account yet, you can create one in seconds and join the project automatically.
+
+— Lenzu · lenzu.app`
+      : `Hola,
 
 ${inviterName} te invitó a colaborar en el proyecto "${projectTitle}" en Lenzu.
 
@@ -527,31 +540,55 @@ ${inviteUrl}
 
 Si aún no tienes cuenta, podrás crearla en segundos y unirte automáticamente al proyecto.
 
-— Lenzu · lenzu.app`,
-      html: getProjectInvitationTemplate(inviter, timeline, inviteUrl)
+— Lenzu · lenzu.app`;
+
+    const mailOptions = {
+      from: `"Lenzu" <${process.env.EMAIL_USER}>`,
+      to: invitedEmail,
+      replyTo: inviter?.email || process.env.EMAIL_USER,
+      subject,
+      text, // Plain-text alternative — reduces spam scoring vs HTML-only emails
+      html: getProjectInvitationTemplate(inviter, timeline, inviteUrl, lang)
     };
 
     await transporter.sendMail(mailOptions);
-    console.log('Project invitation email sent to:', invitedEmail);
+    console.log(`Project invitation email sent to: ${invitedEmail} (${lang})`);
   } catch (error) {
     console.error('Error sending project invitation email to', invitedEmail, ':', error);
     // Don't throw — email failure shouldn't block the invitation flow
   }
 };
 
-const getProjectInvitationTemplate = (inviter, timeline, inviteUrl) => {
-  const inviterName = inviter?.name || 'Un fotógrafo';
-  const projectTitle = timeline?.title || 'un proyecto';
+const getProjectInvitationTemplate = (inviter, timeline, inviteUrl, lang = 'es') => {
+  const en = lang === 'en';
+  const inviterName = inviter?.name || (en ? 'A photographer' : 'Un fotógrafo');
+  const projectTitle = timeline?.title || (en ? 'a project' : 'un proyecto');
   const customFooter = inviter?.branding?.emailFooter;
+
+  const t = en ? {
+    greeting: 'Hi,',
+    invited: (n, p) => `<strong>${n}</strong> invited you to collaborate on the project <strong>${p}</strong> on Lenzu.`,
+    pitch: 'Lenzu keeps the whole team in sync on the wedding day: day-of timeline, shot list, locations and reminders before each moment. Accept the invitation to see the project.',
+    cta: 'VIEW THE PROJECT',
+    fallback: 'If you don\'t have an account yet, you can create one in seconds and join the project automatically. If the button doesn\'t work, copy and paste this link:',
+    footer: 'Coordination for wedding photographers'
+  } : {
+    greeting: 'Hola,',
+    invited: (n, p) => `<strong>${n}</strong> te invitó a colaborar en el proyecto <strong>${p}</strong> en Lenzu.`,
+    pitch: 'Lenzu mantiene a todo el equipo sincronizado el día de la boda: timeline del día, shot list, locaciones y notificaciones antes de cada momento. Acepta la invitación para ver el proyecto.',
+    cta: 'VER EL PROYECTO',
+    fallback: 'Si aún no tienes cuenta, podrás crear una en segundos y unirte automáticamente al proyecto. Si el botón no funciona, copia y pega este enlace:',
+    footer: 'Coordinación para fotógrafos de boda'
+  };
 
   let dateLine = '';
   if (timeline?.weddingDate) {
     try {
-      const formatted = new Date(timeline.weddingDate).toLocaleDateString('es-MX', {
+      const formatted = new Date(timeline.weddingDate).toLocaleDateString(en ? 'en-US' : 'es-MX', {
         day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Mexico_City'
       });
       dateLine = `<p style="color: #12112a; font-size: 15px; line-height: 1.7; margin: 0 0 20px;">📅 ${formatted}</p>`;
-    } catch (_) { /* fecha inválida — se omite */ }
+    } catch (_) { /* invalid date — skip */ }
   }
 
   return `
@@ -572,30 +609,26 @@ const getProjectInvitationTemplate = (inviter, timeline, inviteUrl) => {
         <!-- Body -->
         <div style="padding: 40px;">
           <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 20px;">
-            Hola,
+            ${t.greeting}
           </p>
           <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 20px;">
-            <strong>${inviterName}</strong> te invitó a colaborar en el proyecto
-            <strong>${projectTitle}</strong> en Lenzu.
+            ${t.invited(inviterName, projectTitle)}
           </p>
           ${dateLine}
           <p style="color: #12112a; font-size: 16px; line-height: 1.7; margin: 0 0 32px;">
-            Lenzu mantiene a todo el equipo sincronizado el día de la boda: timeline del día,
-            shot list, locaciones y notificaciones antes de cada momento. Acepta la invitación
-            para ver el proyecto.
+            ${t.pitch}
           </p>
 
           <!-- CTA -->
           <div style="text-align: center; margin-bottom: 36px;">
             <a href="${inviteUrl}"
                style="display: inline-block; background-color: #12112a; color: #f4f1ec; text-decoration: none; padding: 14px 36px; border-radius: 3px; font-family: 'DM Sans', Arial, sans-serif; font-size: 14px; letter-spacing: 0.08em;">
-              VER EL PROYECTO
+              ${t.cta}
             </a>
           </div>
 
           <p style="color: #888; font-size: 13px; line-height: 1.7; margin: 0;">
-            Si aún no tienes cuenta, podrás crear una en segundos y unirte automáticamente al proyecto.
-            Si el botón no funciona, copia y pega este enlace:<br>
+            ${t.fallback}<br>
             <a href="${inviteUrl}" style="color: #12112a; word-break: break-all;">${inviteUrl}</a>
           </p>
         </div>
@@ -603,7 +636,7 @@ const getProjectInvitationTemplate = (inviter, timeline, inviteUrl) => {
         <!-- Footer -->
         <div style="background-color: #f4f1ec; padding: 20px 40px; text-align: center;">
           <p style="color: #aaa; font-size: 11px; margin: 0; font-family: Arial, sans-serif;">
-            ${customFooter ? `${customFooter}<br>` : ''}© ${new Date().getFullYear()} Lenzu · Coordinación para fotógrafos de boda · lenzu.app
+            ${customFooter ? `${customFooter}<br>` : ''}© ${new Date().getFullYear()} Lenzu · ${t.footer} · lenzu.app
           </p>
         </div>
 

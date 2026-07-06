@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users, Trash2, X, Clock, Copy, Check } from 'lucide-react';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
@@ -24,9 +25,11 @@ interface PendingInvitation {
 }
 
 export default function CollaboratorsModal({ isOpen, onClose, timeline }: CollaboratorsModalProps) {
+  const { t, i18n } = useTranslation();
   const { user } = useAuthStore();
   const { removeCollaborator } = useTimelineStore();
   const { inviteGuest, createInviteLink } = useInvitationsStore();
+  const [lang, setLang] = useState<'es' | 'en'>(i18n.language?.startsWith('en') ? 'en' : 'es');
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
@@ -62,7 +65,7 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
     e.preventDefault();
     if (!inviteEmail.trim()) return;
     try {
-      await inviteGuest(timeline._id, inviteEmail.trim());
+      await inviteGuest(timeline._id, inviteEmail.trim(), lang);
       setInviteStatus('Invitación enviada');
       setInviteEmail('');
       setTimeout(() => setInviteStatus(null), 3000);
@@ -147,6 +150,26 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
               />
               <Button type="submit" variant="accent">Invitar</Button>
             </form>
+
+            {/* Email language selector */}
+            <div className="flex items-center gap-2 mt-2">
+              <span className="alto-label text-stone">{t('invite.emailLanguage')}</span>
+              <div className="inline-flex border-[1.5px] border-ink overflow-hidden">
+                {(['es', 'en'] as const).map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setLang(code)}
+                    className={`px-2.5 py-0.5 font-mono text-[11px] font-bold transition-colors ${
+                      lang === code ? 'bg-ink text-paper' : 'bg-fog text-stone hover:text-ink'
+                    }`}
+                  >
+                    {code === 'es' ? 'ES' : 'EN'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {inviteStatus && (
               <p className="font-mono text-[11px] text-stone mt-2">{inviteStatus}</p>
             )}

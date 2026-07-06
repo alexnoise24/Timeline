@@ -21,8 +21,10 @@ export default function InviteAccept() {
       }
 
       // If user is not logged in, redirect to register with invite token
+      // (preserve the ?lang= chosen by the inviter so the register page matches)
       if (!isAuthenticated || !user) {
-        navigate(`/register?invite=${token}`);
+        const lang = new URLSearchParams(window.location.search).get('lang');
+        navigate(`/register?invite=${token}${lang ? `&lang=${lang}` : ''}`);
         return;
       }
 

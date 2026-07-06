@@ -38,12 +38,18 @@ const Register: React.FC = () => {
     }
   }, [inviteToken]);
 
-  // Auto-detect browser language on mount (Spanish → es, everything else → en)
+  // Language on mount: an explicit ?lang= from the invitation wins over browser detection
+  // (the inviting photographer chose the language for this client).
   useEffect(() => {
+    const invitedLang = searchParams.get('lang');
+    if (invitedLang === 'en' || invitedLang === 'es') {
+      i18n.changeLanguage(invitedLang);
+      return;
+    }
     const browserLang = navigator.language || (navigator as any).userLanguage || 'en';
     const detected = browserLang.toLowerCase().startsWith('es') ? 'es' : 'en';
     i18n.changeLanguage(detected);
-  }, []);
+  }, [searchParams]);
 
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === 'es' ? 'en' : 'es');

@@ -16,7 +16,7 @@ interface InvitationsState {
   isLoading: boolean;
   error?: string;
   fetchMyInvitations: () => Promise<void>;
-  inviteGuest: (timelineId: string, email: string, message?: string) => Promise<void>;
+  inviteGuest: (timelineId: string, email: string, lang?: string, message?: string) => Promise<void>;
   acceptInvitation: (timelineId: string) => Promise<void>;
   declineInvitation: (timelineId: string) => Promise<void>;
   createInviteLink: (timelineId: string) => Promise<string>; // returns token
@@ -39,8 +39,8 @@ export const useInvitationsStore = create<InvitationsState>((set, get) => ({
     }
   },
 
-  inviteGuest: async (timelineId, email, message) => {
-    await api.post(`/invitations/invite/${timelineId}`, { email, message });
+  inviteGuest: async (timelineId, email, lang, message) => {
+    await api.post(`/invitations/invite/${timelineId}`, { email, message, lang });
     // no state change needed here
   },
 

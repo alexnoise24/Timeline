@@ -14,9 +14,10 @@ interface InviteModalProps {
 }
 
 export default function InviteModal({ isOpen, onClose, timelineId, timelineTitle }: InviteModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { inviteGuest, createInviteLink } = useInvitationsStore();
   const [email, setEmail] = useState('');
+  const [lang, setLang] = useState<'es' | 'en'>(i18n.language?.startsWith('en') ? 'en' : 'es');
   const [inviteStatus, setInviteStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -39,7 +40,7 @@ export default function InviteModal({ isOpen, onClose, timelineId, timelineTitle
     setInviteStatus(null);
 
     try {
-      await inviteGuest(timelineId, email.trim());
+      await inviteGuest(timelineId, email.trim(), lang);
       setInviteStatus({ type: 'success', message: 'Invitation sent successfully!' });
       setEmail('');
       setTimeout(() => setInviteStatus(null), 3000);
@@ -89,6 +90,25 @@ export default function InviteModal({ isOpen, onClose, timelineId, timelineTitle
               disabled={isSubmitting}
               className="w-full"
             />
+
+            {/* Email language selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-primary-600">{t('invite.emailLanguage')}</span>
+              <div className="inline-flex border border-gray-300 rounded-lg overflow-hidden">
+                {(['es', 'en'] as const).map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setLang(code)}
+                    className={`px-3 py-1 text-xs font-semibold transition-colors ${
+                      lang === code ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {code === 'es' ? 'ES' : 'EN'}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {inviteStatus && (
               <div

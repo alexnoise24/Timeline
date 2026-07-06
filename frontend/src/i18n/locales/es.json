@@ -591,6 +591,7 @@
     "inviteRegisteredDesc": "Envía una invitación a un usuario que ya tiene cuenta. Verá este timeline en sus Timelines Compartidos.",
     "sendInvitation": "Enviar Invitación",
     "sending": "Enviando...",
+    "emailLanguage": "Idioma del correo:",
     "shareLink": "Compartir Link de Invitación",
     "shareLinkDesc": "Genera un link para compartir con cualquiera. Si no tienen cuenta, se les pedirá que se registren primero.",
     "generateLink": "Generar Link de Invitación",

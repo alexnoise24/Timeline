@@ -14,14 +14,16 @@ const router = express.Router();
 // Base URL for building invite links inside emails (frontend origin)
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://lenzu.app';
 
-// Build a targeted, single-use-ish JWT invite token bound to the invited email
-const buildInviteUrl = (timelineId, invitedBy, email) => {
+// Build a targeted, single-use-ish JWT invite token bound to the invited email.
+// lang ('en'|'es') is carried in the URL so the registration page matches the email language.
+const buildInviteUrl = (timelineId, invitedBy, email, lang = 'es') => {
   const token = jwt.sign(
     { timelineId, invitedBy, email: email.toLowerCase() },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
-  return `${FRONTEND_URL}/invite/${token}`;
+  const langSuffix = lang === 'en' ? '?lang=en' : '';
+  return `${FRONTEND_URL}/invite/${token}${langSuffix}`;
 };
 
 // Create invite link (JWT token) for a timeline
@@ -170,6 +172,8 @@ router.post('/invite/:timelineId',
 
       const { timelineId } = req.params;
       const { email, message } = req.body;
+      // Email language chosen by the photographer in the invite modal
+      const lang = req.body.lang === 'en' ? 'en' : 'es';
 
       // Find the user — may or may not be registered yet
       const invitedUser = await User.findOne({ email: email.toLowerCase() });
@@ -182,8 +186,8 @@ router.post('/invite/:timelineId',
           return res.status(404).json({ message: 'Timeline not found' });
         }
 
-        const inviteUrl = buildInviteUrl(timelineId, req.userId, email);
-        sendProjectInvitationEmail(email.toLowerCase(), req.user, timeline, inviteUrl)
+        const inviteUrl = buildInviteUrl(timelineId, req.userId, email, lang);
+        sendProjectInvitationEmail(email.toLowerCase(), req.user, timeline, inviteUrl, lang)
           .catch(err => console.error('Error sending project invitation email:', err));
 
         logActivity(req.userId, req.user.name, 'collaborator.invite', {
@@ -261,7 +265,7 @@ router.post('/invite/:timelineId',
           // Email with a deep link straight to the project
           sendProjectInvitationEmail(
             invitedUser.email, req.user, timeline,
-            buildInviteUrl(timelineId, req.userId, invitedUser.email)
+            buildInviteUrl(timelineId, req.userId, invitedUser.email, lang), lang
           ).catch(err => console.error('Error sending project invitation email:', err));
 
           return res.json({
@@ -298,7 +302,7 @@ router.post('/invite/:timelineId',
       // Email with a deep link straight to the project
       sendProjectInvitationEmail(
         invitedUser.email, req.user, timeline,
-        buildInviteUrl(timelineId, req.userId, invitedUser.email)
+        buildInviteUrl(timelineId, req.userId, invitedUser.email, lang), lang
       ).catch(err => console.error('Error sending project invitation email:', err));
 
       logActivity(req.userId, req.user.name, 'collaborator.invite', { timelineId, invitedEmail: invitedUser.email, timelineTitle: timeline.title }, req);
