@@ -493,11 +493,26 @@ export const sendProjectInvitationEmail = async (invitedEmail, inviter, timeline
   try {
     const transporter = createTransporter();
     const inviterName = inviter?.name || 'Un fotógrafo';
+    const projectTitle = timeline?.title || 'un proyecto';
 
     const mailOptions = {
       from: `"Lenzu" <${process.env.EMAIL_USER}>`,
       to: invitedEmail,
+      replyTo: inviter?.email || process.env.EMAIL_USER,
       subject: `${inviterName} te invitó a colaborar en Lenzu`,
+      // Plain-text alternative — reduces spam scoring vs HTML-only emails
+      text: `Hola,
+
+${inviterName} te invitó a colaborar en el proyecto "${projectTitle}" en Lenzu.
+
+Lenzu mantiene a tu equipo sincronizado el día de la boda: timeline, shot list, locaciones y notificaciones antes de cada momento.
+
+Abre el proyecto aquí:
+${inviteUrl}
+
+Si aún no tienes cuenta, podrás crearla en segundos y unirte automáticamente al proyecto.
+
+— Lenzu · lenzu.app`,
       html: getProjectInvitationTemplate(inviter, timeline, inviteUrl)
     };
 
