@@ -1,7 +1,22 @@
 import nodemailer from 'nodemailer';
 
-// Create transporter using Gmail
+// Create transporter.
+// If EMAIL_HOST is set (e.g. GoDaddy SMTP for support@lenzu.app), send through that
+// authenticated host so the From domain aligns with SPF/DMARC → lands in inbox, not spam.
+// Falls back to Gmail (legacy) when no custom host is configured — non-breaking.
 const createTransporter = () => {
+  if (process.env.EMAIL_HOST) {
+    return nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT || '465', 10),
+      secure: process.env.EMAIL_SECURE !== 'false', // true → 465 (SSL); set 'false' for 587 (STARTTLS)
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+  }
+
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
