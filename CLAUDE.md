@@ -240,20 +240,15 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 - ~~Set de screenshots en inglés para App Store~~ ✅ screenshots en español subidos (primary language ES)
 - Post Bundles feature
 - ~~Recapturar screenshot de notificaciones en inglés~~ ✅ mockup generado
-- Email automático de invitación a proyecto (diseñado, no implementado)
+- ~~Email automático de invitación a proyecto~~ ✅ implementado 2026-07-06 (ver "Cambios — 6 julio 2026")
 - Configurar DNS wildcard *.lenzu.app para subdominios personalizados
 - ~~Restricción Apple Watch por plan~~ ✅ implementado 2026-07-02 (ver sección "Cambios — 2 julio 2026")
-- **Notificaciones push Community Chat (implementar en horario de baja actividad)**
-  * Cuando el master escribe en Community → push a todos los demás usuarios
-  * Cuando otros usuarios escriben → no mandar push (ya llega por Telegram)
-  * Usar Firebase FCM (fcmTokens[] ya guardados en BD)
-  * Firebase Admin SDK ya inicializado en services/firebase.js
-  * Falta: crear función sendPushNotification() en services/firebase.js
-  * Falta: lógica en routes/community.js para disparar según role
-  * Limpiar tokens inválidos si FCM devuelve registration-token-not-registered
+- ~~Notificaciones push Community Chat~~ ✅ implementado 2026-07-06 (ver "Cambios — 6 julio 2026"). Nota: la infra `sendPushNotification()` YA existía en `services/notifications.js` (no en firebase.js); solo faltaba la lógica de disparo por role
 - Android: al menos 2 personas lo pidieron en TikTok (sin fecha definida)
-- Próximo build de Xcode: agregar `ITSAppUsesNonExemptEncryption = NO` (Boolean) al Info.plist del target App para saltarse el diálogo de export compliance
-- UX menor: contraseña incorrecta en el modal de eliminar cuenta → el interceptor de axios trata el 401 como sesión expirada y manda al login en vez de mostrar "contraseña incorrecta"
+- ~~Próximo build de Xcode: `ITSAppUsesNonExemptEncryption = NO`~~ ✅ agregado al Info.plist 2026-07-06 (aplica en el próximo binario que archives)
+- **Próximo build de Xcode — splash screen**: `@capacitor/splash-screen` NO está instalado (pantalla blanca al abrir). Fix: `cd frontend && npm install @capacitor/splash-screen && npx cap sync ios` (imágenes ya generadas en Assets). Requiere binario nuevo
+- Recordatorio de build: mantener Version/Build del target Watch SIEMPRE igual al target App
+- ~~UX menor: contraseña incorrecta en el modal de eliminar cuenta~~ ✅ corregido 2026-07-06 (ver "Cambios — 6 julio 2026")
 - Si Apple borra la cuenta demo probando el flujo de eliminación → recrearla (script Mongoose con `new User()` + `.save()`, nunca insertOne) con su timeline de ejemplo
 - Re-monetización futura: `FREE_FOR_ALL = false` en utils.ts + pasos de deployment/IAP-SETUP.md (requiere resolver alta fiscal — de Alex o cuenta nueva a nombre de Dani)
 
@@ -493,6 +488,46 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Video del flujo de eliminación adjunto: `lenzu-account-deletion.mp4` (ojo: ASC rechaza extensiones en MAYÚSCULAS/.MP4 y nombres con espacios)
 - Cuenta demo verificada contra prod el mismo día: appreview@lenzu.app / password en ASC → login OK, proyecto "Sofia & Daniel - Tulum Wedding" (9 eventos, 10 shots)
 - App Store Connect: Paid Apps Agreement quedó aceptado pero SIN banco ni formularios fiscales — estado "pendiente" indefinido, inofensivo, NO completarlo mientras la app sea gratis; DSA declarado "No soy comerciante / no distribuyo en UE"
+
+## Cambios — 6 julio 2026
+
+### App PUBLICADA en el App Store (live)
+- La build 1.1.0 (11) aprobada el 5 jul ya está **visible y descargable** en el store: https://apps.apple.com/app/id6761141674
+- App 100% gratuita (FREE_FOR_ALL) — ver [[lenzu-free-for-all]]
+
+### TestFlight → App Store en toda la web
+- `Landing.tsx`: botón hero "Probar en iPhone · BETA · TESTFLIGHT" → **"Descarga en App Store · GRATIS · iPHONE"** (link `apps.apple.com/app/id6761141674`)
+- `Dashboard.tsx`: banner de creators (solo web) migrado a App Store
+- i18n: claves `testflight*` → `appstore*` (ES/EN). **Cero referencias a TestFlight ni al link `UbSPGPQ2` en `src/`**
+- El link público de TestFlight (`UbSPGPQ2`) queda obsoleto
+
+### Push notifications — Community Chat
+- Nuevo helper `notifyCommunityBroadcast(senderId, notification, data)` en `backend/services/notifications.js`
+- `routes/community.js` POST `/`: si el autor es **master** → push a todos los usuarios excepto el autor y excepto `role: 'guest'`. Otros usuarios → sin push (ya llega por Telegram). Fire-and-forget
+- Reutiliza `sendPushNotification()` (que YA existía, con limpieza de tokens FCM inválidos)
+
+### Email automático de invitación a proyecto (registrados y no registrados)
+- `backend/services/email.js`: nuevo `sendProjectInvitationEmail()` + template Lenzu (navy/crema); usa `branding.emailFooter` del fotógrafo si está configurado
+- `routes/invitations.js` POST `/invite/:timelineId`: **ya NO devuelve 404** si el email no está registrado — genera token JWT atado al email y manda correo con link a `/invite/:token`. Usuarios registrados: además del push/in-app, ahora reciben email con link directo al proyecto
+- `accept-invite-token`: valida que el email del token coincida con el del usuario (los tokens de "Copiar link" no llevan email → no se ven afectados)
+- Frontend: el flujo ya existía casi completo — `InviteAccept.tsx` (logueado→acepta; deslogueado→`/register?invite=`), `Register.tsx` (auto-acepta tras registro). Se agregó: `Login.tsx` maneja `?invite=` (cubre registrado+deslogueado), y el link "Iniciar sesión" de Register preserva el token
+- URL base de los links en el email: `process.env.FRONTEND_URL || 'https://lenzu.app'`
+- Depende de `EMAIL_USER`/`EMAIL_PASSWORD` en prod (los mismos del welcome/reengagement)
+
+### Fix UX — modal de eliminar cuenta (rechazo 401)
+- `lib/api.ts`: el interceptor ya NO fuerza logout en 401 de `/users/account` (antes trataba el "contraseña incorrecta" como sesión expirada y mandaba al login). Variable `isAuthRoute` → `skip401Redirect`
+- `AccountSettings.tsx`: en 401 muestra toast localizado "Contraseña incorrecta" y el usuario permanece en Configuración
+- i18n: nueva key `settings.incorrectPassword` (ES/EN)
+
+### Info.plist — export compliance
+- Agregado `ITSAppUsesNonExemptEncryption = NO` al target App (aplica en el próximo binario que archives). Ver [[ios-pending]]
+
+### Xcode (commits de esta sesión)
+- `project.pbxproj`: bumps del build 11 ya aprobado (App 10→11, Watch 4→11 y 1.0→1.1.0) commiteados
+- `Package.resolved`: dependencias SPM de RevenueCat (dormidas) commiteadas
+
+### Deploy
+- Tres deploys completos (`deploy-production.sh`): commits `2e835fa`, `b5c3055` — frontend a lenzu.app + backend rsync + pm2 restart, verificados (bundle nuevo, health 200)
 
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
