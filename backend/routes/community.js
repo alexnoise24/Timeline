@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
 import { isMaster } from '../config/constants.js';
 import sendTelegramNotification from '../services/telegram.js';
+import { notifyCommunityBroadcast } from '../services/notifications.js';
 
 const router = express.Router();
 
@@ -100,6 +101,20 @@ router.post('/', authenticate, async (req, res) => {
     sendTelegramNotification(
       `💬 *Nuevo mensaje en Community*\n👤 ${user.name} · ${planLabel}\n📝 ${content.trim()}\n🕐 ${hora}`
     ).catch(() => {});
+
+    // Push notification: solo cuando el master escribe (los mensajes de otros
+    // usuarios ya llegan al equipo por Telegram). Fire-and-forget.
+    if (isMaster(user)) {
+      const body = content.trim();
+      notifyCommunityBroadcast(
+        req.userId,
+        {
+          title: `${user.name} · Comunidad`,
+          body: body.length > 80 ? body.slice(0, 77) + '...' : body,
+        },
+        { url: '/community' }
+      ).catch(() => {});
+    }
 
     res.status(201).json({ message });
   } catch (error) {

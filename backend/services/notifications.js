@@ -83,6 +83,36 @@ export const sendPushNotification = async (userIds, notification, data = {}) => 
 };
 
 /**
+ * Broadcast a Community Chat notification to every user except the sender.
+ * Used when the master posts in Community — regular users' messages already
+ * reach the team via Telegram, so only master posts trigger this.
+ * @param {string} senderId - User ID of the sender (to exclude)
+ * @param {Object} notification - Notification payload (title, body)
+ * @param {Object} data - Additional data (e.g. { url: '/community' })
+ */
+export const notifyCommunityBroadcast = async (senderId, notification, data = {}) => {
+  try {
+    // Everyone except the sender and invited guests (guests don't see Community)
+    const recipients = await User.find({
+      _id: { $ne: senderId },
+      role: { $ne: 'guest' },
+    }).select('_id');
+
+    const recipientIds = recipients.map(u => u._id.toString());
+
+    if (recipientIds.length === 0) {
+      console.log('⚠️ No community recipients to notify');
+      return;
+    }
+
+    return await sendPushNotification(recipientIds, notification, data);
+  } catch (error) {
+    console.error('❌ Error broadcasting community notification:', error);
+    throw error;
+  }
+};
+
+/**
  * Send notification to all timeline members except the sender
  * @param {string} timelineId - Timeline ID
  * @param {string} senderId - User ID of the sender (to exclude)

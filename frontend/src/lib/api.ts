@@ -50,12 +50,15 @@ api.interceptors.response.use(
         message: error.message,
       });
 
-      // Only handle 401 for non-login/register routes
-      const isAuthRoute = ['/auth/login', '/auth/register', '/auth/check-email'].some(route => 
+      // Don't force-logout on 401 for routes where a 401 means "wrong password
+      // for this specific action" rather than "session expired". The account
+      // deletion endpoint returns 401 when the confirmation password is wrong —
+      // that must surface in the modal, not bounce the user to /login.
+      const skip401Redirect = ['/auth/login', '/auth/register', '/auth/check-email', '/users/account'].some(route =>
         error.config.url?.includes(route)
       );
 
-      if (error.response.status === 401 && !isAuthRoute) {
+      if (error.response.status === 401 && !skip401Redirect) {
         // Only clear token and redirect if we're not already on the login page
         if (!window.location.pathname.includes('login')) {
           localStorage.removeItem('token');

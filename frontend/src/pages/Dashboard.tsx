@@ -345,22 +345,22 @@ export default function Dashboard() {
 
           <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-8">
 
-            {/* ── TestFlight banner ── */}
+            {/* ── App Store banner ── */}
             {isCreatorRole(user?.role) && !isNativeApp && (
               <div className="mb-8 border-[1.5px] border-ink bg-fog flex flex-col sm:flex-row sm:items-center gap-4 p-5">
                 <div className="flex-1">
-                  <p className="alto-label mb-1">{t('dashboard.testflightTitle')}</p>
+                  <p className="alto-label mb-1">{t('dashboard.appstoreTitle')}</p>
                   <p className="font-mono text-[12px] text-stone leading-relaxed">
-                    {t('dashboard.testflightDesc')}
+                    {t('dashboard.appstoreDesc')}
                   </p>
                 </div>
                 <a
-                  href="https://testflight.apple.com/join/UbSPGPQ2"
+                  href="https://apps.apple.com/app/id6761141674"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-[22px] py-[14px] bg-ink text-paper font-mono font-bold text-[11px] uppercase tracking-[0.08em] hover:bg-fog hover:text-ink border-[1.5px] border-ink transition-colors duration-[80ms] whitespace-nowrap"
                 >
-                  {t('dashboard.testflightJoin')}
+                  {t('dashboard.appstoreJoin')}
                 </a>
               </div>
             )}

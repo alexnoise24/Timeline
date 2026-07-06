@@ -39,7 +39,11 @@ export default function AccountSettings() {
       logout();
       navigate('/login');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || t('settings.deleteError'));
+      if (error.response?.status === 401) {
+        toast.error(t('settings.incorrectPassword'));
+      } else {
+        toast.error(error.response?.data?.message || t('settings.deleteError'));
+      }
     } finally {
       setDeleting(false);
     }

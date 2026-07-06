@@ -188,13 +188,13 @@ export default function Landing() {
               <Link to="/register" className="landing-btn-accent">Empieza gratis →</Link>
               <a href="#como" className="landing-btn-ghost">Cómo funciona</a>
               <a
-                href="https://testflight.apple.com/join/UbSPGPQ2"
+                href="https://apps.apple.com/app/id6761141674"
                 target="_blank" rel="noopener noreferrer"
                 className="landing-btn-primary"
                 style={{ flexDirection: 'column', gap: '2px', padding: '10px 18px' }}
               >
-                <span>Probar en iPhone</span>
-                <span style={{ fontSize: '9px', opacity: 0.5, letterSpacing: '0.10em', fontWeight: 400 }}>BETA · TESTFLIGHT</span>
+                <span>Descarga en App Store</span>
+                <span style={{ fontSize: '9px', opacity: 0.5, letterSpacing: '0.10em', fontWeight: 400 }}>GRATIS · iPHONE</span>
               </a>
             </div>
           </div>
