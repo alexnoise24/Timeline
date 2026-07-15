@@ -549,6 +549,18 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Backfill en prod: entradas creadas para los 4 invitados aún no registrados (jillimcewan, emilymbrown13, carlo.wedding.2027, hello@beachlensphotography.com) con su fecha original — los links del 6 jul YA EXPIRARON, reenviar desde el modal
 - Verificado E2E contra prod (invite → pending → cancel) con JWT firmado server-side; API interna en puerto **5050** (no 5000)
 - Deploy completo commit `0928f54`
+- DNS: Alex borró el registro DMARC duplicado (queda solo `p=quarantine`, verificado); buzón support@lenzu.app sin rebotes → correos aceptados por Gmail, buscar en Spam/Promotions
+- Decisión: NO crear registro www.lenzu.app (el aviso de Cloudflare se ignora; todos los links usan lenzu.app directo)
+
+### Vendors por proyecto (Overview) — implementado y desplegado
+- `Timeline.vendorsList` (campo aditivo): `{ name, instagram, role }`
+- Card "Vendors" en Overview entre General Information y Photographers Team, mismo patrón de edición global que locaciones (isEditing + Save)
+- Instagram normalizado con helper `igHandle()` (acepta `@user`, `user` o URL de instagram.com pegada) → link a instagram.com/handle
+- El PUT `/timelines/:id` ya aceptaba cualquier campo del esquema (`Object.assign`) — solo se agregó el campo al modelo
+- i18n: keys `overview.vendors*` en ES/EN
+- Verificado E2E en prod: PUT guarda vendors y el resto del proyecto queda intacto (days/shots/collaborators/pendingEmailInvites sin cambios)
+- Deploy completo commit `4cd9f83`
+- Idea futura anotada: biblioteca global "mis vendors" en Settings con autocompletar (vendors recurrentes de fotógrafos destino)
 
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
