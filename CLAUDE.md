@@ -529,6 +529,27 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 ### Deploy
 - Tres deploys completos (`deploy-production.sh`): commits `2e835fa`, `b5c3055` — frontend a lenzu.app + backend rsync + pm2 restart, verificados (bundle nuevo, health 200)
 
+## Cambios — 15 julio 2026
+
+### Diagnóstico invitaciones "no llegan" a no-registrados
+- El backend SÍ enviaba todos los correos (logs pm2 confirman); el problema era de ENTREGA + visibilidad, no de código
+- mail-tester desde prod: **10/10** — SPF pass, DKIM firma `d=lenzu.app` (GoDaddy sí firma DKIM vía smtpout), dmarc=pass
+- Correos del 6 jul enviados antes de 17:25 UTC salieron con el transporter viejo de Gmail (pm2 se reinició con config GoDaddy a esa hora) → probable Spam
+- DNS: hay DOS registros DMARC en `_dmarc.lenzu.app` (p=reject + p=quarantine) = inválido; el DNS está en **Cloudflare** — Alex quedó de borrar el p=reject
+- Si un destinatario "no recibe": buscar en Spam/Promotions y revisar rebotes en el buzón de support@lenzu.app (webmail GoDaddy)
+
+### Invitaciones pendientes por email (no registrados) — implementado y desplegado
+- `Timeline.pendingEmailInvites` (campo aditivo): `{ email, invitedBy, invitedAt, lang }`
+- POST `/invite/:timelineId` rama no-registrado: persiste/actualiza la entrada (re-invitar el mismo email = refresca fecha + token nuevo)
+- Limpieza automática: `accept-invite-token` y la rama de usuario registrado borran la entrada al materializarse la invitación
+- GET `/timeline/:id/pending`: ahora devuelve `type: 'user' | 'email'` combinando invitedTimelines + pendingEmailInvites
+- Nuevo DELETE `/timeline/:id/email-invite?email=` (owner) para cancelar — solo bookkeeping, el JWT enviado sigue válido hasta expirar
+- `CollaboratorsModal.tsx`: email invites en "Pending Invitations" con ícono Mail, botón reenviar (RefreshCw, manda correo nuevo con token fresco) y cancelar (X)
+- **Tokens de invitación (email y copiar-link): 7d → 30d**
+- Backfill en prod: entradas creadas para los 4 invitados aún no registrados (jillimcewan, emilymbrown13, carlo.wedding.2027, hello@beachlensphotography.com) con su fecha original — los links del 6 jul YA EXPIRARON, reenviar desde el modal
+- Verificado E2E contra prod (invite → pending → cancel) con JWT firmado server-side; API interna en puerto **5050** (no 5000)
+- Deploy completo commit `0928f54`
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
