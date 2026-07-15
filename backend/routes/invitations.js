@@ -20,7 +20,7 @@ const buildInviteUrl = (timelineId, invitedBy, email, lang = 'es') => {
   const token = jwt.sign(
     { timelineId, invitedBy, email: email.toLowerCase() },
     process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '30d' }
   );
   const langSuffix = lang === 'en' ? '?lang=en' : '';
   return `${FRONTEND_URL}/invite/${token}${langSuffix}`;
@@ -44,7 +44,7 @@ router.post('/create-link/:timelineId',
       const token = jwt.sign(
         { timelineId, invitedBy: req.userId },
         process.env.JWT_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: '30d' }
       );
 
       // Let frontend build the URL with its current origin
@@ -130,10 +130,19 @@ router.post('/accept-invite-token',
           role: 'editor', // Invited users can edit everything
           addedAt: new Date()
         });
-        await timeline.save();
         console.log('Added user to timeline collaborators as editor');
       } else {
         console.log('User already a collaborator');
+      }
+
+      // Clear the email-invite entry now that the invitee joined
+      const emailInvites = timeline.pendingEmailInvites || [];
+      timeline.pendingEmailInvites = emailInvites.filter(
+        p => p.email !== user.email.toLowerCase()
+      );
+
+      if (!alreadyCollaborator || timeline.pendingEmailInvites.length !== emailInvites.length) {
+        await timeline.save();
       }
 
       console.log('Invitation accepted successfully for timeline:', timelineId);
@@ -190,6 +199,19 @@ router.post('/invite/:timelineId',
         sendProjectInvitationEmail(email.toLowerCase(), req.user, timeline, inviteUrl, lang)
           .catch(err => console.error('Error sending project invitation email:', err));
 
+        // Track it on the timeline so the owner sees it under "Pending Invitations".
+        // Re-inviting the same email just refreshes the entry (new email, new token).
+        timeline.pendingEmailInvites = (timeline.pendingEmailInvites || []).filter(
+          p => p.email !== email.toLowerCase()
+        );
+        timeline.pendingEmailInvites.push({
+          email: email.toLowerCase(),
+          invitedBy: req.userId,
+          invitedAt: new Date(),
+          lang
+        });
+        await timeline.save();
+
         logActivity(req.userId, req.user.name, 'collaborator.invite', {
           timelineId, invitedEmail: email.toLowerCase(), timelineTitle: timeline.title, via: 'email-unregistered'
         }, req);
@@ -209,6 +231,15 @@ router.post('/invite/:timelineId',
       const timeline = await Timeline.findById(timelineId);
       if (!timeline) {
         return res.status(404).json({ message: 'Timeline not found' });
+      }
+
+      // Invitee registered since the last email invite — drop the stale email entry,
+      // the invitation now lives on the user's invitedTimelines
+      if ((timeline.pendingEmailInvites || []).some(p => p.email === invitedUser.email.toLowerCase())) {
+        timeline.pendingEmailInvites = timeline.pendingEmailInvites.filter(
+          p => p.email !== invitedUser.email.toLowerCase()
+        );
+        await timeline.save();
       }
 
       // Check if user is already an active collaborator on the timeline
@@ -447,6 +478,7 @@ router.get('/timeline/:timelineId/pending',
           inv => inv.timelineId.toString() === timelineId && inv.status === 'pending'
         );
         return {
+          type: 'user',
           userId: user._id,
           userName: user.name,
           userEmail: user.email,
@@ -455,7 +487,17 @@ router.get('/timeline/:timelineId/pending',
         };
       });
 
-      res.json({ invitations: pendingInvitations });
+      // Email invites to addresses that haven't registered yet
+      const timeline = await Timeline.findById(timelineId).select('pendingEmailInvites');
+      const emailInvitations = (timeline?.pendingEmailInvites || []).map(p => ({
+        type: 'email',
+        userEmail: p.email,
+        invitedAt: p.invitedAt,
+        lang: p.lang,
+        status: 'pending'
+      }));
+
+      res.json({ invitations: [...pendingInvitations, ...emailInvitations] });
     } catch (error) {
       console.error('Get timeline invitations error:', error);
       res.status(500).json({ message: 'Failed to get invitations' });
@@ -488,6 +530,40 @@ router.delete('/timeline/:timelineId/revoke/:userId',
     } catch (error) {
       console.error('Revoke invitation error:', error);
       res.status(500).json({ message: 'Failed to revoke invitation' });
+    }
+  }
+);
+
+// Cancel an email invitation to an unregistered address (owner only)
+router.delete('/timeline/:timelineId/email-invite',
+  authenticate,
+  requirePhotographer,
+  requireTimelineOwner,
+  async (req, res) => {
+    try {
+      const { timelineId } = req.params;
+      const email = (req.query.email || '').toLowerCase().trim();
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      const timeline = await Timeline.findById(timelineId);
+      if (!timeline) {
+        return res.status(404).json({ message: 'Timeline not found' });
+      }
+
+      timeline.pendingEmailInvites = (timeline.pendingEmailInvites || []).filter(
+        p => p.email !== email
+      );
+      await timeline.save();
+
+      // The emailed JWT stays technically valid until it expires; without the
+      // pending entry the accept flow still works, which is acceptable — cancel
+      // here is a bookkeeping action, not a security revocation.
+      res.json({ message: 'Email invitation cancelled' });
+    } catch (error) {
+      console.error('Cancel email invitation error:', error);
+      res.status(500).json({ message: 'Failed to cancel email invitation' });
     }
   }
 );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Users, Trash2, X, Clock, Copy, Check } from 'lucide-react';
+import { Users, Trash2, X, Clock, Copy, Check, Mail, RefreshCw } from 'lucide-react';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { Timeline } from '@/types';
@@ -17,10 +17,12 @@ interface CollaboratorsModalProps {
 }
 
 interface PendingInvitation {
-  userId: string;
-  userName: string;
+  type: 'user' | 'email';
+  userId?: string;      // only for registered users
+  userName?: string;    // only for registered users
   userEmail: string;
   invitedAt: string;
+  lang?: 'es' | 'en';   // email invites: language the email was sent in
   status: string;
 }
 
@@ -32,6 +34,7 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
   const [lang, setLang] = useState<'es' | 'en'>(i18n.language?.startsWith('en') ? 'en' : 'es');
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -128,6 +131,42 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
       toast.error('Failed to revoke invitation');
     } finally {
       setRevokingId(null);
+    }
+  };
+
+  // Email invites (unregistered addresses) are keyed by email, not userId
+  const handleCancelEmailInvite = async (email: string) => {
+    if (!window.confirm(`Are you sure you want to cancel the invitation for ${email}?`)) {
+      return;
+    }
+
+    setRevokingId(email);
+    try {
+      await api.delete(`/invitations/timeline/${timeline._id}/email-invite`, {
+        params: { email }
+      });
+      toast.success('Invitation cancelled');
+      await fetchPendingInvitations();
+    } catch (error) {
+      console.error('Error cancelling email invitation:', error);
+      toast.error('Failed to cancel invitation');
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
+  // Re-sends the invitation email with a fresh token (tokens expire after 30 days)
+  const handleResendEmailInvite = async (email: string, inviteLang?: 'es' | 'en') => {
+    setResendingId(email);
+    try {
+      await inviteGuest(timeline._id, email, inviteLang || lang);
+      toast.success('Invitation re-sent');
+      await fetchPendingInvitations();
+    } catch (error) {
+      console.error('Error re-sending email invitation:', error);
+      toast.error('Failed to re-send invitation');
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -298,39 +337,67 @@ export default function CollaboratorsModal({ isOpen, onClose, timeline }: Collab
               </div>
             ) : pendingInvitations.length > 0 ? (
               <div className="space-y-2">
-                {pendingInvitations.map((invitation) => (
-                  <div
-                    key={invitation.userId}
-                    className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-semibold">
-                        <Clock size={20} />
+                {pendingInvitations.map((invitation) => {
+                  const isEmailInvite = invitation.type === 'email';
+                  const inviteKey = isEmailInvite ? invitation.userEmail : invitation.userId!;
+                  return (
+                    <div
+                      key={inviteKey}
+                      className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 shrink-0 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-semibold">
+                          {isEmailInvite ? <Mail size={20} /> : <Clock size={20} />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {isEmailInvite ? invitation.userEmail : invitation.userName}
+                          </p>
+                          <p className="text-sm text-gray-600 truncate">
+                            {isEmailInvite
+                              ? `Invited ${new Date(invitation.invitedAt).toLocaleDateString()} · not registered yet`
+                              : invitation.userEmail}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{invitation.userName}</p>
-                        <p className="text-sm text-gray-600">{invitation.userEmail}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                        Pending
-                      </span>
-                      <button
-                        onClick={() => handleRevokeInvitation(invitation.userId, invitation.userName)}
-                        disabled={revokingId === invitation.userId}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        title="Revoke invitation"
-                      >
-                        {revokingId === invitation.userId ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
-                        ) : (
-                          <X size={16} />
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                          Pending
+                        </span>
+                        {isEmailInvite && (
+                          <button
+                            onClick={() => handleResendEmailInvite(invitation.userEmail, invitation.lang)}
+                            disabled={resendingId === invitation.userEmail}
+                            className="p-2 text-gray-600 hover:bg-yellow-100 rounded-lg transition-colors disabled:opacity-50"
+                            title="Re-send invitation email"
+                          >
+                            {resendingId === invitation.userEmail ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-600 border-t-transparent" />
+                            ) : (
+                              <RefreshCw size={16} />
+                            )}
+                          </button>
                         )}
-                      </button>
+                        <button
+                          onClick={() =>
+                            isEmailInvite
+                              ? handleCancelEmailInvite(invitation.userEmail)
+                              : handleRevokeInvitation(invitation.userId!, invitation.userName || invitation.userEmail)
+                          }
+                          disabled={revokingId === inviteKey}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Revoke invitation"
+                        >
+                          {revokingId === inviteKey ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
+                          ) : (
+                            <X size={16} />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-4 bg-gray-50 rounded-lg border border-gray-200">

@@ -229,6 +229,24 @@ const timelineSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  // Invitations emailed to addresses without a Lenzu account yet.
+  // Removed when the invitee registers/accepts or the owner cancels.
+  pendingEmailInvites: [{
+    email: { type: String, lowercase: true, trim: true },
+    invitedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    invitedAt: {
+      type: Date,
+      default: Date.now
+    },
+    lang: {
+      type: String,
+      enum: ['es', 'en'],
+      default: 'es'
+    }
+  }],
   collaborators: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
