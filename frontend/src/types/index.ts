@@ -119,6 +119,7 @@ export interface Timeline {
   location?: string;
   locationUrl?: string;
   locationsList?: Array<{ name: string; url: string }>;
+  vendorsList?: Array<{ name: string; instagram: string; role: string }>;
   couple?: {
     partner1?: string;
     partner2?: string;

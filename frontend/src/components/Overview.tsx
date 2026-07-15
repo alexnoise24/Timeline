@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, Edit2, Save, X, Camera, Plus, Trash2, Upload } from 'lucide-react';
+import { Settings, Edit2, Save, X, Camera, Plus, Trash2, Upload, Store, Instagram } from 'lucide-react';
 import { Timeline, Photographer } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
@@ -52,6 +52,17 @@ export default function Overview({ timeline }: OverviewProps) {
     getInitialLocationsList(timeline)
   );
 
+  const [vendorsList, setVendorsList] = useState<Array<{ name: string; instagram: string; role: string }>>(
+    timeline.vendorsList || []
+  );
+
+  // Accepts "@user", "user" or a pasted instagram.com URL → returns the bare handle
+  const igHandle = (value: string) => {
+    const trimmed = value.trim().replace(/^@/, '');
+    const match = trimmed.match(/instagram\.com\/([A-Za-z0-9._]+)/);
+    return match ? match[1] : trimmed;
+  };
+
   const [formData, setFormData] = useState({
     title: timeline.title || '',
     description: timeline.description || '',
@@ -92,6 +103,7 @@ export default function Overview({ timeline }: OverviewProps) {
       generalNotes: timeline.generalNotes || '',
     });
     setLocationsList(getInitialLocationsList(timeline));
+    setVendorsList(timeline.vendorsList || []);
   }, [timeline]);
 
   const canEdit = user && (
@@ -139,6 +151,9 @@ export default function Overview({ timeline }: OverviewProps) {
         },
         guestAttire: formData.guestAttire,
         generalNotes: formData.generalNotes,
+        vendorsList: vendorsList
+          .map(v => ({ name: v.name.trim(), instagram: igHandle(v.instagram), role: v.role.trim() }))
+          .filter(v => v.name !== '' || v.instagram !== ''),
       });
       setIsEditing(false);
       toast.success(t('overview.updateSuccess'));
@@ -166,6 +181,7 @@ export default function Overview({ timeline }: OverviewProps) {
       generalNotes: timeline.generalNotes || '',
     });
     setLocationsList(getInitialLocationsList(timeline));
+    setVendorsList(timeline.vendorsList || []);
     setIsEditing(false);
   };
 
@@ -653,6 +669,111 @@ export default function Overview({ timeline }: OverviewProps) {
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Vendors */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <Store className="text-amber-600" size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{t('overview.vendors')}</h3>
+                <p className="text-sm text-gray-600">{t('overview.vendorsDesc')}</p>
+              </div>
+            </div>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => setVendorsList([...vendorsList, { name: '', instagram: '', role: '' }])}
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <Plus size={14} />
+                {t('overview.addVendor')}
+              </button>
+            )}
+          </div>
+
+          {isEditing ? (
+            vendorsList.length > 0 ? (
+              <div className="space-y-3">
+                {vendorsList.map((vendor, index) => (
+                  <div key={index} className="flex gap-2 items-start">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <Input
+                        placeholder={t('overview.vendorName')}
+                        value={vendor.name}
+                        onChange={(e) => {
+                          const updated = [...vendorsList];
+                          updated[index] = { ...updated[index], name: e.target.value };
+                          setVendorsList(updated);
+                        }}
+                      />
+                      <Input
+                        placeholder="@instagram"
+                        value={vendor.instagram}
+                        onChange={(e) => {
+                          const updated = [...vendorsList];
+                          updated[index] = { ...updated[index], instagram: e.target.value };
+                          setVendorsList(updated);
+                        }}
+                      />
+                      <Input
+                        placeholder={t('overview.vendorRole')}
+                        value={vendor.role}
+                        onChange={(e) => {
+                          const updated = [...vendorsList];
+                          updated[index] = { ...updated[index], role: e.target.value };
+                          setVendorsList(updated);
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setVendorsList(vendorsList.filter((_, i) => i !== index))}
+                      className="mt-2 p-1 text-red-500 hover:text-red-700 transition-colors"
+                      title={t('overview.removeVendor')}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">{t('overview.noVendors')}</p>
+            )
+          ) : timeline.vendorsList && timeline.vendorsList.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {timeline.vendorsList.map((vendor, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-gray-900 truncate">{vendor.name || '-'}</h4>
+                    {vendor.role && (
+                      <span className="shrink-0 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                        {vendor.role}
+                      </span>
+                    )}
+                  </div>
+                  {vendor.instagram && (
+                    <a
+                      href={`https://instagram.com/${igHandle(vendor.instagram)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      <Instagram size={13} />
+                      @{igHandle(vendor.instagram)}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">{t('overview.noVendors')}</p>
+          )}
         </CardContent>
       </Card>
 

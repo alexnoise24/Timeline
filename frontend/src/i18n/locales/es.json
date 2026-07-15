@@ -282,7 +282,14 @@
     "errorDeletingPhotographer": "Error al eliminar fotógrafo",
     "update": "Actualizar",
     "add": "Agregar",
-    "selectAndCropImage": "Por favor selecciona y recorta una imagen"
+    "selectAndCropImage": "Por favor selecciona y recorta una imagen",
+    "vendors": "Vendors",
+    "vendorsDesc": "Proveedores del evento y sus redes",
+    "addVendor": "Agregar vendor",
+    "vendorName": "Nombre del vendor",
+    "vendorRole": "Rol (flores, DJ, venue...)",
+    "removeVendor": "Eliminar vendor",
+    "noVendors": "No hay vendors agregados"
   },
   "shotList": {
     "title": "Listas de Fotos",

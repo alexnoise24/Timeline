@@ -205,6 +205,12 @@ const timelineSchema = new mongoose.Schema({
     name: { type: String, default: '' },
     url: { type: String, default: '' }
   }],
+  // Wedding vendors (florist, DJ, venue...) — name + Instagram handle for day-of tagging
+  vendorsList: [{
+    name: { type: String, default: '' },
+    instagram: { type: String, default: '' },
+    role: { type: String, default: '' }
+  }],
   couple: {
     partner1: String,
     partner2: String
