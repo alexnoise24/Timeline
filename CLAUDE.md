@@ -562,6 +562,13 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Deploy completo commit `4cd9f83`
 - Idea futura anotada: biblioteca global "mis vendors" en Settings con autocompletar (vendors recurrentes de fotógrafos destino)
 
+## Cambios — 16 julio 2026
+
+### Fix crítico — registro de guests roto desde el 2 de julio
+- El deploy del 2 jul (`d39130b`) agregó `user.current_plan = 'guest'` en `routes/auth.js` pero NUNCA se agregó `'guest'` al enum de `current_plan` en `models/User.js` → **todo registro con role guest (links de invitación) devolvía 500** desde entonces
+- Fix: `'guest'` agregado al enum (aditivo). Desplegado a prod (scp + pm2 restart) y verificado E2E: registro guest → 201 con `current_plan: 'guest'` (usuario de prueba borrado después)
+- Afectados detectados: planner@destinationweddingstulum.com (3 intentos fallidos 16 jul, nunca se creó su cuenta — su link sigue válido, puede reintentar) y Emily Brown (emilymbrown13@gmail.com), que le sacó la vuelta registrándose como photographer → por eso aparece con plan free en admin, y **quedó SIN conectar al proyecto "Emily & Ryan"** (sin collaborator, sin invitedTimelines, su pendingEmailInvite sigue vivo) — reenviar invitación desde el modal para conectarla
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu

@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
   },
   current_plan: {
     type: String,
-    enum: ['none', 'trial', 'free', 'starter', 'pro', 'studio', 'master', 'lifetime'],
+    enum: ['none', 'trial', 'free', 'starter', 'pro', 'studio', 'master', 'lifetime', 'guest'],
     default: 'none'
   },
   is_payment_required: {
