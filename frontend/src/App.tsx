@@ -118,6 +118,40 @@ function App() {
     return () => document.removeEventListener('touchmove', blockBounce);
   }, [isNative]);
 
+  // Web-only: with the global overflow:hidden the document never scrolls, so a
+  // wheel event that lands outside a scroll container does nothing. That happens
+  // over the sidebar/navbar, and on first load when Chrome keeps the scroll
+  // gesture latched to the auth loading screen after React replaces it (Magic
+  // Mouse / trackpad scroll without moving the cursor). Forward those events to
+  // the page's main scroll container.
+  useEffect(() => {
+    if (isNative) return;
+    const hasScrollableAncestor = (start: EventTarget | null) => {
+      let el = start as HTMLElement | null;
+      while (el && el !== document.documentElement) {
+        const { overflowY } = getComputedStyle(el);
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+          return true;
+        }
+        el = el.parentElement;
+      }
+      return false;
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0 || hasScrollableAncestor(e.target)) return;
+      const candidates = Array.from(
+        document.querySelectorAll<HTMLElement>('.overflow-y-auto, .overflow-auto')
+      ).filter((c) => c.clientHeight > 0 && c.scrollHeight > c.clientHeight);
+      if (candidates.length === 0) return;
+      const main = candidates.reduce((a, b) =>
+        a.clientWidth * a.clientHeight >= b.clientWidth * b.clientHeight ? a : b
+      );
+      main.scrollTop += e.deltaY;
+    };
+    document.addEventListener('wheel', onWheel, { passive: true });
+    return () => document.removeEventListener('wheel', onWheel);
+  }, [isNative]);
+
   // Toast offset: env(safe-area-inset-top) resolved by CSS keeps toasts below
   // the Dynamic Island / notch. (getComputedStyle on a --var returns the raw
   // "env(...)" string, never pixels — that's why the old JS calc gave 0.)

@@ -572,6 +572,16 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Resolución (misma noche): Alex reinvitó a ambas por correo desde el modal del proyecto "Emily & Ryan" — Emily (registrada): email + invitación in-app 'pending', su pendingEmailInvite viejo se limpió solo; planner (no registrada): email + entrada nueva en pendingEmailInvites con token de 30d. Ambas pendientes de aceptar
 - Receta para firmar tokens de INVITACIÓN server-side (E2E): payload `{ timelineId, invitedBy, email }` con JWT_SECRET, expiresIn 30d (el email en minúsculas; los tokens de "Copiar link" no llevan email)
 
+## Cambios — 22 julio 2026
+
+### Fix scroll congelado en web (Magic Mouse / trackpad)
+- Reporte de Alex: al abrir lenzu.app por primera vez en Chrome desktop, la rueda no movía nada (clicks sí funcionaban). Solo con Magic Mouse/trackpad
+- Causa raíz: el fix de iOS pone `overflow: hidden` en `html/body/#root` → el documento nunca scrollea, solo el contenedor interno de cada página. Chrome "ancla" (scroll latching) el gesto inercial del Magic Mouse al elemento bajo el cursor al iniciar; en el primer load ese elemento es la pantalla de carga del auth (App.tsx), que React reemplaza → el gesto queda apuntando a un nodo muerto y sin documento de respaldo la rueda no hace nada hasta mover el cursor/hacer click
+- Efecto colateral del mismo diseño: zonas muertas permanentes de la rueda sobre sidebar y navbar
+- Fix en `App.tsx` (solo web, gated con `!isNative`): listener global de `wheel` (passive) que, si el target no tiene ningún ancestro scrolleable, reenvía `deltaY` al contenedor `.overflow-y-auto`/`.overflow-auto` visible más grande de la página
+- Verificado E2E en Chrome contra prod: sidebar y navbar ahora scrollean, scroll sobre contenido sin cambios (sin doble scroll)
+- Deploy solo frontend (build + scp de dist/)
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
