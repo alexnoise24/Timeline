@@ -146,6 +146,11 @@ const eventSchema = new mongoose.Schema({
     ref: 'User'
   },
   completedAt: Date,
+  // Manual ordering within the day (drag & drop). When every event in a day
+  // has a sortIndex the UI renders in this order; otherwise falls back to time.
+  sortIndex: {
+    type: Number
+  },
   notes: [noteSchema],
   changeLogs: [changeLogSchema],
   createdBy: {

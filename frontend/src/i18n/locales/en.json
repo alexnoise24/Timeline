@@ -227,7 +227,9 @@
     "confirmFinishWedding": "Finish the wedding day?",
     "shotList": "Shot List",
     "weddingMode": "Wedding Mode",
-    "finish": "Finish"
+    "finish": "Finish",
+    "sortChronologically": "Sort by time",
+    "dragToReorder": "Drag to reorder"
   },
   "overview": {
     "basicInformation": "Basic Information",

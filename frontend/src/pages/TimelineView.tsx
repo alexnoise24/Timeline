@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Calendar, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle, ChevronRight, Sparkles, FileDown, MoreHorizontal } from 'lucide-react';
+import { Plus, Calendar, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle, ChevronRight, Sparkles, FileDown, MoreHorizontal, GripVertical, ArrowDownUp } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { exportTimelinePDF } from '@/components/TimelinePDFExport';
 import { useTimelineStore } from '@/store/timelineStore';
@@ -42,6 +42,7 @@ export default function TimelineView() {
     deleteDayEvent,
     toggleDayEventCompletion,
     addDayEventNote,
+    reorderDayEvents,
     isLoading,
     accessDenied,
     timelines
@@ -452,6 +453,47 @@ export default function TimelineView() {
     setIsNoteModalOpen(true);
   };
 
+  // ── Manual event ordering (drag & drop) ──
+  const [draggedEvent, setDraggedEvent] = useState<{ dayId: string; eventId: string } | null>(null);
+  const [dragOverEventId, setDragOverEventId] = useState<string | null>(null);
+
+  // Manual order (sortIndex) wins only when EVERY event of the day has one;
+  // otherwise fall back to time order (legacy days keep behaving as before).
+  const sortDayEvents = (events: Event[]) => {
+    const manual = events.length > 0 && events.every((e) => typeof e.sortIndex === 'number');
+    return [...events].sort((a, b) => {
+      if (manual) return (a.sortIndex as number) - (b.sortIndex as number);
+      return (a.time || '00:00').localeCompare(b.time || '00:00');
+    });
+  };
+
+  const handleEventDrop = async (day: Day, targetEventId: string) => {
+    if (!id || !draggedEvent || draggedEvent.dayId !== day._id) return;
+    const orderedIds = sortDayEvents(day.events).map((e) => e._id);
+    const fromIdx = orderedIds.indexOf(draggedEvent.eventId);
+    const toIdx = orderedIds.indexOf(targetEventId);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    orderedIds.splice(toIdx, 0, ...orderedIds.splice(fromIdx, 1));
+    try {
+      await reorderDayEvents(id, day._id, orderedIds);
+    } catch (error) {
+      console.error('Error reordering events:', error);
+    }
+  };
+
+  const handleSortChronologically = async (day: Day) => {
+    if (!id || day.events.length < 2) return;
+    // Events without a time go last
+    const orderedIds = [...day.events]
+      .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
+      .map((e) => e._id);
+    try {
+      await reorderDayEvents(id, day._id, orderedIds);
+    } catch (error) {
+      console.error('Error sorting events chronologically:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-full bg-paper">
@@ -746,11 +788,7 @@ export default function TimelineView() {
             ) : (
               sortedDays.map((day) => {
                 const isCollapsed = collapsedDays.has(day._id);
-                const sortedEvents = [...day.events].sort((a, b) => {
-                  const timeA = a.time || '00:00';
-                  const timeB = b.time || '00:00';
-                  return timeA.localeCompare(timeB);
-                });
+                const sortedEvents = sortDayEvents(day.events);
 
                 return (
                   <div key={day._id} className="border-[1.5px] border-ink bg-fog overflow-hidden">
@@ -780,6 +818,16 @@ export default function TimelineView() {
                         <span className="border-[1px] border-ink/30 px-2 py-0.5 font-mono text-[10px] text-stone">
                           {day.events.length}
                         </span>
+                        {day.events.length > 1 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSortChronologically(day)}
+                            title={t('timelineView.sortChronologically')}
+                          >
+                            <ArrowDownUp size={13} strokeWidth={1.5} />
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -821,15 +869,44 @@ export default function TimelineView() {
                               <div
                                 key={event._id}
                                 ref={isActiveEvent ? activeEventRef : undefined}
+                                draggable
+                                onDragStart={() => setDraggedEvent({ dayId: day._id, eventId: event._id })}
+                                onDragEnd={() => { setDraggedEvent(null); setDragOverEventId(null); }}
+                                onDragOver={(e) => {
+                                  if (draggedEvent && draggedEvent.dayId === day._id && draggedEvent.eventId !== event._id) {
+                                    e.preventDefault();
+                                    setDragOverEventId(event._id);
+                                  }
+                                }}
+                                onDragLeave={() => { if (dragOverEventId === event._id) setDragOverEventId(null); }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  handleEventDrop(day, event._id);
+                                  setDraggedEvent(null);
+                                  setDragOverEventId(null);
+                                }}
                                 className={`group relative border-[1px] bg-paper p-4 sm:p-5 transition-colors duration-[80ms] ${
                                   event.isCompleted ? 'opacity-60' : ''
                                 } ${
-                                  isActiveEvent
+                                  draggedEvent?.eventId === event._id ? 'opacity-40' : ''
+                                } ${
+                                  dragOverEventId === event._id ? 'outline outline-2 outline-lavender' : ''
+                                } ${
+                                  openEventMenuId === event._id
+                                    ? 'border-[1px] border-ink bg-fog/70'
+                                    : isActiveEvent
                                     ? 'border-l-[3px] border-lavender bg-lavender/5'
                                     : 'border-ink/15 hover:border-ink/30'
                                 }`}
                               >
                                 <div className="flex gap-4">
+                                  {/* Drag handle */}
+                                  <div
+                                    className="flex-shrink-0 hidden sm:flex items-center -ml-2 cursor-grab active:cursor-grabbing text-stone/30 group-hover:text-stone transition-colors duration-[80ms]"
+                                    title={t('timelineView.dragToReorder')}
+                                  >
+                                    <GripVertical size={15} strokeWidth={1.5} />
+                                  </div>
                                   {/* Time */}
                                   <div className="flex-shrink-0 flex flex-col items-center w-14">
                                     {event.time ? (

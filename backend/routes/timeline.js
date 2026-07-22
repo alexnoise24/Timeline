@@ -450,6 +450,7 @@ router.post('/:id/days/:dayId/events', authenticate, requireTimelineAccess, asyn
       time,
       location,
       category,
+      sortIndex: day.events.length,  // Append at the end for manual ordering
       createdBy: req.userId,
       changeLogs: [{
         action: 'created',
@@ -520,6 +521,53 @@ router.put('/:id/days/:dayId/events/:eventId', authenticate, requireTimelineAcce
   } catch (error) {
     console.error('Error updating event:', error);
     res.status(500).json({ message: 'Failed to update event' });
+  }
+});
+
+// Reorder events within a day (manual drag & drop or chronological sort).
+// Body: { orderedEventIds: [id, id, ...] } — every event of the day, in the desired order.
+router.put('/:id/days/:dayId/reorder', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    const canEdit = timeline.owner.equals(req.userId) ||
+      timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+      req.userTimelineRole === 'invited';
+
+    if (!canEdit) {
+      return res.status(403).json({ message: 'You do not have permission to edit' });
+    }
+
+    const day = timeline.days.id(req.params.dayId);
+    if (!day) {
+      return res.status(404).json({ message: 'Day not found' });
+    }
+
+    const { orderedEventIds } = req.body;
+    if (!Array.isArray(orderedEventIds) || orderedEventIds.length !== day.events.length) {
+      return res.status(400).json({ message: 'orderedEventIds must include every event of the day' });
+    }
+
+    const positions = new Map(orderedEventIds.map((eventId, index) => [String(eventId), index]));
+    for (const event of day.events) {
+      const index = positions.get(String(event._id));
+      if (index === undefined) {
+        return res.status(400).json({ message: 'orderedEventIds must include every event of the day' });
+      }
+      event.sortIndex = index;
+    }
+
+    await timeline.save();
+    await timeline.populate('days.events.createdBy days.events.notes.author', 'name email avatar');
+
+    res.json({ day });
+  } catch (error) {
+    console.error('Error reordering events:', error);
+    res.status(500).json({ message: 'Failed to reorder events' });
   }
 });
 

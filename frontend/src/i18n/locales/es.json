@@ -227,7 +227,9 @@
     "confirmFinishWedding": "¿Finalizar el día de boda?",
     "shotList": "Lista de tomas",
     "weddingMode": "Modo boda",
-    "finish": "Finalizar"
+    "finish": "Finalizar",
+    "sortChronologically": "Ordenar por hora",
+    "dragToReorder": "Arrastra para reordenar"
   },
   "overview": {
     "basicInformation": "Información Básica",

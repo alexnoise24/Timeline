@@ -47,6 +47,7 @@ interface TimelineState {
   deleteDayEvent: (timelineId: string, dayId: string, eventId: string) => Promise<void>;
   toggleDayEventCompletion: (timelineId: string, dayId: string, eventId: string) => Promise<void>;
   addDayEventNote: (timelineId: string, dayId: string, eventId: string, content: string) => Promise<void>;
+  reorderDayEvents: (timelineId: string, dayId: string, orderedEventIds: string[]) => Promise<void>;
   addCollaborator: (timelineId: string, userId: string, role: string) => Promise<void>;
   removeCollaborator: (timelineId: string, userId: string) => Promise<void>;
   addShot: (timelineId: string, shot: Partial<Shot>) => Promise<void>;
@@ -1048,6 +1049,52 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
         data: {},
       });
       optimisticUpdate();
+    }
+  },
+
+  reorderDayEvents: async (timelineId, dayId, orderedEventIds) => {
+    const userId = getUserId();
+
+    // Optimistic: apply the new sortIndex locally right away so the drag feels instant
+    const positions = new Map(orderedEventIds.map((eventId, index) => [eventId, index]));
+    set((state) => {
+      if (!state.currentTimeline) return { currentTimeline: null };
+      return {
+        currentTimeline: {
+          ...state.currentTimeline,
+          days: state.currentTimeline.days.map((d) =>
+            d._id === dayId
+              ? {
+                  ...d,
+                  events: d.events.map((e) =>
+                    positions.has(e._id) ? { ...e, sortIndex: positions.get(e._id) } : e
+                  ),
+                }
+              : d
+          ),
+        },
+      };
+    });
+
+    try {
+      const { data } = await api.put(`/timelines/${timelineId}/days/${dayId}/reorder`, { orderedEventIds });
+      set((state) => {
+        if (!state.currentTimeline) return { currentTimeline: null };
+        return {
+          currentTimeline: {
+            ...state.currentTimeline,
+            days: state.currentTimeline.days.map((d) =>
+              d._id === dayId ? data.day : d
+            ),
+          },
+        };
+      });
+      if (userId && get().currentTimeline) {
+        await saveTimelineOffline(get().currentTimeline!, userId);
+      }
+    } catch (error) {
+      console.error('Error reordering day events:', error);
+      throw error;
     }
   },
 

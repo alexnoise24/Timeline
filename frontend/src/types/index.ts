@@ -68,6 +68,7 @@ export interface Event {
   time?: string;
   location?: string;
   category: 'ceremony' | 'reception' | 'preparation' | 'photography' | 'other';
+  sortIndex?: number;
   isCompleted: boolean;
   completedBy?: User;
   completedAt?: string;
