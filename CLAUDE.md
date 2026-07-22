@@ -582,6 +582,15 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Verificado E2E en Chrome contra prod: sidebar y navbar ahora scrollean, scroll sobre contenido sin cambios (sin doble scroll)
 - Deploy solo frontend (build + scp de dist/)
 
+### Tab "Correos" en admin — tracking de emails de invitación (commit 985ddef)
+- Nuevo modelo `backend/models/EmailLog.js` (aditivo, TTL 180d como ActivityLog): trackingId, to, timelineTitle, sentByName, status sent/failed, openedAt, openCount, lastOpenedAt
+- `sendProjectInvitationEmail()` ahora: genera trackingId (randomUUID), inyecta pixel 1×1 al final del HTML y crea el EmailLog (sent al aceptar SMTP / failed con el error). Solo correos de invitación; welcome/reengagement sin tracking
+- Nueva ruta pública `GET /api/email-track/:trackingId(.png)` (`routes/emailTrack.js`): responde GIF transparente y registra apertura fire-and-forget (`$min openedAt` = solo primera vez, `$inc openCount`). Registrada en server.js
+- `GET /api/admin/emails` (requireMaster): últimos 200, filtro `?email=` (regex escapado) y `from/to`
+- AdminPanel.tsx: tercera pestaña CORREOS — buscador por destinatario, auto-refresh 30s, badges Error (rojo, title=error SMTP) / Abierto (verde) / Enviado (gris), columna aperturas (n× + última fecha)
+- Verificado E2E contra prod: pixel 200 image/gif, apertura registrada en BD, admin endpoint 200 con JWT master y 401 sin token (datos de prueba borrados)
+- **Limitaciones conocidas**: "entregado" real no existe con SMTP puro (solo aceptado/error; rebotes → buzón support@lenzu.app); "Abierto" depende de cargar imágenes — Apple Mail Privacy Protection puede marcar aperturas automáticas, y quien bloquee imágenes no registra apertura
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
