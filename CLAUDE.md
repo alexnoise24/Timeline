@@ -591,6 +591,23 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Verificado E2E contra prod: pixel 200 image/gif, apertura registrada en BD, admin endpoint 200 con JWT master y 401 sin token (datos de prueba borrados)
 - **Limitaciones conocidas**: "entregado" real no existe con SMTP puro (solo aceptado/error; rebotes → buzón support@lenzu.app); "Abierto" depende de cargar imágenes — Apple Mail Privacy Protection puede marcar aperturas automáticas, y quien bloquee imágenes no registra apertura
 
+### Bug "nota duplicada" First Look/Ceremony — diagnóstico + fix UX (commit b90e860)
+- Reporte: nota agregada "a First Look" apareció en Ceremony (MK & Moty). NO era bug de datos: la BD tenía UNA sola nota, en Ceremony
+- Causa real (reproducido E2E con proyecto de prueba): el menú ⋯ del evento se despliega hacia abajo y se encima sobre la tarjeta del evento SIGUIENTE; con eventos sin hora (--:-- idénticos) es fácil abrir el menú de un evento creyendo que es el de abajo. El modal de nota sí muestra el título del evento, pero pasa desapercibido
+- Fix UX: la tarjeta del evento se resalta (borde ink + bg fog) mientras su menú ⋯ está abierto
+- Limpieza en prod: nota huérfana "Suggested 1 hour before ceremony" removida de Ceremony en MK & Moty (el texto ya estaba en la descripción de First Look, puesto por Alex como workaround)
+
+### Orden manual de eventos + botón cronológico (commit b90e860)
+- `eventSchema.sortIndex` (aditivo): orden manual dentro del día. Regla frontend: si TODOS los eventos del día tienen sortIndex numérico → orden manual; si no → orden por hora (días existentes sin tocar siguen igual)
+- El POST de crear evento asigna `sortIndex: day.events.length` (nuevos eventos van al final)
+- `PUT /timelines/:id/days/:dayId/reorder` body `{ orderedEventIds }` — valida que incluya todos los eventos del día y persiste sortIndex; mismo endpoint para drag y para orden cronológico
+- Frontend: drag & drop HTML5 en las tarjetas (grip handle GripVertical visible en hover, indicadores de arrastre outline lavanda), store `reorderDayEvents()` con update optimista
+- Botón ⇅ (ArrowDownUp) en el header del día junto a editar: reordena por hora (eventos sin hora van al final); visible solo con 2+ eventos
+- Wedding mode / Watch / notificaciones siguen ordenando por hora (no afectados)
+- i18n: `timelineView.sortChronologically` y `timelineView.dragToReorder` (ES/EN)
+- Verificado E2E contra prod con proyecto de prueba (borrado al final): drag persiste sortIndex en BD y sobrevive reload; botón ⇅ reordena; nota cae en el evento correcto
+- Nota: el drag & drop es HTML5 nativo → no funciona en touch/móvil (feature de desktop por ahora)
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
