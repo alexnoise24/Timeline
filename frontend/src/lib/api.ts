@@ -85,6 +85,8 @@ export const getAdminUsers = () => api.get('/admin/users');
 export const upgradeUserToPro = (userId: string) => api.post(`/admin/users/${userId}/upgrade-pro`);
 export const getActivityLog = (params?: { eventType?: string; userId?: string; from?: string; to?: string }) =>
   api.get('/admin/activity', { params });
+export const getEmailLog = (params?: { email?: string; from?: string; to?: string }) =>
+  api.get('/admin/emails', { params });
 
 // Wedding mode analytics (fire-and-forget from frontend)
 export const logWeddingMode = (timelineId: string, active: boolean) =>

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { getAdminUsers, upgradeUserToPro, getActivityLog } from '@/lib/api';
+import { getAdminUsers, upgradeUserToPro, getActivityLog, getEmailLog } from '@/lib/api';
 
 interface AdminUser {
   _id: string;
@@ -25,6 +25,21 @@ interface ActivityEntry {
   details: Record<string, any>;
   ipAddress: string | null;
   timestamp: string;
+}
+
+interface EmailEntry {
+  _id: string;
+  to: string;
+  emailType: string;
+  lang: string;
+  timelineTitle: string | null;
+  sentByName: string | null;
+  status: 'sent' | 'failed';
+  error: string | null;
+  openedAt: string | null;
+  openCount: number;
+  lastOpenedAt: string | null;
+  sentAt: string;
 }
 
 const PLAN_BADGE: Record<string, string> = {
@@ -74,7 +89,13 @@ const fmtDetails = (details: Record<string, any>) => {
   return parts.join(' · ') || '—';
 };
 
-type TabType = 'users' | 'activity';
+type TabType = 'users' | 'activity' | 'emails';
+
+const TAB_LABEL: Record<TabType, string> = {
+  users: 'USUARIOS',
+  activity: 'ACTIVITY LOG',
+  emails: 'CORREOS',
+};
 
 export default function AdminPanel() {
   const { user } = useAuthStore();
@@ -92,6 +113,11 @@ export default function AdminPanel() {
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const refreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [emails, setEmails] = useState<EmailEntry[]>([]);
+  const [loadingEmails, setLoadingEmails] = useState(false);
+  const [emailSearch, setEmailSearch] = useState('');
+  const emailRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (user && user.role !== 'master') navigate('/dashboard', { replace: true });
@@ -143,6 +169,25 @@ export default function AdminPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, filterEvent, filterFrom, filterTo]);
 
+  const fetchEmails = async () => {
+    setLoadingEmails(true);
+    try {
+      const params: Record<string, string> = {};
+      if (emailSearch) params.email = emailSearch;
+      const res = await getEmailLog(params);
+      setEmails(res.data.emails);
+    } catch { /* silently fail */ }
+    finally { setLoadingEmails(false); }
+  };
+
+  useEffect(() => {
+    if (tab !== 'emails') { if (emailRefreshRef.current) clearInterval(emailRefreshRef.current); return; }
+    fetchEmails();
+    emailRefreshRef.current = setInterval(fetchEmails, 30_000);
+    return () => { if (emailRefreshRef.current) clearInterval(emailRefreshRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, emailSearch]);
+
   const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
@@ -172,7 +217,7 @@ export default function AdminPanel() {
 
       {/* Tabs */}
       <div className="border-b-[1.5px] border-ink bg-paper px-6 flex">
-        {(['users', 'activity'] as TabType[]).map(t => (
+        {(['users', 'activity', 'emails'] as TabType[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -182,7 +227,7 @@ export default function AdminPanel() {
                 : 'border-transparent text-stone hover:text-ink'
             }`}
           >
-            {t === 'users' ? 'USUARIOS' : 'ACTIVITY LOG'}
+            {TAB_LABEL[t]}
           </button>
         ))}
       </div>
@@ -349,6 +394,87 @@ export default function AdminPanel() {
                 </div>
                 <div className="px-4 py-3 border-t-[1px] border-ink/15 bg-fog">
                   <p className="alto-label text-stone">MOSTRANDO {logs.length} EVENTOS MÁS RECIENTES</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── EMAILS TAB ── */}
+        {tab === 'emails' && (
+          <>
+            <div className="flex flex-wrap gap-2 mb-6 items-center">
+              <input
+                type="text"
+                placeholder="Buscar por email destinatario..."
+                value={emailSearch}
+                onChange={e => setEmailSearch(e.target.value)}
+                className="w-full sm:w-72 border-[1.5px] border-ink bg-paper px-[14px] py-[10px] font-mono text-[12px] text-ink focus:outline-none focus:outline-[2px] focus:outline-lavender placeholder:text-stone"
+              />
+              <div className="ml-auto flex items-center gap-3">
+                <span className="alto-label text-stone">AUTO 30S</span>
+                <button
+                  onClick={fetchEmails}
+                  disabled={loadingEmails}
+                  className="flex items-center gap-1.5 border-[1.5px] border-ink px-3 py-[9px] alto-label text-ink hover:bg-fog transition-colors duration-[80ms] disabled:opacity-40"
+                >
+                  <RefreshCw size={11} strokeWidth={1.5} className={loadingEmails ? 'animate-spin' : ''} />
+                  Actualizar
+                </button>
+              </div>
+            </div>
+
+            {loadingEmails && emails.length === 0 ? (
+              <div className="py-16 text-center alto-label text-stone">Cargando...</div>
+            ) : emails.length === 0 ? (
+              <div className="py-16 text-center alto-label text-stone">Sin correos registrados aún</div>
+            ) : (
+              <div className="border-[1.5px] border-ink overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-[1px] border-ink/20 bg-fog">
+                        {['Fecha / Hora','Destinatario','Proyecto','Invitó','Estado','Aperturas'].map(h => (
+                          <th key={h} className="text-left px-4 py-3 alto-label text-stone whitespace-nowrap">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y-[1px] divide-ink/10">
+                      {emails.map(m => (
+                        <tr key={m._id} className="hover:bg-fog/50 transition-colors duration-[80ms]">
+                          <td className="px-4 py-3 font-mono text-[10px] text-stone whitespace-nowrap">{fmtTime(m.sentAt)}</td>
+                          <td className="px-4 py-3 font-mono font-bold text-[11px] text-ink whitespace-nowrap">{m.to}</td>
+                          <td className="px-4 py-3 font-mono text-[11px] text-stone max-w-[180px] truncate">{m.timelineTitle || '—'}</td>
+                          <td className="px-4 py-3 font-mono text-[11px] text-stone whitespace-nowrap">{m.sentByName || '—'}</td>
+                          <td className="px-4 py-3">
+                            {m.status === 'failed' ? (
+                              <span className="border-[1px] border-brick/40 bg-brick/5 text-brick px-2 py-0.5 font-mono font-bold text-[9px] uppercase tracking-[0.04em] whitespace-nowrap" title={m.error || ''}>
+                                Error
+                              </span>
+                            ) : m.openedAt ? (
+                              <span className="border-[1px] border-moss/40 bg-moss/8 text-ink px-2 py-0.5 font-mono font-bold text-[9px] uppercase tracking-[0.04em] whitespace-nowrap">
+                                Abierto
+                              </span>
+                            ) : (
+                              <span className="border-[1px] border-ink/20 bg-fog text-stone px-2 py-0.5 font-mono font-bold text-[9px] uppercase tracking-[0.04em] whitespace-nowrap">
+                                Enviado
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-[10px] text-stone whitespace-nowrap">
+                            {m.openCount > 0
+                              ? `${m.openCount}× · última ${fmtTime(m.lastOpenedAt || m.openedAt || m.sentAt)}`
+                              : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="px-4 py-3 border-t-[1px] border-ink/15 bg-fog">
+                  <p className="alto-label text-stone">
+                    MOSTRANDO {emails.length} CORREOS · "ABIERTO" USA PIXEL DE TRACKING — APPLE MAIL PUEDE MARCAR APERTURAS AUTOMÁTICAS
+                  </p>
                 </div>
               </div>
             )}

@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import ActivityLog from '../models/ActivityLog.js';
+import EmailLog from '../models/EmailLog.js';
 import { authenticate } from '../middleware/auth.js';
 import { isMaster } from '../config/constants.js';
 
@@ -81,6 +82,31 @@ router.get('/activity', authenticate, requireMaster, async (req, res) => {
   } catch (error) {
     console.error('Admin get activity error:', error);
     res.status(500).json({ message: 'Error al obtener actividad' });
+  }
+});
+
+// GET /api/admin/emails — últimos 200 correos enviados (invitaciones), filtrable
+router.get('/emails', authenticate, requireMaster, async (req, res) => {
+  try {
+    const { email, from, to } = req.query;
+
+    const filter = {};
+    if (email) filter.to = { $regex: email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+    if (from || to) {
+      filter.sentAt = {};
+      if (from) filter.sentAt.$gte = new Date(from);
+      if (to)   filter.sentAt.$lte = new Date(to + 'T23:59:59.999Z');
+    }
+
+    const emails = await EmailLog.find(filter)
+      .sort({ sentAt: -1 })
+      .limit(200)
+      .lean();
+
+    res.json({ emails });
+  } catch (error) {
+    console.error('Admin get emails error:', error);
+    res.status(500).json({ message: 'Error al obtener correos' });
   }
 });
 

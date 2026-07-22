@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import { randomUUID } from 'crypto';
+import EmailLog from '../models/EmailLog.js';
 
 // Create transporter.
 // If EMAIL_HOST is set (e.g. GoDaddy SMTP for support@lenzu.app), send through that
@@ -506,6 +508,25 @@ export const sendProjectInvitationEmail = async (invitedEmail, inviter, timeline
     return;
   }
 
+  // Tracking de apertura: pixel 1×1 servido por el backend (visible en Admin → Correos)
+  const trackingId = randomUUID();
+  const baseUrl = process.env.FRONTEND_URL || 'https://lenzu.app';
+  const trackingPixel = `<img src="${baseUrl}/api/email-track/${trackingId}.png" width="1" height="1" alt="" style="display:block;border:0;" />`;
+  const logEmail = (status, error) => {
+    EmailLog.create({
+      trackingId,
+      to: invitedEmail,
+      emailType: 'invitation',
+      lang,
+      timelineId: timeline?._id,
+      timelineTitle: timeline?.title,
+      sentBy: inviter?._id,
+      sentByName: inviter?.name,
+      status,
+      error
+    }).catch(err => console.error('Error logging invitation email:', err));
+  };
+
   try {
     const transporter = createTransporter();
     const en = lang === 'en';
@@ -548,13 +569,15 @@ Si aún no tienes cuenta, podrás crearla en segundos y unirte automáticamente 
       replyTo: inviter?.email || process.env.EMAIL_USER,
       subject,
       text, // Plain-text alternative — reduces spam scoring vs HTML-only emails
-      html: getProjectInvitationTemplate(inviter, timeline, inviteUrl, lang)
+      html: getProjectInvitationTemplate(inviter, timeline, inviteUrl, lang) + trackingPixel
     };
 
     await transporter.sendMail(mailOptions);
     console.log(`Project invitation email sent to: ${invitedEmail} (${lang})`);
+    logEmail('sent');
   } catch (error) {
     console.error('Error sending project invitation email to', invitedEmail, ':', error);
+    logEmail('failed', error?.message);
     // Don't throw — email failure shouldn't block the invitation flow
   }
 };

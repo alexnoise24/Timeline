@@ -17,6 +17,7 @@ import brandingRoutes from './routes/branding.js';
 import communityRoutes from './routes/community.js';
 import adminRoutes from './routes/admin.js';
 import iapRoutes from './routes/iap.js';
+import emailTrackRoutes from './routes/emailTrack.js';
 import { setupSocketHandlers } from './socket/handlers.js';
 import { initializeFirebase } from './services/firebase.js';
 
@@ -116,6 +117,7 @@ app.use('/api/branding', brandingRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/iap', iapRoutes);
+app.use('/api/email-track', emailTrackRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
