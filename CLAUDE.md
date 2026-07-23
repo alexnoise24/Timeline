@@ -245,6 +245,7 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 - ~~Restricción Apple Watch por plan~~ ✅ implementado 2026-07-02 (ver sección "Cambios — 2 julio 2026")
 - ~~Notificaciones push Community Chat~~ ✅ implementado 2026-07-06 (ver "Cambios — 6 julio 2026"). Nota: la infra `sendPushNotification()` YA existía en `services/notifications.js` (no en firebase.js); solo faltaba la lógica de disparo por role
 - Android: al menos 2 personas lo pidieron en TikTok (sin fecha definida)
+- **Drag & drop táctil de eventos** (móvil/iOS): el reorder actual usa HTML5 dnd (solo desktop). Falta implementar gestos touch (pointer events o long-press) sobre las tarjetas de evento en TimelineView. El backend y el store ya están listos (`reorderDayEvents` + PUT `/days/:dayId/reorder`) — es solo UI. Decidido el 22 jul 2026 dejarlo para después
 - ~~Próximo build de Xcode: `ITSAppUsesNonExemptEncryption = NO`~~ ✅ agregado al Info.plist 2026-07-06 (aplica en el próximo binario que archives)
 - **Próximo build de Xcode — splash screen**: `@capacitor/splash-screen` NO está instalado (pantalla blanca al abrir). Fix: `cd frontend && npm install @capacitor/splash-screen && npx cap sync ios` (imágenes ya generadas en Assets). Requiere binario nuevo
 - Recordatorio de build: mantener Version/Build del target Watch SIEMPRE igual al target App
