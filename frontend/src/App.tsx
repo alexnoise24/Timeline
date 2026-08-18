@@ -118,38 +118,99 @@ function App() {
     return () => document.removeEventListener('touchmove', blockBounce);
   }, [isNative]);
 
-  // Web-only: with the global overflow:hidden the document never scrolls, so a
-  // wheel event that lands outside a scroll container does nothing. That happens
-  // over the sidebar/navbar, and on first load when Chrome keeps the scroll
-  // gesture latched to the auth loading screen after React replaces it (Magic
-  // Mouse / trackpad scroll without moving the cursor). Forward those events to
-  // the page's main scroll container.
+  // Web-only: with the global overflow:hidden the document never scrolls, so
+  // wheel events Chrome can't route to a scroll container do nothing. Two cases:
+  // 1) The target has no scrollable ancestor — over the sidebar/navbar, or a
+  //    node React already detached. Forward the delta to the main container.
+  // 2) The target IS inside a scroll container but native scrolling is dead:
+  //    Chrome latches the wheel to the node under the cursor, and when React
+  //    replaces that node (expanding a day, countdown re-renders, menus) the
+  //    latch points at a dead node until the cursor moves. A watchdog detects
+  //    wheel activity that moves nothing for 150ms and takes over manually
+  //    until the gesture ends. A live native scroll moves within 1-2 frames,
+  //    so it never trips the watchdog (no double scroll).
   useEffect(() => {
     if (isNative) return;
-    const hasScrollableAncestor = (start: EventTarget | null) => {
+    const nearestScroller = (start: EventTarget | null): HTMLElement | null => {
       let el = start as HTMLElement | null;
       while (el && el !== document.documentElement) {
         const { overflowY } = getComputedStyle(el);
         if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
-          return true;
+          return el;
         }
         el = el.parentElement;
       }
-      return false;
+      return null;
     };
-    const onWheel = (e: WheelEvent) => {
-      if (e.deltaY === 0 || hasScrollableAncestor(e.target)) return;
+    const mainScroller = (): HTMLElement | null => {
       const candidates = Array.from(
         document.querySelectorAll<HTMLElement>('.overflow-y-auto, .overflow-auto')
       ).filter((c) => c.clientHeight > 0 && c.scrollHeight > c.clientHeight);
-      if (candidates.length === 0) return;
-      const main = candidates.reduce((a, b) =>
+      if (candidates.length === 0) return null;
+      return candidates.reduce((a, b) =>
         a.clientWidth * a.clientHeight >= b.clientWidth * b.clientHeight ? a : b
       );
-      main.scrollTop += e.deltaY;
+    };
+    // Whether the scroller can still move in the delta's direction. Without
+    // this, the watchdog would fight the (intended) lack of scroll chaining
+    // when a container is already at its end.
+    const canConsume = (el: HTMLElement, deltaY: number) =>
+      deltaY < 0 ? el.scrollTop > 0 : el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+
+    let watched: HTMLElement | null = null;
+    let watchedTop = 0;
+    let pendingDelta = 0;
+    let lastEventAt = 0;
+    let takenOver = false;
+    let timer: number | undefined;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0 || e.ctrlKey) return; // ctrlKey = pinch zoom
+      const scroller = nearestScroller(e.target);
+      if (!scroller) {
+        const main = mainScroller();
+        if (main) main.scrollTop += e.deltaY;
+        return;
+      }
+      const now = performance.now();
+      // A pause in wheel activity = new gesture: reset, give native a chance.
+      if (now - lastEventAt > 300 || scroller !== watched) {
+        watched = scroller;
+        watchedTop = scroller.scrollTop;
+        pendingDelta = 0;
+        takenOver = false;
+      }
+      lastEventAt = now;
+      if (takenOver) {
+        scroller.scrollTop += e.deltaY;
+        watchedTop = scroller.scrollTop;
+        return;
+      }
+      if (scroller.scrollTop !== watchedTop) {
+        // Native scrolling is alive — stand down for this gesture.
+        watchedTop = scroller.scrollTop;
+        pendingDelta = 0;
+        return;
+      }
+      pendingDelta += e.deltaY;
+      if (timer === undefined) {
+        timer = window.setTimeout(() => {
+          timer = undefined;
+          if (!watched || takenOver) return;
+          if (watched.scrollTop === watchedTop && pendingDelta !== 0 && canConsume(watched, pendingDelta)) {
+            takenOver = true;
+            watched.scrollTop += pendingDelta;
+            watchedTop = watched.scrollTop;
+            pendingDelta = 0;
+          }
+        }, 150);
+      }
     };
     document.addEventListener('wheel', onWheel, { passive: true });
-    return () => document.removeEventListener('wheel', onWheel);
+    return () => {
+      document.removeEventListener('wheel', onWheel);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
   }, [isNative]);
 
   // Toast offset: env(safe-area-inset-top) resolved by CSS keeps toasts below

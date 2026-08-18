@@ -609,6 +609,16 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Verificado E2E contra prod con proyecto de prueba (borrado al final): drag persiste sortIndex en BD y sobrevive reload; botón ⇅ reordena; nota cae en el evento correcto
 - Nota: el drag & drop es HTML5 nativo → no funciona en touch/móvil (feature de desktop por ahora)
 
+## Cambios — 18 agosto 2026
+
+### Fix scroll muerto DENTRO del área del timeline (web, mouse)
+- Reporte de Alex: en web la rueda no scrollea sobre el contenido del timeline; solo funciona fuera de esa área. En móvil todo bien
+- Causa: segunda variante del scroll latching de Chrome (ver fix 22 jul). Chrome ancla la rueda al nodo bajo el cursor; cuando React REEMPLAZA ese nodo (expandir/colapsar día, re-render de countdowns cada minuto, menú ⋯), el ancla queda en un nodo muerto y la rueda no hace nada hasta mover el cursor. El área del timeline es la única con DOM dinámico — por eso ahí muere y en sidebar/navbar (DOM estático, cubiertos por el forwarding de julio) funciona. El handler de julio solo cubría targets SIN ancestro scrolleable; con ancestro válido se hacía a un lado y confiaba en el scroll nativo (que es el que está muerto)
+- Fix en `App.tsx` (solo web, mismo useEffect): el handler de wheel ahora es un watchdog — si hay actividad de rueda ≥150ms y el scroll container más cercano no se movió NI UN PIXEL, toma el control y aplica los deltas manualmente hasta que el gesto termina (pausa >300ms = gesto nuevo, se le vuelve a dar chance al nativo). El scroll nativo vivo se mueve en 1-2 frames, así que nunca hay doble scroll. Ignora ctrlKey (pinch zoom) y respeta los límites del container (no simula chaining)
+- Verificado E2E contra prod: 1 tick sobre contenido = 100px exactos (sin doble), forwarding de sidebar/navbar intacto, clamping en los límites OK. El caso del ancla muerta no es reproducible con eventos sintéticos (CDP re-hace hit-test por evento) — pendiente confirmación de Alex con su mouse
+- Diagnóstico descartado: NO hay scroll containers anidados en la página (escaneo completo del DOM: solo el contenedor principal), el `overscroll-behavior: none` global no interviene aquí, y el bundle de prod sí tenía el fix de julio
+- Deploy solo frontend (build + scp de dist/)
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
