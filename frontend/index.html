@@ -32,6 +32,21 @@
     <style>
       input, textarea, select { font-size: max(16px, 1em) !important; }
     </style>
+
+    <!-- iOS nativo puede disparar estos eventos antes de que React monte sus
+         listeners (la app carga lenzu.app remoto); se capturan aquí y
+         NotificationHandler los procesa al montar. Capacitor copia los datos
+         directo sobre el evento (e.token), no en e.detail -->
+    <script>
+      window.addEventListener('nativeFCMToken', function (e) {
+        var token = e.token || (e.detail && e.detail.token);
+        if (token) window.__lenzuPendingFCMToken = token;
+      });
+      window.addEventListener('pushNotificationTap', function (e) {
+        var url = e.url || (e.detail && e.detail.url);
+        if (url) window.__lenzuPendingTapUrl = url;
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

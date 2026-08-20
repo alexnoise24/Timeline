@@ -133,7 +133,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillResignActive(_ application: UIApplication) {}
     func applicationDidEnterBackground(_ application: UIApplication) {}
     func applicationWillEnterForeground(_ application: UIApplication) {}
-    func applicationDidBecomeActive(_ application: UIApplication) {}
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        // Reenvía el token FCM guardado: en un arranque en frío el token de FCM
+        // llega antes de que la página remota (lenzu.app) haya cargado sus
+        // listeners, y el evento original se pierde. El backend dedupe por token.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            guard let token = UserDefaults.standard.string(forKey: "lenzu_fcm_token"),
+                  let rootVC = self.window?.rootViewController as? CAPBridgeViewController,
+                  let bridge = rootVC.bridge else { return }
+            NSLog("🔁 [Lenzu] didBecomeActive — re-forwarding stored FCM token to JS")
+            self.forwardFCMTokenToJS(token, bridge: bridge)
+        }
+    }
     func applicationWillTerminate(_ application: UIApplication) {}
 }
 

@@ -619,6 +619,20 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Diagnóstico descartado: NO hay scroll containers anidados en la página (escaneo completo del DOM: solo el contenedor principal), el `overscroll-behavior: none` global no interviene aquí, y el bundle de prod sí tenía el fix de julio
 - Deploy solo frontend (build + scp de dist/)
 
+## Cambios — 19 agosto 2026
+
+### Fix crítico — push de mensajes NUNCA funcionó (0 tokens FCM en toda la BD)
+- Reporte de Alex: mensajes sin leer en la app que nunca notificaron. Diagnóstico: 33 usuarios en prod, **CERO con token FCM registrado** — el pipeline de envío (`notifyTimelineMembers` → `sendPushNotification`) está bien, pero todos los intentos mueren en "No FCM tokens found" (logs pm2 lo confirman desde siempre)
+- **Causa raíz (iOS)**: `bridge.triggerJSEvent` de Capacitor NO crea un `CustomEvent` — `cap.createEvent` copia los datos directo sobre el evento (`ev.token = ...`). El handler en `NotificationHandler.tsx` leía `e.detail?.token` → siempre `undefined` → token descartado silenciosamente en cada arranque. Mismo bug en el tap de notificación (`e.detail?.url` → la navegación al tocar una push tampoco funcionaba)
+- Causa secundaria (web): el prompt de habilitar notificaciones aparece una sola vez (localStorage `notificationPromptSeen`) — casi nadie lo aceptó
+- Fixes frontend (desplegados a lenzu.app, efecto inmediato en iOS por carga remota):
+  - `NotificationHandler.tsx`: lee `(e as any).token ?? detail?.token` (y `url` igual); si el POST falla, el token queda en `window.__lenzuPendingFCMToken` para reintentar
+  - `index.html`: script inline en `<head>` que captura `nativeFCMToken`/`pushNotificationTap` si llegan antes de que React monte (App muestra spinner durante el check de auth → había ventana sin listener); NotificationHandler procesa lo pendiente al montar
+- Fix nativo (requiere binario nuevo, aditivo): `AppDelegate.swift` reenvía el token guardado en UserDefaults en `applicationDidBecomeActive` (+3s) — cubre la carrera FCM-token-antes-de-que-cargue-lenzu.app y se auto-sana en cada foregrounding
+- Verificado E2E: endpoint `POST /users/fcm-token` contra prod → 200 y token en BD (dato de prueba borrado); bundle nuevo en prod con el script de captura
+- **Falta verificación real**: Alex debe forzar cierre + reabrir la app iOS (con permiso de notificaciones concedido) → revisar que su usuario master tenga fcmTokens en BD → mandar un mensaje de prueba desde otra cuenta
+- Nota: los tokens FCM de web piden `VITE_FIREBASE_*` (ya en .env) y el usuario debe aceptar el prompt del navegador
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu

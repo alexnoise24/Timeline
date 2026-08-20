@@ -59,22 +59,31 @@ export default function NotificationHandler() {
   }, [navigate]);
 
   useEffect(() => {
-    // Handle FCM token delivered by the iOS native layer via window event
-    const handleNativeFCMToken = async (e: Event) => {
-      const token = (e as CustomEvent<{ token: string }>).detail?.token;
-      if (!token) return;
+    const saveNativeToken = async (token: string) => {
       console.log('[iOS] nativeFCMToken received:', token);
       try {
         await api.post('/users/fcm-token', { fcmToken: token, device: 'ios' });
         console.log('[iOS] FCM token saved to backend');
+        if ((window as any).__lenzuPendingFCMToken === token) {
+          delete (window as any).__lenzuPendingFCMToken;
+        }
       } catch (err) {
+        // Se conserva en window para reintentar en el próximo mount (p.ej. tras login)
+        (window as any).__lenzuPendingFCMToken = token;
         console.error('[iOS] Failed to save FCM token:', err);
       }
     };
 
+    // Capacitor triggerJSEvent copia los datos directo sobre el evento (e.token);
+    // se deja detail como fallback por si algún día se emite como CustomEvent
+    const handleNativeFCMToken = (e: Event) => {
+      const token = (e as any).token ?? (e as CustomEvent<{ token: string }>).detail?.token;
+      if (token) saveNativeToken(token);
+    };
+
     // Handle notification tap delivered by the iOS native layer
     const handlePushNotificationTap = (e: Event) => {
-      const url = (e as CustomEvent<{ url: string }>).detail?.url;
+      const url = (e as any).url ?? (e as CustomEvent<{ url: string }>).detail?.url;
       if (url) {
         console.log('[iOS] pushNotificationTap → navigating to', url);
         navigate(url);
@@ -83,6 +92,15 @@ export default function NotificationHandler() {
 
     window.addEventListener('nativeFCMToken', handleNativeFCMToken);
     window.addEventListener('pushNotificationTap', handlePushNotificationTap);
+
+    // Eventos que llegaron antes de montar (capturados por el script de index.html)
+    const pendingToken = (window as any).__lenzuPendingFCMToken;
+    if (pendingToken) saveNativeToken(pendingToken);
+    const pendingUrl = (window as any).__lenzuPendingTapUrl;
+    if (pendingUrl) {
+      delete (window as any).__lenzuPendingTapUrl;
+      navigate(pendingUrl);
+    }
 
     return () => {
       window.removeEventListener('nativeFCMToken', handleNativeFCMToken);
