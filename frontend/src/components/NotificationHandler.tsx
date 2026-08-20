@@ -59,17 +59,24 @@ export default function NotificationHandler() {
   }, [navigate]);
 
   useEffect(() => {
+    // TEMP DEBUG: beacon de diagnóstico FCM (quitar al verificar push)
+    const dbgFCM = (stage: string) => {
+      fetch(`/api/email-track/debug/${stage}`, { cache: 'no-store' }).catch(() => {});
+    };
+
     const saveNativeToken = async (token: string) => {
       console.log('[iOS] nativeFCMToken received:', token);
       try {
         await api.post('/users/fcm-token', { fcmToken: token, device: 'ios' });
         console.log('[iOS] FCM token saved to backend');
+        dbgFCM('post-ok');
         if ((window as any).__lenzuPendingFCMToken === token) {
           delete (window as any).__lenzuPendingFCMToken;
         }
       } catch (err) {
         // Se conserva en window para reintentar en el próximo mount (p.ej. tras login)
         (window as any).__lenzuPendingFCMToken = token;
+        dbgFCM(`post-fail-${(err as any)?.response?.status ?? 'network'}`);
         console.error('[iOS] Failed to save FCM token:', err);
       }
     };
@@ -102,11 +109,41 @@ export default function NotificationHandler() {
       navigate(pendingUrl);
     }
 
+    // Reintento de token pendiente (p.ej. llegó antes del login y el POST dio 401)
+    const retryInterval = setInterval(() => {
+      const pending = (window as any).__lenzuPendingFCMToken;
+      if (pending && localStorage.getItem('token')) {
+        delete (window as any).__lenzuPendingFCMToken;
+        saveNativeToken(pending);
+      }
+    }, 15000);
+
     return () => {
+      clearInterval(retryInterval);
       window.removeEventListener('nativeFCMToken', handleNativeFCMToken);
       window.removeEventListener('pushNotificationTap', handlePushNotificationTap);
     };
   }, [navigate]);
+
+  useEffect(() => {
+    // Web: si el permiso ya fue concedido, re-registra el token FCM en cada carga
+    // (los tokens rotan y el POST inicial pudo fallar; sin esto el permiso queda
+    // concedido pero sin token en BD). No muestra ningún prompt: permission ya es granted.
+    const isNativeApp =
+      (window as any).Capacitor?.isNativePlatform?.() === true ||
+      navigator.userAgent.includes('Capacitor') ||
+      window.location.href.startsWith('capacitor://');
+    if (isNativeApp) return;
+    if (getNotificationPermission() !== 'granted') return;
+    if (!localStorage.getItem('token')) return;
+
+    requestNotificationPermission()
+      .then(token => {
+        if (token) return api.post('/users/fcm-token', { fcmToken: token });
+      })
+      .then(res => { if (res) console.log('[web] FCM token re-registered'); })
+      .catch(err => console.error('[web] FCM token re-register failed:', err));
+  }, []);
 
   const handleEnableNotifications = async () => {
     setIsLoading(true);
