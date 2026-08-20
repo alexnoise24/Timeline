@@ -43,3 +43,6 @@ coverage/
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Llaves privadas APNs — NUNCA commitear
+*.p8
