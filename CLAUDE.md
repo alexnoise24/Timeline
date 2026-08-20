@@ -630,8 +630,17 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
   - `index.html`: script inline en `<head>` que captura `nativeFCMToken`/`pushNotificationTap` si llegan antes de que React monte (App muestra spinner durante el check de auth → había ventana sin listener); NotificationHandler procesa lo pendiente al montar
 - Fix nativo (requiere binario nuevo, aditivo): `AppDelegate.swift` reenvía el token guardado en UserDefaults en `applicationDidBecomeActive` (+3s) — cubre la carrera FCM-token-antes-de-que-cargue-lenzu.app y se auto-sana en cada foregrounding
 - Verificado E2E: endpoint `POST /users/fcm-token` contra prod → 200 y token en BD (dato de prueba borrado); bundle nuevo en prod con el script de captura
-- **Falta verificación real**: Alex debe forzar cierre + reabrir la app iOS (con permiso de notificaciones concedido) → revisar que su usuario master tenga fcmTokens en BD → mandar un mensaje de prueba desde otra cuenta
 - Nota: los tokens FCM de web piden `VITE_FIREBASE_*` (ya en .env) y el usuario debe aceptar el prompt del navegador
+
+### Push iOS VERIFICADO end-to-end (20 ago 2026) — notificación real recibida en el iPhone de Alex ✅
+- Beacons de debug confirmaron: el build 11 perdía el evento del token en CADA arranque (FCM lo dispara ~0.5s tras abrir, antes de que cargue lenzu.app; sin plugin Preferences no hay workaround JS) → **el push en iOS requiere build ≥12**
+- **Build 1.1.1 (12)** archivado y subido por Alex (el tren 1.1.0 estaba cerrado por Apple tras la publicación → bump a 1.1.1); instalado vía TestFlight → el reenvío en `didBecomeActive` entregó el token a los 3s y quedó registrado en BD
+- Primer envío falló: `messaging/third-party-auth-error — Invalid APNs credential` → **faltaba la llave APNs en Firebase desde el día uno** (era imposible que llegara un push a cualquier iPhone)
+- Alex creó la llave APNs "Lenzu APNs" (Key ID 4RJ869D593, Team ID YS36R98LJ2, Sandbox & Production, Team Scoped) y la subió a Firebase (moment-weaver-66582 → Cloud Messaging) en los slots de desarrollo Y producción. El .p8 (`AuthKey_4RJ869D593.p8`) quedó en las descargas de Alex — no se puede re-descargar de Apple
+- Fix adicional `backend/services/notifications.js`: la limpieza de tokens ya solo poda errores de token muerto (`registration-token-not-registered`, `invalid-registration-token`, `invalid-argument`) y loggea el código de error de cada fallo — antes un error de configuración (como el de APNs) borraba tokens válidos
+- Mejoras frontend que quedaron permanentes: captura temprana de eventos nativos en index.html, reintento de token pendiente cada 15s (cubre token llegado antes del login), auto-registro web si el permiso ya está granted
+- Prueba E2E real: mensaje desde cuenta de prueba a proyecto "Sara & Luis" → `1 succeeded` → notificación recibida en el iPhone. Datos de prueba borrados (3 mensajes + colaborador temporal); beacons de debug retirados de index.html, NotificationHandler y emailTrack.js
+- **PENDIENTE: enviar build 1.1.1 (12) a revisión de Apple** — hasta que se apruebe, los demás usuarios de iPhone siguen sin poder registrar tokens (publicación automática al aprobar)
 
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal

@@ -56,12 +56,22 @@ export const sendPushNotification = async (userIds, notification, data = {}) => 
 
     console.log(`✅ Notification sent successfully: ${response.successCount} succeeded, ${response.failureCount} failed`);
 
-    // Remove invalid tokens
+    // Remove invalid tokens — solo errores que indican token muerto.
+    // Errores de configuración (p.ej. credenciales APNs) NO deben borrar tokens.
+    const DEAD_TOKEN_ERRORS = [
+      'messaging/registration-token-not-registered',
+      'messaging/invalid-registration-token',
+      'messaging/invalid-argument',
+    ];
     if (response.failureCount > 0) {
       const invalidTokens = [];
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
-          invalidTokens.push(allTokens[idx]);
+          const code = resp.error?.code || 'unknown';
+          console.error(`❌ FCM send failed [${code}]: ${resp.error?.message || ''} (token ${allTokens[idx].slice(0, 12)}...)`);
+          if (DEAD_TOKEN_ERRORS.includes(code)) {
+            invalidTokens.push(allTokens[idx]);
+          }
         }
       });
 

@@ -38,15 +38,8 @@
          NotificationHandler los procesa al montar. Capacitor copia los datos
          directo sobre el evento (e.token), no en e.detail -->
     <script>
-      // TEMP DEBUG: beacons de diagnóstico FCM, solo en la app nativa (quitar al verificar push)
-      var __lenzuDbg = function (stage) {
-        if (!window.Capacitor && !/Capacitor/.test(navigator.userAgent)) return;
-        try { fetch('/api/email-track/debug/' + stage, { cache: 'no-store' }).catch(function () {}); } catch (err) {}
-      };
-      __lenzuDbg('head-script-loaded');
       window.addEventListener('nativeFCMToken', function (e) {
         var token = e.token || (e.detail && e.detail.token);
-        __lenzuDbg(token ? 'event-token-ok' : 'event-token-empty');
         if (token) window.__lenzuPendingFCMToken = token;
       });
       window.addEventListener('pushNotificationTap', function (e) {

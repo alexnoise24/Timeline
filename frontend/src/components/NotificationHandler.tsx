@@ -59,24 +59,17 @@ export default function NotificationHandler() {
   }, [navigate]);
 
   useEffect(() => {
-    // TEMP DEBUG: beacon de diagnóstico FCM (quitar al verificar push)
-    const dbgFCM = (stage: string) => {
-      fetch(`/api/email-track/debug/${stage}`, { cache: 'no-store' }).catch(() => {});
-    };
-
     const saveNativeToken = async (token: string) => {
       console.log('[iOS] nativeFCMToken received:', token);
       try {
         await api.post('/users/fcm-token', { fcmToken: token, device: 'ios' });
         console.log('[iOS] FCM token saved to backend');
-        dbgFCM('post-ok');
         if ((window as any).__lenzuPendingFCMToken === token) {
           delete (window as any).__lenzuPendingFCMToken;
         }
       } catch (err) {
         // Se conserva en window para reintentar en el próximo mount (p.ej. tras login)
         (window as any).__lenzuPendingFCMToken = token;
-        dbgFCM(`post-fail-${(err as any)?.response?.status ?? 'network'}`);
         console.error('[iOS] Failed to save FCM token:', err);
       }
     };
