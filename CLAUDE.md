@@ -640,7 +640,7 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Fix adicional `backend/services/notifications.js`: la limpieza de tokens ya solo poda errores de token muerto (`registration-token-not-registered`, `invalid-registration-token`, `invalid-argument`) y loggea el código de error de cada fallo — antes un error de configuración (como el de APNs) borraba tokens válidos
 - Mejoras frontend que quedaron permanentes: captura temprana de eventos nativos en index.html, reintento de token pendiente cada 15s (cubre token llegado antes del login), auto-registro web si el permiso ya está granted
 - Prueba E2E real: mensaje desde cuenta de prueba a proyecto "Sara & Luis" → `1 succeeded` → notificación recibida en el iPhone. Datos de prueba borrados (3 mensajes + colaborador temporal); beacons de debug retirados de index.html, NotificationHandler y emailTrack.js
-- **PENDIENTE: enviar build 1.1.1 (12) a revisión de Apple** — hasta que se apruebe, los demás usuarios de iPhone siguen sin poder registrar tokens (publicación automática al aprobar)
+- **Build 1.1.1 (12) enviado a revisión de Apple el 19 ago 2026** (publicación automática al aprobar) — hasta entonces, los usuarios con build 11 siguen sin poder registrar tokens. Usuario demo verificado vigente antes de enviar (login 200, plan pro, proyecto demo con 9 eventos + 10 shots)
 
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
