@@ -196,7 +196,7 @@ export default function AdminPanel() {
   if (!user || user.role !== 'master') return null;
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="h-full overflow-y-auto bg-paper">
 
       {/* Header */}
       <div className="border-b-[1.5px] border-ink bg-paper px-6 py-4 flex items-center justify-between">

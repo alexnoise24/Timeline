@@ -18,16 +18,16 @@ shot lists y colaboración de equipo en tiempo real durante el día de boda.
 - **BD de producción: `wedding-timeline`** — NO usar `lenzu` (está vacía)
 - Siempre conectar con: `mongosh wedding-timeline`
 - Ejemplo para subir plan:
-  `ssh alexobregon@192.168.100.150 'mongosh wedding-timeline --eval "db.users.updateOne({email:\"x@x.com\"},{$set:{current_plan:\"pro\",...}})"'`
+  `ssh -i ~/.ssh/id_ed25519 alexobregon@104.238.138.164 'mongosh wedding-timeline --eval "db.users.updateOne({email:\"x@x.com\"},{$set:{current_plan:\"pro\",...}})"'`
 
 ## Deploy
 - Script: deploy-production.sh en la raíz
 - Comando: bash deploy-production.sh
 - SERVER_USER: alexobregon
-- SERVER_IP: 192.168.100.150 (red local)
+- SERVER_IP: 104.238.138.164 (VPS en la nube desde sep 2026 — la IP local 192.168.100.150 quedó obsoleta)
 - SERVER_PATH: /var/www/timeline
 - Proceso: build → git push → scp dist → rsync backend → pm2 restart timeline-api
-- SSH key: ~/.ssh/id_ed25519 (configurada con ssh-copy-id el 2026-04-06)
+- SSH: `ssh -i ~/.ssh/id_ed25519 alexobregon@104.238.138.164`
 - URL producción: lenzu.app
 
 ## Estructura de carpetas
@@ -374,7 +374,7 @@ Nginx sirve el frontend desde `root /var/www/timeline/frontend/dist` (server blo
 cd "/Volumes/T7/Web APP/Timeline/frontend"
 npm run build                                    # tsc && vite build → regenera dist/
 scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
-  alexobregon@192.168.100.150:/var/www/timeline/frontend/dist/
+  alexobregon@104.238.138.164:/var/www/timeline/frontend/dist/
 ```
 - NO ejecutar `deploy-production.sh` si solo quieres frontend (ese hace git push + rsync backend + pm2 restart).
 - Verificación post-deploy: `curl -s https://lenzu.app/ | grep -oE "assets/index-[A-Za-z0-9_-]+\.js"` debe mostrar un hash **distinto** al anterior.
