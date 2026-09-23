@@ -8,6 +8,7 @@ import { MASTER_EMAIL, TRIAL_DURATION_DAYS } from '../config/constants.js';
 import { sendWelcomeEmail, sendPasswordResetEmail, sendReengagementEmail } from '../services/email.js';
 import sendTelegramNotification from '../services/telegram.js';
 import { logActivity } from '../services/activityLogger.js';
+import { claimPendingEmailInvites } from '../services/inviteClaims.js';
 
 const router = express.Router();
 
@@ -56,6 +57,14 @@ router.post('/register',
 
       // Log registration activity (fire and forget)
       logActivity(user._id, user.name, 'user.register', { role: user.role, email: user.email }, req);
+
+      // Auto-claim pending email invites so invitees who register directly on
+      // lenzu.app (without clicking the tokenized link) still join their project
+      try {
+        await claimPendingEmailInvites(user, req);
+      } catch (claimError) {
+        console.error('Failed to auto-claim email invites on register:', claimError);
+      }
 
       // Send welcome email (async, don't block registration)
       sendWelcomeEmail(user).catch(err => {
@@ -132,6 +141,14 @@ router.post('/login',
         user.trial_end_date !== null &&
         user.current_plan === 'none' &&
         user.role !== 'guest';
+
+      // Auto-claim pending email invites (covers users who already had an
+      // account, or who never clicked the tokenized link from the email)
+      try {
+        await claimPendingEmailInvites(user, req);
+      } catch (claimError) {
+        console.error('Failed to auto-claim email invites on login:', claimError);
+      }
 
       // Log login activity (fire and forget)
       logActivity(user._id, user.name, 'user.login', { plan: user.current_plan }, req);

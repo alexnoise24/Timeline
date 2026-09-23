@@ -13,11 +13,24 @@ interface PasswordRequirement {
   met: boolean;
 }
 
+// Targeted email invites carry the invited address in the JWT payload;
+// "copy link" tokens don't. Decode (without verifying) to prefill and validate.
+const getInviteTokenEmail = (token: string | null): string | null => {
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload.email === 'string' ? payload.email.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+};
+
 const Register: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get('invite');
-  
+  const inviteTokenEmail = getInviteTokenEmail(inviteToken);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -31,12 +44,17 @@ const Register: React.FC = () => {
   const { acceptInviteToken } = useInvitationsStore();
   const navigate = useNavigate();
 
-  // Set role to guest if coming from invite link
+  // Set role to guest if coming from invite link; prefill the invited email
+  // (the invitation is bound to it — registering with another email orphans the account)
   useEffect(() => {
     if (inviteToken) {
-      setFormData(prev => ({ ...prev, role: 'guest' }));
+      setFormData(prev => ({
+        ...prev,
+        role: 'guest',
+        email: prev.email || inviteTokenEmail || ''
+      }));
     }
-  }, [inviteToken]);
+  }, [inviteToken, inviteTokenEmail]);
 
   // Language on mount: an explicit ?lang= from the invitation wins over browser detection
   // (the inviting photographer chose the language for this client).
@@ -83,6 +101,13 @@ const Register: React.FC = () => {
       return;
     }
 
+    // Targeted invites only work with the invited email — block before creating
+    // the account so the user isn't left registered but disconnected from the project
+    if (inviteTokenEmail && formData.email.trim().toLowerCase() !== inviteTokenEmail) {
+      setError('invite_email_mismatch');
+      return;
+    }
+
     try {
       setIsLoading(true);
       await register(formData.name, formData.email, formData.password, formData.role);
@@ -104,12 +129,12 @@ const Register: React.FC = () => {
         } catch (inviteError: any) {
           console.error('Failed to accept invitation:', inviteError);
           localStorage.removeItem('inviteToken');
-          
+
           // Show error message but continue to dashboard
-          setError('Account created! However, the invitation link may have expired. Please ask for a new invite.');
+          setError(inviteError?.response?.status === 403 ? 'invite_email_mismatch' : 'invite_expired');
           setTimeout(() => {
             navigate('/dashboard', { replace: true });
-          }, 3000);
+          }, 6000);
           return;
         }
       }
@@ -261,6 +286,9 @@ const Register: React.FC = () => {
               <div className="overflow-hidden">
                 <span className="font-mono font-bold text-[12px] uppercase text-ink block">{t('auth.guest')}</span>
                 <p className="font-mono text-[11px] text-stone mt-1 leading-relaxed">{t('auth.guestDesc')}</p>
+                {!inviteToken && formData.role === 'guest' && (
+                  <p className="font-mono text-[11px] text-stone mt-2 leading-relaxed">{t('auth.guestNeedsInvite')}</p>
+                )}
               </div>
             </div>
 
@@ -278,6 +306,10 @@ const Register: React.FC = () => {
                     Este correo ya tiene una cuenta.{' '}
                     <Link to="/login" className="underline font-bold">Iniciar sesión</Link>
                   </>
+                ) : error === 'invite_email_mismatch' ? (
+                  t('auth.inviteEmailMismatch', { email: inviteTokenEmail })
+                ) : error === 'invite_expired' ? (
+                  t('auth.inviteExpired')
                 ) : (
                   'Ocurrió un error. Intenta de nuevo.'
                 )}
