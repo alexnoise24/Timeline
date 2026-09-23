@@ -642,6 +642,25 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Prueba E2E real: mensaje desde cuenta de prueba a proyecto "Sara & Luis" → `1 succeeded` → notificación recibida en el iPhone. Datos de prueba borrados (3 mensajes + colaborador temporal); beacons de debug retirados de index.html, NotificationHandler y emailTrack.js
 - **Build 1.1.1 (12) enviado a revisión de Apple el 19 ago 2026** (publicación automática al aprobar) — hasta entonces, los usuarios con build 11 siguen sin poder registrar tokens. Usuario demo verificado vigente antes de enviar (login 200, plan pro, proyecto demo con 9 eventos + 10 shots)
 
+## Cambios — 23 septiembre 2026
+
+### Caso Kelly/Murphy — invitadas registradas pero sin conectar a su proyecto
+- **Kelly** (Kelly & Chad): abrió su link pero se registró con `iamkelly2.0@outlook.com` en vez de `khogan612@gmail.com` (el email del token) → el accept devolvió 403 por la validación de email, y el frontend lo aplastaba con un error genérico. **Murphy** (Murphy & Dan): nunca usó el link con token — se registró directo en lenzu.app eligiendo "Colaborador" → cuenta guest huérfana (mismo patrón que Emily Brown en julio)
+- Ambas conectadas manualmente en prod (collaborator editor + invitedTimelines accepted + limpieza de pendingEmailInvites), replicando lo que hace accept-invite-token
+- Dan (`kodak229e@yahoo.com`, proyecto Murphy & Dan) sigue invitado sin registrarse
+
+### Auto-claim de invitaciones por email (register + login) — desplegado
+- Nuevo `backend/services/inviteClaims.js` → `claimPendingEmailInvites(user, req)`: busca `pendingEmailInvites` que coincidan con el email del usuario y los materializa (colaborador editor, invitedTimelines accepted, limpieza, socket `timeline:invited`, activity log `collaborator.accept` via `email-claim`)
+- Llamado en `routes/auth.js` en register Y login (await con try/catch — nunca rompe el auth). El caso Murphy ahora se auto-resuelve; también cubre a quien ya tenía cuenta al ser invitado y a quien nunca toca el link del correo
+- Ojo: `timeline.save()` corre validación del esquema — un timeline inválido (p. ej. sin `weddingDate`) hace fallar el claim de ESE timeline (loggeado como "Failed to auto-claim")
+
+### Register.tsx — UX de invitaciones (desplegado)
+- Pre-llena el campo email con el de la invitación (decodifica el payload del JWT sin verificar, helper `getInviteTokenEmail`)
+- Bloquea el submit si escriben OTRO email con mensaje claro (`auth.inviteEmailMismatch`) — evita el caso Kelly ANTES de crear la cuenta; los tokens de "Copiar link" no llevan email y no se ven afectados
+- El catch del accept ahora distingue 403 (email distinto) de token inválido/expirado (`auth.inviteExpired`) — antes TODO caía en el genérico "Ocurrió un error"
+- Nota bajo la opción "Colaborador" cuando no hay token: necesitas invitación, usa el mismo correo (`auth.guestNeedsInvite`). La opción NO se ocultó: con el auto-claim, registrarse directo con el correo invitado ya funciona
+- Verificado E2E contra prod (register y login claim con timeline de prueba, borrado al final). Deploy completo commit `ee62fe5`
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
