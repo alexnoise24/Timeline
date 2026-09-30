@@ -661,6 +661,25 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Nota bajo la opción "Colaborador" cuando no hay token: necesitas invitación, usa el mismo correo (`auth.guestNeedsInvite`). La opción NO se ocultó: con el auto-claim, registrarse directo con el correo invitado ya funciona
 - Verificado E2E contra prod (register y login claim con timeline de prueba, borrado al final). Deploy completo commit `ee62fe5`
 
+## Cambios — 30 septiembre 2026
+
+### Sección Documentos por proyecto (PDFs de planner) — implementado y desplegado
+- `Timeline.documentsList` (campo aditivo): `{ name, filename, uploadedBy, uploadedAt }`
+- Middleware nuevo `backend/middleware/uploadDocument.js`: multer, solo PDF (acepta `application/octet-stream` de iOS), 10 MB, guarda en `backend/private_uploads/documents/` — **fuera del `/uploads` estático** (que se sirve sin auth); la carpeta está en .gitignore y el rsync del deploy no la borra (sin `--delete`)
+- Rutas en `routes/timeline.js`: POST `/:id/documents` (owner/editors/invited suben), GET `/:id/documents/:documentId/download` (autenticado, verifica membresía, `res.download` con nombre original), DELETE `/:id/documents/:documentId` (solo owner o quien lo subió; borra archivo + entrada)
+- UI: card "Documentos" en Overview entre Vendors y Photographers Team — botón "Subir PDF" (visible con canEdit), lista con descarga (fetch con Bearer → blob) y eliminar
+- Activity log: `document.upload`, `document.delete`, `document.transcribe`
+- i18n: keys `overview.documents*` y `overview.transcribe*` (ES/EN)
+- Verificado E2E contra prod (proyecto Jenny & Sean, datos borrados): upload 201 → documentsList → download 200 con bytes correctos / 401 sin token → archivo NO accesible vía URL pública (el 200 de `/uploads/documents/...` es el catch-all del SPA devolviendo index.html, no el PDF) → delete limpia BD y disco
+
+### Transcripción de PDF a eventos con Claude API (SOLO master) — implementado, falta API key
+- `backend/services/transcribeDocument.js`: PDF base64 → Claude API (`claude-opus-4-8`, adaptive thinking, structured outputs con json_schema) → `{ events: [{time, title, description}] }`. Filtra solo lo relevante para foto/video, conserva el idioma del documento, horas en HH:MM 24h
+- POST `/:id/documents/:documentId/transcribe`: gated con `isMaster(req.user)` (mismo helper de constants.js) — nadie más puede quemar tokens LLM (app 100% gratis). Sin `ANTHROPIC_API_KEY` responde 500 con mensaje claro "missing API key" (verificado en prod)
+- UI (solo `user.role === 'master'`): botón Sparkles por documento → modal: elegir día → "Transcribir con IA" → preview editable (hora/título/descripción, eliminar filas) → "Agregar N eventos" inserta reutilizando POST `/days/:dayId/events` (sortIndex y changeLogs gratis) → fetchTimeline
+- Dependencia nueva: `@anthropic-ai/sdk` en backend (rsync no sube node_modules → tras deploy con package.json nuevo hay que `npm install` en el VPS; ya hecho)
+- **PENDIENTE: agregar `ANTHROPIC_API_KEY` al `.env` del backend en el VPS** (Alex manual — nunca tocar .env) y reiniciar pm2. Hasta entonces la transcripción devuelve el error de configuración; el resto de Documentos funciona
+- Deploy completo commit `7840426` (frontend + backend + npm install en VPS + pm2 restart, health 200, bundle verificado)
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
