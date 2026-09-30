@@ -677,7 +677,7 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - POST `/:id/documents/:documentId/transcribe`: gated con `isMaster(req.user)` (mismo helper de constants.js) — nadie más puede quemar tokens LLM (app 100% gratis). Sin `ANTHROPIC_API_KEY` responde 500 con mensaje claro "missing API key" (verificado en prod)
 - UI (solo `user.role === 'master'`): botón Sparkles por documento → modal: elegir día → "Transcribir con IA" → preview editable (hora/título/descripción, eliminar filas) → "Agregar N eventos" inserta reutilizando POST `/days/:dayId/events` (sortIndex y changeLogs gratis) → fetchTimeline
 - Dependencia nueva: `@anthropic-ai/sdk` en backend (rsync no sube node_modules → tras deploy con package.json nuevo hay que `npm install` en el VPS; ya hecho)
-- **PENDIENTE: agregar `ANTHROPIC_API_KEY` al `.env` del backend en el VPS** (Alex manual — nunca tocar .env) y reiniciar pm2. Hasta entonces la transcripción devuelve el error de configuración; el resto de Documentos funciona
+- `ANTHROPIC_API_KEY` configurada por Alex en el `.env` del VPS el mismo día (ojo: al pegarla duplicó la línea 3 veces — dotenv usa la PRIMERA aparición; se limpió con sed dejando una sola). **Transcripción verificada E2E con llamada real al API**: PDF de prueba con itinerario → 10 eventos correctos (horas 24h, idioma conservado, locaciones en descripción) en ~6s. Datos de prueba borrados
 - Deploy completo commit `7840426` (frontend + backend + npm install en VPS + pm2 restart, health 200, bundle verificado)
 
 ## Personas del proyecto
