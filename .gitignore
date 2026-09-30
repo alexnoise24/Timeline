@@ -46,3 +46,6 @@ coverage/
 
 # Llaves privadas APNs — NUNCA commitear
 *.p8
+
+# Private documents (planner PDFs) — never commit user files
+backend/private_uploads/

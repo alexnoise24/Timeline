@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, Edit2, Save, X, Camera, Plus, Trash2, Upload, Store, Instagram } from 'lucide-react';
+import { Settings, Edit2, Save, X, Camera, Plus, Trash2, Upload, Store, Instagram, FileText, Download, Sparkles } from 'lucide-react';
 import { Timeline, Photographer } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useTimelineStore } from '@/store/timelineStore';
@@ -18,7 +18,7 @@ interface OverviewProps {
 export default function Overview({ timeline }: OverviewProps) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const { updateOverview } = useTimelineStore();
+  const { updateOverview, fetchTimeline } = useTimelineStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isPhotographerModalOpen, setIsPhotographerModalOpen] = useState(false);
   const [editingPhotographer, setEditingPhotographer] = useState<Photographer | null>(null);
@@ -110,6 +110,161 @@ export default function Overview({ timeline }: OverviewProps) {
     timeline.owner._id === user._id ||
     timeline.collaborators.some(c => c.user && c.user._id === user._id && c.role === 'editor')
   );
+
+  // Documents (planner PDFs)
+  const documentInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error(t('overview.onlyPdf'));
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(t('overview.documentTooLarge'));
+      return;
+    }
+    setUploadingDocument(true);
+    try {
+      const token = localStorage.getItem('token');
+      const body = new FormData();
+      body.append('document', file, file.name);
+      const response = await fetch(`/api/timelines/${timeline._id}/documents`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      if (!response.ok) throw new Error('Failed to upload document');
+      await fetchTimeline(timeline._id);
+      toast.success(t('overview.documentUploaded'));
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast.error(t('overview.documentUploadError'));
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
+  const handleDocumentDownload = async (doc: { _id: string; name: string }) => {
+    setDownloadingDocId(doc._id);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/timelines/${timeline._id}/documents/${doc._id}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to download document');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.name || 'document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast.error(t('overview.documentDownloadError'));
+    } finally {
+      setDownloadingDocId(null);
+    }
+  };
+
+  // Transcribe (master only) — planner PDF → timeline events via Claude API
+  const isMasterUser = user?.role === 'master';
+  const [transcribeDoc, setTranscribeDoc] = useState<{ _id: string; name: string } | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcribedEvents, setTranscribedEvents] = useState<Array<{ time: string; title: string; description: string }> | null>(null);
+  const [transcribeDayId, setTranscribeDayId] = useState('');
+  const [insertingEvents, setInsertingEvents] = useState(false);
+
+  const openTranscribeModal = (doc: { _id: string; name: string }) => {
+    setTranscribeDoc(doc);
+    setTranscribedEvents(null);
+    setTranscribeDayId(timeline.days?.[0]?._id || '');
+  };
+
+  const closeTranscribeModal = () => {
+    if (transcribing || insertingEvents) return;
+    setTranscribeDoc(null);
+    setTranscribedEvents(null);
+  };
+
+  const handleTranscribe = async () => {
+    if (!transcribeDoc) return;
+    setTranscribing(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/timelines/${timeline._id}/documents/${transcribeDoc._id}/transcribe`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to transcribe document');
+      const data = await response.json();
+      setTranscribedEvents(data.events || []);
+    } catch (error) {
+      console.error('Error transcribing document:', error);
+      toast.error(t('overview.transcribeError'));
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
+  const handleInsertEvents = async () => {
+    if (!transcribedEvents || !transcribeDayId) return;
+    const valid = transcribedEvents.filter((ev) => ev.title.trim());
+    if (valid.length === 0) return;
+    setInsertingEvents(true);
+    try {
+      const token = localStorage.getItem('token');
+      for (const ev of valid) {
+        const response = await fetch(`/api/timelines/${timeline._id}/days/${transcribeDayId}/events`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: ev.title.trim(),
+            description: ev.description.trim(),
+            time: ev.time.trim(),
+            category: 'other',
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to insert event');
+      }
+      await fetchTimeline(timeline._id);
+      toast.success(t('overview.transcribeInserted', { count: valid.length }));
+      setTranscribeDoc(null);
+      setTranscribedEvents(null);
+    } catch (error) {
+      console.error('Error inserting events:', error);
+      toast.error(t('overview.transcribeInsertError'));
+      await fetchTimeline(timeline._id);
+    } finally {
+      setInsertingEvents(false);
+    }
+  };
+
+  const handleDocumentDelete = async (doc: { _id: string }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/timelines/${timeline._id}/documents/${doc._id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to delete document');
+      await fetchTimeline(timeline._id);
+      toast.success(t('overview.documentDeleted'));
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error(t('overview.documentDeleteError'));
+    }
+  };
 
   // Only owner can edit photographers team
   const canEditPhotographers = user && timeline.owner._id === user._id;
@@ -776,6 +931,192 @@ export default function Overview({ timeline }: OverviewProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Documents (planner PDFs) */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center">
+                <FileText className="text-rose-600" size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{t('overview.documents')}</h3>
+                <p className="text-sm text-gray-600">{t('overview.documentsDesc')}</p>
+              </div>
+            </div>
+            {canEdit && (
+              <>
+                <input
+                  ref={documentInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={handleDocumentUpload}
+                />
+                <Button
+                  onClick={() => documentInputRef.current?.click()}
+                  variant="outline"
+                  disabled={uploadingDocument}
+                  className="flex items-center gap-2"
+                >
+                  <Upload size={16} />
+                  {uploadingDocument ? t('overview.uploadingDocument') : t('overview.uploadDocument')}
+                </Button>
+              </>
+            )}
+          </div>
+
+          {timeline.documentsList && timeline.documentsList.length > 0 ? (
+            <div className="space-y-2">
+              {timeline.documentsList.map((doc) => (
+                <div key={doc._id} className="flex items-center justify-between gap-3 bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="text-gray-400 shrink-0" size={18} />
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{doc.name}</p>
+                      <p className="text-xs text-gray-500">{new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isMasterUser && timeline.days && timeline.days.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => openTranscribeModal(doc)}
+                        className="p-2 text-purple-500 hover:text-purple-700 transition-colors"
+                        title={t('overview.transcribe')}
+                      >
+                        <Sparkles size={16} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDocumentDownload(doc)}
+                      disabled={downloadingDocId === doc._id}
+                      className="p-2 text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-50"
+                      title={t('overview.downloadDocument')}
+                    >
+                      <Download size={16} />
+                    </button>
+                    {user && (timeline.owner._id === user._id || doc.uploadedBy === user._id) && (
+                      <button
+                        type="button"
+                        onClick={() => handleDocumentDelete(doc)}
+                        className="p-2 text-red-500 hover:text-red-700 transition-colors"
+                        title={t('overview.deleteDocument')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">{t('overview.noDocuments')}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Transcribe modal (master only) */}
+      <Modal
+        isOpen={!!transcribeDoc}
+        onClose={closeTranscribeModal}
+        title={t('overview.transcribeTitle')}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 truncate">{transcribeDoc?.name}</p>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('overview.transcribeSelectDay')}
+            </label>
+            <select
+              value={transcribeDayId}
+              onChange={(e) => setTranscribeDayId(e.target.value)}
+              disabled={transcribing || insertingEvents}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+            >
+              {timeline.days?.map((day) => (
+                <option key={day._id} value={day._id}>
+                  {day.label || new Date(day.date).toLocaleDateString()}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {transcribedEvents === null ? (
+            <Button onClick={handleTranscribe} disabled={transcribing} className="w-full flex items-center justify-center gap-2">
+              <Sparkles size={16} />
+              {transcribing ? t('overview.transcribing') : t('overview.transcribeRun')}
+            </Button>
+          ) : transcribedEvents.length === 0 ? (
+            <p className="text-sm text-gray-500">{t('overview.transcribeEmpty')}</p>
+          ) : (
+            <>
+              <p className="text-xs text-gray-500">{t('overview.transcribePreviewHint')}</p>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {transcribedEvents.map((ev, index) => (
+                  <div key={index} className="flex gap-2 items-start bg-gray-50 rounded-lg p-2">
+                    <input
+                      type="time"
+                      value={ev.time}
+                      onChange={(e) => {
+                        const updated = [...transcribedEvents];
+                        updated[index] = { ...updated[index], time: e.target.value };
+                        setTranscribedEvents(updated);
+                      }}
+                      className="border border-gray-300 rounded px-2 py-1 text-sm w-24 shrink-0"
+                    />
+                    <div className="flex-1 space-y-1 min-w-0">
+                      <input
+                        type="text"
+                        value={ev.title}
+                        onChange={(e) => {
+                          const updated = [...transcribedEvents];
+                          updated[index] = { ...updated[index], title: e.target.value };
+                          setTranscribedEvents(updated);
+                        }}
+                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm font-medium"
+                      />
+                      {ev.description !== '' && (
+                        <textarea
+                          value={ev.description}
+                          rows={2}
+                          onChange={(e) => {
+                            const updated = [...transcribedEvents];
+                            updated[index] = { ...updated[index], description: e.target.value };
+                            setTranscribedEvents(updated);
+                          }}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-xs text-gray-600"
+                        />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTranscribedEvents(transcribedEvents.filter((_, i) => i !== index))}
+                      className="mt-1 p-1 text-red-500 hover:text-red-700 transition-colors shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={closeTranscribeModal} disabled={insertingEvents} className="flex-1">
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleInsertEvents} disabled={insertingEvents || transcribedEvents.length === 0} className="flex-1">
+                  {insertingEvents
+                    ? t('overview.transcribeInserting')
+                    : t('overview.transcribeInsert', { count: transcribedEvents.filter((ev) => ev.title.trim()).length })}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
 
       {/* Photographers Team */}
       <Card>

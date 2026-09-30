@@ -216,6 +216,20 @@ const timelineSchema = new mongoose.Schema({
     instagram: { type: String, default: '' },
     role: { type: String, default: '' }
   }],
+  // Planner/vendor documents (PDFs). Files live OUTSIDE the public /uploads static dir;
+  // download goes through an authenticated endpoint that checks project membership
+  documentsList: [{
+    name: { type: String, default: '' },      // original filename shown in the UI
+    filename: { type: String, default: '' },  // stored filename on disk (private_uploads/documents)
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   couple: {
     partner1: String,
     partner2: String

@@ -121,6 +121,7 @@ export interface Timeline {
   locationUrl?: string;
   locationsList?: Array<{ name: string; url: string }>;
   vendorsList?: Array<{ name: string; instagram: string; role: string }>;
+  documentsList?: Array<{ _id: string; name: string; filename: string; uploadedBy?: string; uploadedAt: string }>;
   couple?: {
     partner1?: string;
     partner2?: string;

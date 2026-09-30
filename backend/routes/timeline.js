@@ -7,6 +7,7 @@ import { authenticate, requirePhotographer, requireTimelineAccess, requireTimeli
 import { io } from '../server.js';
 import upload from '../middleware/upload.js';
 import { uploadInspiration, processInspirationImage } from '../middleware/uploadInspiration.js';
+import uploadDocument, { documentsDir } from '../middleware/uploadDocument.js';
 import { getTimelineLimit, isMaster } from '../config/constants.js';
 import { logActivity } from '../services/activityLogger.js';
 
@@ -1218,6 +1219,159 @@ router.put('/:id/photographers/reorder', authenticate, requireTimelineAccess, as
   } catch (error) {
     console.error('Error reordering photographers:', error);
     res.status(500).json({ message: 'Failed to reorder photographers' });
+  }
+});
+
+// =====================
+// DOCUMENT ROUTES (planner PDFs)
+// =====================
+
+// Upload a document (any project member with edit rights)
+router.post('/:id/documents', authenticate, requireTimelineAccess, (req, res) => {
+  uploadDocument.single('document')(req, res, async (err) => {
+    if (err) {
+      logActivity(req.userId, req.user?.name, 'error.upload', { error: err.message, timelineId: req.params.id }, req);
+      return res.status(400).json({ message: err.message });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    try {
+      const timeline = await Timeline.findById(req.params.id);
+      if (!timeline) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(404).json({ message: 'Timeline not found' });
+      }
+
+      const canEdit = timeline.owner.equals(req.userId) ||
+        timeline.collaborators.some(c => c.user.equals(req.userId) && c.role === 'editor') ||
+        req.userTimelineRole === 'invited';
+
+      if (!canEdit) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(403).json({ message: 'No permission to upload' });
+      }
+
+      timeline.documentsList.push({
+        name: req.file.originalname,
+        filename: req.file.filename,
+        uploadedBy: req.userId,
+        uploadedAt: new Date()
+      });
+      await timeline.save();
+
+      const document = timeline.documentsList[timeline.documentsList.length - 1];
+      logActivity(req.userId, req.user?.name, 'document.upload', { timelineId: req.params.id, name: req.file.originalname }, req);
+      res.status(201).json({ document });
+    } catch (error) {
+      fs.unlink(req.file.path, () => {});
+      console.error('Error uploading document:', error);
+      res.status(500).json({ message: 'Failed to upload document' });
+    }
+  });
+});
+
+// Download a document (any project member)
+router.get('/:id/documents/:documentId/download', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    const document = timeline.documentsList.id(req.params.documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    const filePath = path.join(documentsDir, path.basename(document.filename));
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    res.download(filePath, document.name || document.filename);
+  } catch (error) {
+    console.error('Error downloading document:', error);
+    res.status(500).json({ message: 'Failed to download document' });
+  }
+});
+
+// Delete a document (owner or the member who uploaded it)
+router.delete('/:id/documents/:documentId', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    const document = timeline.documentsList.id(req.params.documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    const canDelete = timeline.owner.equals(req.userId) ||
+      (document.uploadedBy && document.uploadedBy.equals(req.userId));
+
+    if (!canDelete) {
+      return res.status(403).json({ message: 'You do not have permission to delete this document' });
+    }
+
+    const filePath = path.join(documentsDir, path.basename(document.filename));
+    fs.unlink(filePath, () => {});
+
+    timeline.documentsList.pull(req.params.documentId);
+    await timeline.save();
+
+    logActivity(req.userId, req.user?.name, 'document.delete', { timelineId: req.params.id, name: document.name }, req);
+    res.json({ message: 'Document deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    res.status(500).json({ message: 'Failed to delete document' });
+  }
+});
+
+// Transcribe a planner PDF into timeline events via the Claude API.
+// Master-only: this is the only endpoint that spends LLM tokens (app is free for everyone).
+router.post('/:id/documents/:documentId/transcribe', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    if (!isMaster(req.user)) {
+      return res.status(403).json({ message: 'This feature is not available for your account' });
+    }
+
+    const timeline = await Timeline.findById(req.params.id);
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    const document = timeline.documentsList.id(req.params.documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    const filePath = path.join(documentsDir, path.basename(document.filename));
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    const { transcribeDocumentPDF } = await import('../services/transcribeDocument.js');
+    const result = await transcribeDocumentPDF(filePath);
+
+    logActivity(req.userId, req.user?.name, 'document.transcribe', {
+      timelineId: req.params.id,
+      name: document.name,
+      eventsFound: result.events.length,
+      usage: result.usage
+    }, req);
+
+    res.json({ events: result.events });
+  } catch (error) {
+    console.error('Error transcribing document:', error);
+    if (error.code === 'NO_API_KEY') {
+      return res.status(500).json({ message: 'Transcription is not configured on the server (missing API key)' });
+    }
+    res.status(500).json({ message: 'Failed to transcribe document' });
   }
 });
 
