@@ -680,6 +680,19 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - `ANTHROPIC_API_KEY` configurada por Alex en el `.env` del VPS el mismo día (ojo: al pegarla duplicó la línea 3 veces — dotenv usa la PRIMERA aparición; se limpió con sed dejando una sola). **Transcripción verificada E2E con llamada real al API**: PDF de prueba con itinerario → 10 eventos correctos (horas 24h, idioma conservado, locaciones en descripción) en ~6s. Datos de prueba borrados
 - Deploy completo commit `7840426` (frontend + backend + npm install en VPS + pm2 restart, health 200, bundle verificado)
 
+## Cambios — 4 octubre 2026
+
+### Tab Moodboard por proyecto (solo master) — implementado y desplegado
+- Nueva tab "Moodboard" en TimelineView junto a Inspiración, visible SOLO para `user.role === 'master'` (doble gating: filtro de tabs + guard en render + guard dentro del componente)
+- `Timeline.moodboardUrl` (campo aditivo, String): deep-link al board del proyecto en moodboard.lenzu.app
+- Componente nuevo `frontend/src/components/MoodboardTab.tsx`: sin link → form para pegarlo (acepta URL completa o board id crudo, normaliza con `normalizeMoodboardUrl()`, valida host moodboard.lenzu.app + param `?board=`); con link → iframe embebido (height calc(100vh - 280px)) + botones "Cambiar link" y "Abrir completo" (pestaña nueva)
+- Guarda vía `updateTimeline()` del store (el PUT ya aceptaba el campo; solo se agregó al modelo)
+- i18n: keys `timelineView.moodboard*` (ES/EN)
+- **App moodboard** (repo aparte, `/Volumes/T7/Web APP/moodboard`; en VPS `/home/alexobregon/moodboard`, pm2 `moodboard` cluster puerto 3800): agregado deep-linking — `?board=<id>` en la URL abre ese board directo (funciona con sub-boards; fallback al primero), y la URL se sincroniza con `history.replaceState` al cambiar de board → la barra de direcciones siempre es un link copiable. Deploy: `npm run build` + scp dist/* al VPS (sin pm2 restart)
+- El servidor del moodboard NO manda X-Frame-Options/CSP → el iframe funciona sin cambios. Ojo: moodboard no tiene auth (cualquiera con el link ve/edita); aceptable porque solo master ve el botón
+- Verificado E2E contra prod: deep-link abre board correcto (MK & Motty activo, no el primero); tab visible como master; form valida y guarda; iframe carga el board; moodboardUrl persiste en BD. Timeline de prueba E2E borrado (×2)
+- Proyecto "MK & Moty" quedó vinculado a su board real (`board-muuhydpl`) como primer caso de uso
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu

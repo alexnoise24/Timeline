@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Calendar, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle, ChevronRight, Sparkles, FileDown, MoreHorizontal, GripVertical, ArrowDownUp } from 'lucide-react';
+import { Plus, Calendar, MapPin, MessageSquare, History, Users, ArrowLeft, Clipboard, Camera, Edit2, Trash2, CheckCircle2, Circle, ChevronRight, Sparkles, FileDown, MoreHorizontal, GripVertical, ArrowDownUp, Palette } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { exportTimelinePDF } from '@/components/TimelinePDFExport';
 import { useTimelineStore } from '@/store/timelineStore';
@@ -19,13 +19,14 @@ import { formatDate, formatDateTime, getActiveDay, getCategoryLabel, getInitials
 import Overview from '@/components/Overview';
 import ShootList from '@/components/ShootList';
 import Inspiration from '@/components/Inspiration';
+import MoodboardTab from '@/components/MoodboardTab';
 import Sidebar from '@/components/Sidebar';
 import CollaboratorsModal from '@/components/CollaboratorsModal';
 import WeddingSwipeView from '@/components/WeddingSwipeView';
 import { watchService } from '@/services/watchService';
 import { logWeddingMode } from '@/lib/api';
 
-type TabType = 'overview' | 'timeline' | 'shotlist' | 'inspiration';
+type TabType = 'overview' | 'timeline' | 'shotlist' | 'inspiration' | 'moodboard';
 
 export default function TimelineView() {
   const { t, i18n } = useTranslation();
@@ -686,22 +687,26 @@ export default function TimelineView() {
 
           {/* Tab Navigation */}
           <div className="flex items-center overflow-x-auto scrollbar-none">
-            {(['overview', 'timeline', 'shotlist', 'inspiration'] as TabType[])
+            {(['overview', 'timeline', 'shotlist', 'inspiration', 'moodboard'] as TabType[])
               // On native, hide the Inspiration tab entirely when the owner is
               // not Pro (no lock UI, no plan mention). Web keeps the tab.
               .filter((tab) => !(tab === 'inspiration' && isNative && !ownerHasPro))
+              // Moodboard (external app) is a master-only tool
+              .filter((tab) => !(tab === 'moodboard' && user?.role !== 'master'))
               .map((tab) => {
               const icons: Record<TabType, React.ReactNode> = {
                 overview: <Clipboard size={13} strokeWidth={1.5} />,
                 timeline: <Calendar size={13} strokeWidth={1.5} />,
                 shotlist: <Camera size={13} strokeWidth={1.5} />,
                 inspiration: <Sparkles size={13} strokeWidth={1.5} />,
+                moodboard: <Palette size={13} strokeWidth={1.5} />,
               };
               const labels: Record<TabType, string> = {
                 overview: t('timelineView.overview'),
                 timeline: t('timelineView.timeline'),
                 shotlist: t('timelineView.shotLists'),
                 inspiration: t('timelineView.inspiration'),
+                moodboard: t('timelineView.moodboard'),
               };
               return (
                 <button
@@ -728,6 +733,10 @@ export default function TimelineView() {
 
         {activeTab === 'shotlist' && (
           <ShootList timeline={currentTimeline} />
+        )}
+
+        {activeTab === 'moodboard' && user?.role === 'master' && (
+          <MoodboardTab timeline={currentTimeline} />
         )}
 
         {activeTab === 'inspiration' && (

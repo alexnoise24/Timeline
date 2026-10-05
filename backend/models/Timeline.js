@@ -210,6 +210,12 @@ const timelineSchema = new mongoose.Schema({
     name: { type: String, default: '' },
     url: { type: String, default: '' }
   }],
+  // Deep-link to this project's board in the moodboard app (moodboard.lenzu.app/?board=xxx)
+  // Only surfaced in the UI for master users
+  moodboardUrl: {
+    type: String,
+    default: ''
+  },
   // Wedding vendors (florist, DJ, venue...) — name + Instagram handle for day-of tagging
   vendorsList: [{
     name: { type: String, default: '' },
