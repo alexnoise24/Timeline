@@ -1,4 +1,5 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -1274,6 +1275,42 @@ router.post('/:id/documents', authenticate, requireTimelineAccess, (req, res) =>
 });
 
 // Download a document (any project member)
+// Access token for the moodboard app (moodboard.lenzu.app) — shared session
+// from Lenzu, no separate moodboard login. Master gets full access ('all');
+// project members get access scoped to this project's linked board and its
+// sub-boards. The moodboard server validates via POST /api/moodboard/verify.
+router.get('/:id/moodboard-token', authenticate, requireTimelineAccess, async (req, res) => {
+  try {
+    const timeline = await Timeline.findById(req.params.id);
+    if (!timeline) {
+      return res.status(404).json({ message: 'Timeline not found' });
+    }
+
+    const master = isMaster(req.user);
+    let boardId = null;
+    try {
+      boardId = new URL(timeline.moodboardUrl || '').searchParams.get('board');
+    } catch { /* no board linked */ }
+
+    if (!master && !boardId) {
+      return res.status(404).json({ message: 'No moodboard linked to this project' });
+    }
+
+    const token = jwt.sign({
+      type: 'moodboard',
+      userId: req.user._id.toString(),
+      name: req.user.name,
+      scope: master ? 'all' : 'board',
+      boardId: boardId || null
+    }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+    res.json({ token });
+  } catch (error) {
+    console.error('Error issuing moodboard token:', error);
+    res.status(500).json({ message: 'Failed to issue moodboard token' });
+  }
+});
+
 router.get('/:id/documents/:documentId/download', authenticate, requireTimelineAccess, async (req, res) => {
   try {
     const timeline = await Timeline.findById(req.params.id);

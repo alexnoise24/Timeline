@@ -698,6 +698,17 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - **Colaboradores ven y usan el moodboard**: la tab aparece para cualquier miembro del proyecto cuando `moodboardUrl` está seteado; solo master la ve sin link (para vincular). El form de vincular y el botón "Cambiar link" son solo-master. El iframe (y "Abrir completo" para no-master) usan `&embed=1`; master abre la app completa con "Abrir completo"
 - Verificado E2E en prod: embed muestra solo MK & Motty (sin Instagram/Branding/+/Delete) tanto directo como dentro del iframe de Lenzu. Vista de colaborador verificada a nivel código (no hay credenciales de colaborador para login)
 
+### Iteración 3 (misma noche): auth del moodboard con sesión compartida desde Lenzu
+- **El moodboard ya NO es público**: todas las rutas `/api` exigen un token firmado por Lenzu. Sin token → 401 + pantalla de bloqueo "Open this moodboard from Lenzu" (link a lenzu.app). `/uploads` (imágenes) sigue estático público
+- **Emisión**: `GET /api/timelines/:id/moodboard-token` (authenticate + requireTimelineAccess) en `routes/timeline.js` — firma JWT `{ type:'moodboard', userId, name, scope, boardId }` con JWT_SECRET, expira 30d. Master → `scope:'all'` (todos los boards = "su usuario" con los tableros ya hechos); miembros del proyecto → `scope:'board'` limitado al board vinculado + sus sub-boards
+- **Validación sin secreto compartido**: el server del moodboard llama `POST http://localhost:5050/api/moodboard/verify` (ruta nueva `backend/routes/moodboard.js`, montada en server.js) con caché en memoria 10 min. En dev local del moodboard (NODE_ENV≠production) la auth se desactiva sola
+- **Enforcement server-side en moodboard/server.js**: scope 'board' → GET /boards devuelve solo su board; GET/PUT/children con check de subtree (`isInSubtree` sube por parent_id); POST solo sub-boards dentro de su board; DELETE nunca el board raíz del proyecto; upload/delete de imágenes permitido a cualquier autenticado
+- **Frontend moodboard**: captura `?token=` → localStorage `moodboard-token` → lo limpia de la URL; todas las llamadas llevan Bearer; 401 → evento `moodboard-auth-required` → lock screen. `CAN_MANAGE_BOARDS` (sin token local o scope 'all') gatea el botón "+" y Delete
+- **Lenzu frontend**: `getMoodboardToken()` en api.ts; MoodboardTab pide el token al abrir la tab y lo inyecta en el iframe (`&token=`) y en "Abrir completo" (master → app completa; colaborador → vista embed). Spinner hasta tener token; si falla igual renderiza (el moodboard puede tener token guardado)
+- **Flujo resultante**: colaboradores NUNCA hacen login en moodboard — ser miembro del proyecto en Lenzu es el login (token 30d, se renueva en cada apertura de la tab). Alex: su cuenta master de Lenzu = su usuario moodboard; tras abrir una vez desde Lenzu, moodboard.lenzu.app directo funciona 30d (token en localStorage)
+- Verificado E2E en prod: sin token 401; token master ve los 4 boards; token colaborador (miembro real de MK & Moty) ve SOLO MK & Motty, 403 al leer board-1, 403 al borrar su board raíz, 403 al crear board raíz, 200 lee/escribe su board; lock screen sin token; iframe desde Lenzu carga con sesión automática; vista completa master muestra todo y limpia el token de la URL
+- Ojo deploy moodboard: ahora también hay que subir `server.js` + `pm2 restart moodboard` cuando cambie el backend del moodboard (antes solo dist)
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu

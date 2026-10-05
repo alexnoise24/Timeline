@@ -88,6 +88,10 @@ export const getActivityLog = (params?: { eventType?: string; userId?: string; f
 export const getEmailLog = (params?: { email?: string; from?: string; to?: string }) =>
   api.get('/admin/emails', { params });
 
+// Access token for the moodboard app (shared session — see MoodboardTab)
+export const getMoodboardToken = (timelineId: string) =>
+  api.get(`/timelines/${timelineId}/moodboard-token`);
+
 // Wedding mode analytics (fire-and-forget from frontend)
 export const logWeddingMode = (timelineId: string, active: boolean) =>
   api.post(`/timelines/${timelineId}/wedding-mode`, { active }).catch(() => {});
