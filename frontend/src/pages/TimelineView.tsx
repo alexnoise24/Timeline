@@ -691,8 +691,9 @@ export default function TimelineView() {
               // On native, hide the Inspiration tab entirely when the owner is
               // not Pro (no lock UI, no plan mention). Web keeps the tab.
               .filter((tab) => !(tab === 'inspiration' && isNative && !ownerHasPro))
-              // Moodboard (external app) is a master-only tool
-              .filter((tab) => !(tab === 'moodboard' && user?.role !== 'master'))
+              // Moodboard: master always sees it (to link/manage the board);
+              // everyone else only once a board is linked to this project
+              .filter((tab) => !(tab === 'moodboard' && user?.role !== 'master' && !currentTimeline.moodboardUrl))
               .map((tab) => {
               const icons: Record<TabType, React.ReactNode> = {
                 overview: <Clipboard size={13} strokeWidth={1.5} />,
@@ -735,7 +736,7 @@ export default function TimelineView() {
           <ShootList timeline={currentTimeline} />
         )}
 
-        {activeTab === 'moodboard' && user?.role === 'master' && (
+        {activeTab === 'moodboard' && (user?.role === 'master' || !!currentTimeline.moodboardUrl) && (
           <MoodboardTab timeline={currentTimeline} />
         )}
 

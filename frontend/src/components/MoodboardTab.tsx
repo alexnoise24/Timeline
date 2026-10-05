@@ -41,11 +41,26 @@ export default function MoodboardTab({ timeline }: MoodboardTabProps) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Master-only feature; TimelineView already filters the tab, this is a safety guard
-  if (user?.role !== 'master') return null;
-
+  const isMaster = user?.role === 'master';
   const savedUrl = timeline.moodboardUrl || '';
-  const showForm = editing || !savedUrl;
+
+  // Collaborators can view/use a linked board; only master can link/change it.
+  // TimelineView already filters the tab, this is a safety guard.
+  if (!isMaster && !savedUrl) return null;
+
+  const showForm = isMaster && (editing || !savedUrl);
+
+  // The iframe locks the moodboard to this project's board (?embed=1 hides
+  // the other boards and the add/delete board controls)
+  const embedUrl = (() => {
+    try {
+      const u = new URL(savedUrl);
+      u.searchParams.set('embed', '1');
+      return u.toString();
+    } catch {
+      return savedUrl;
+    }
+  })();
 
   const handleSave = async () => {
     const normalized = normalizeMoodboardUrl(urlInput);
@@ -101,17 +116,19 @@ export default function MoodboardTab({ timeline }: MoodboardTabProps) {
   return (
     <div className="space-y-3">
       <div className="flex justify-end gap-2">
+        {isMaster && (
+          <Button
+            variant="secondary"
+            onClick={() => { setUrlInput(savedUrl); setEditing(true); }}
+            className="flex items-center gap-2"
+          >
+            <Pencil size={13} strokeWidth={1.5} />
+            {t('timelineView.moodboardChangeLink')}
+          </Button>
+        )}
         <Button
           variant="secondary"
-          onClick={() => { setUrlInput(savedUrl); setEditing(true); }}
-          className="flex items-center gap-2"
-        >
-          <Pencil size={13} strokeWidth={1.5} />
-          {t('timelineView.moodboardChangeLink')}
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={() => window.open(savedUrl, '_blank', 'noopener')}
+          onClick={() => window.open(isMaster ? savedUrl : embedUrl, '_blank', 'noopener')}
           className="flex items-center gap-2"
         >
           <ExternalLink size={13} strokeWidth={1.5} />
@@ -119,7 +136,7 @@ export default function MoodboardTab({ timeline }: MoodboardTabProps) {
         </Button>
       </div>
       <iframe
-        src={savedUrl}
+        src={embedUrl}
         title="Moodboard"
         className="w-full border-[1.5px] border-ink bg-white"
         style={{ height: 'calc(100vh - 280px)', minHeight: 480 }}

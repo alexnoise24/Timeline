@@ -693,6 +693,11 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Verificado E2E contra prod: deep-link abre board correcto (MK & Motty activo, no el primero); tab visible como master; form valida y guarda; iframe carga el board; moodboardUrl persiste en BD. Timeline de prueba E2E borrado (×2)
 - Proyecto "MK & Moty" quedó vinculado a su board real (`board-muuhydpl`) como primer caso de uso
 
+### Iteración 2 (misma noche): modo embed + acceso para colaboradores
+- **Modo embed en moodboard** (`?embed=1`, flag `IS_EMBED` en App.jsx): el topbar muestra SOLO el board deep-linkeado como label estático — sin tabs de otros boards, sin "+", sin botón Delete. Herramientas (notas, imágenes, draw) intactas. Si el board del link no existe, en embed NO cae al primer board (evita filtrar el moodboard de otra pareja); fuera de embed sí hay fallback
+- **Colaboradores ven y usan el moodboard**: la tab aparece para cualquier miembro del proyecto cuando `moodboardUrl` está seteado; solo master la ve sin link (para vincular). El form de vincular y el botón "Cambiar link" son solo-master. El iframe (y "Abrir completo" para no-master) usan `&embed=1`; master abre la app completa con "Abrir completo"
+- Verificado E2E en prod: embed muestra solo MK & Motty (sin Instagram/Branding/+/Delete) tanto directo como dentro del iframe de Lenzu. Vista de colaborador verificada a nivel código (no hay credenciales de colaborador para login)
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
