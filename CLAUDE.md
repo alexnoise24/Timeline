@@ -713,3 +713,15 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu
 - Jorge → mejor amigo de Alex, cuenta master en Lenzu
+
+## Cambios — 13 octubre 2026
+
+### Transcripción de PDF — el botón ✦ requiere al menos un día en el proyecto
+- Reporte: en el proyecto nuevo "Ilse & Pablo" el PDF subido no mostraba la opción de transcribir. No es bug: `Overview.tsx` solo muestra el botón si `user.role === 'master'` **y** `timeline.days.length > 0` (el modal necesita un día donde insertar los eventos). Los proyectos nuevos se crean sin días
+- Solución: crear el día en la tab Timeline y volver a Overview. Decisión de Alex: dejarlo así, sin cambios de código
+- Mejora anotada (no implementada): mostrar el botón siempre y avisar en el modal si no hay días
+
+### Acceso SSH desde dos Macs
+- Alex trabaja con el T7 desde dos Macs (Mac mini y MacBook Pro); cada una tiene su propia `~/.ssh/id_ed25519`
+- La llave de la MacBook Pro (`lenzu-deploy-macbook`) se agregó al `authorized_keys` del VPS el 13 oct 2026 → ahora mongosh y `deploy-production.sh` funcionan desde ambas
+- Ojo al pegar comandos largos en el terminal del Mac mini: inserta saltos de línea reales y rompe llaves/comandos. Usar líneas cortas o entrar al servidor y correr comandos ahí
