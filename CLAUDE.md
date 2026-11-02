@@ -725,3 +725,27 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Alex trabaja con el T7 desde dos Macs (Mac mini y MacBook Pro); cada una tiene su propia `~/.ssh/id_ed25519`
 - La llave de la MacBook Pro (`lenzu-deploy-macbook`) se agregó al `authorized_keys` del VPS el 13 oct 2026 → ahora mongosh y `deploy-production.sh` funcionan desde ambas
 - Ojo al pegar comandos largos en el terminal del Mac mini: inserta saltos de línea reales y rompe llaves/comandos. Usar líneas cortas o entrar al servidor y correr comandos ahí
+
+## Cambios — 2 noviembre 2026
+
+### Fix — email de bienvenida mencionaba "prueba de 7 días" (commit d8048d9, desplegado)
+- El template de fotógrafos en `backend/services/email.js` nunca se actualizó al eliminar el trial (jun 2026): asunto "Tu prueba de 7 días ha comenzado" + caja "Tu prueba gratuita de 7 días está activa — Válida hasta: 7 días desde hoy". Desde que expiró el bloque Beta (8 may) era lo único visible
+- Fix: asunto único "¡Bienvenido a Lenzu! 🎉", caja reemplazada por "🎉 Lenzu es gratis — acceso completo sin costo y sin límite de tiempo", "Durante tu período de prueba" → "Con tu cuenta puedes". Bloque Beta (código muerto) y variable de trial eliminados
+- Telegram de nuevo registro: ya no dice "Trial activo hasta: N/A"; ahora muestra el rol. Import `TRIAL_DURATION_DAYS` sin uso removido de `routes/auth.js`
+- La lógica de auto-expirar trials legacy en el login se dejó intacta (usuarios viejos)
+- Nota: el registro siempre estuvo bien — photographer/planner entran con plan `free` sin trial en BD; solo el copy del correo mentía
+
+### Fix — invitaciones no aparecían sin reiniciar la app (commit e0b8e98, desplegado)
+- iOS suspende el WebView en background → el socket se desconecta y los eventos `invitation:received`/`timeline:invited` emitidos en ese lapso se pierden; al volver, nada refetcheaba (Dashboard solo fetchea al montar) → la invitación solo aparecía reiniciando
+- Fix en `Dashboard.tsx`: refetch de timelines + invitaciones (1) en `socket.on('connect')` (reconexión tras background) y (2) en `visibilitychange` → visible (cubre resume de iOS y cambio de pestaña en web)
+- El backend ya hacía todo en tiempo real para usuarios registrados (push FCM + socket + email con deep link) — el hueco era solo recepción en frontend
+
+### Diagnóstico — "no les llegó la invitación" a Rex y Luis (1 nov): typo en los emails
+- Alex invitó a `luisrozk@gmail.com` (faltó la "a") y `rex.adm@icluod.com` (icloud mal escrito) → el backend los trató como no-registrados: solo correo (a direcciones equivocadas) + pendingEmailInvites; nunca hubo push ni invitación in-app
+- Los amigos reales (`luisrozka@gmail.com`, `rex.adm@icloud.com`) hicieron todo bien: build 1.1.1 (12) del store, permiso aceptado, tokens FCM registrados. Rex se conectó solo (aceptó un link); Luis quedó huérfano
+- Resolución en prod vía API real (JWT de Alex firmado server-side): borradas las 2 entradas con typo de "Ilse & Pablo" + reinvitado Luis con el email correcto → push "1 succeeded" al iPhone de Luis + email + invitación pending en su cuenta
+- Diagnóstico rápido para la próxima: si una invitación a alguien "ya registrado" aparece como email-invite pendiente en el modal (ícono Mail) en vez de invitación de usuario → el email no coincide con su cuenta (typo o correo distinto)
+
+### Estado del push (verificado 2 nov)
+- **Build 1.1.1 (12) está LIVE en el App Store desde el 20 ago 2026** (verificado vía iTunes lookup API)
+- 6 de 47 usuarios tienen token FCM; los registros nuevos con la app del store registran token bien si aceptan el permiso. Quien toque "No permitir" en el primer arranque no recibe push nunca (iOS no re-pregunta; hay que activarlo en Ajustes → Notificaciones → Lenzu y reabrir la app)
