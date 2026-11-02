@@ -44,9 +44,7 @@ export const sendWelcomeEmail = async (user) => {
     const mailOptions = {
       from: `"LenzuApp" <${process.env.EMAIL_USER}>`,
       to: user.email,
-      subject: isPhotographer
-        ? '¡Bienvenido a Lenzu! Tu prueba de 7 días ha comenzado 🎉'
-        : '¡Bienvenido a Lenzu! 🎉',
+      subject: '¡Bienvenido a Lenzu! 🎉',
       html: isPhotographer 
         ? getPhotographerWelcomeTemplate(user)
         : getGuestWelcomeTemplate(user)
@@ -62,17 +60,6 @@ export const sendWelcomeEmail = async (user) => {
 
 // Template for photographer/creator welcome email
 const getPhotographerWelcomeTemplate = (user) => {
-  const trialEndDate = user.trial_end_date 
-    ? new Date(user.trial_end_date).toLocaleDateString('es-ES', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })
-    : '7 días desde hoy';
-
-  const isBeta = new Date() < new Date('2026-05-08T23:59:59');
-
   return `
     <!DOCTYPE html>
     <html>
@@ -92,35 +79,20 @@ const getPhotographerWelcomeTemplate = (user) => {
         <div style="padding: 40px 30px;">
           <h2 style="color: #3B3B3B; margin-top: 0;">Hola ${user.name},</h2>
 
-          ${isBeta ? `
-          <!-- Beta block (visible only before May 8, 2026) -->
-          <div style="background-color: #12112a; border-radius: 12px; padding: 24px; margin-bottom: 28px;">
-            <p style="color: #CDD973; font-size: 18px; font-weight: bold; margin: 0 0 12px 0;">
-              🎉 Bienvenido a la Beta de Lenzu
-            </p>
-            <p style="color: #ffffff; font-size: 14px; line-height: 1.7; margin: 0 0 12px 0;">
-              Te registraste durante nuestra Beta abierta, así que tienes acceso completo a todas las funciones de Lenzu — incluyendo custom branding — durante 30 días, sin costo.
-            </p>
-            <p style="color: rgba(255,255,255,0.7); font-size: 14px; line-height: 1.7; margin: 0;">
-              Queremos que lo pruebes en campo y nos cuentes qué piensas. Si tienes dudas o sugerencias, responde directamente a este correo.
-            </p>
-          </div>
-          ` : ''}
-
           <p style="color: #666; font-size: 16px; line-height: 1.6;">
             Bienvenido a Lenzu — la app que mantiene a tu equipo sincronizado el día de la boda.
           </p>
 
-          <!-- Trial Box -->
+          <!-- Free Access Box -->
           <div style="background-color: #CDD973; border-radius: 12px; padding: 20px; margin: 25px 0;">
-            <h3 style="color: #3B3B3B; margin: 0 0 10px 0;">🎉 Tu prueba gratuita de 7 días está activa</h3>
+            <h3 style="color: #3B3B3B; margin: 0 0 10px 0;">🎉 Lenzu es gratis</h3>
             <p style="color: #3B3B3B; margin: 0; font-size: 14px;">
-              Válida hasta: <strong>${trialEndDate}</strong>
+              Tienes acceso completo a todas las funciones, sin costo y sin límite de tiempo.
             </p>
           </div>
 
           <p style="color: #666; font-size: 16px; line-height: 1.6;">
-            Durante tu período de prueba puedes:
+            Con tu cuenta puedes:
           </p>
 
           <ul style="color: #666; font-size: 16px; line-height: 1.8;">

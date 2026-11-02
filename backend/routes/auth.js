@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 import { generateToken, authenticate } from '../middleware/auth.js';
-import { MASTER_EMAIL, TRIAL_DURATION_DAYS } from '../config/constants.js';
+import { MASTER_EMAIL } from '../config/constants.js';
 import { sendWelcomeEmail, sendPasswordResetEmail, sendReengagementEmail } from '../services/email.js';
 import sendTelegramNotification from '../services/telegram.js';
 import { logActivity } from '../services/activityLogger.js';
@@ -73,11 +73,8 @@ router.post('/register',
 
       // Telegram notification (fire and forget)
       const fecha = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
-      const trialHasta = user.trial_end_date
-        ? user.trial_end_date.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' })
-        : 'N/A';
       sendTelegramNotification(
-        `🆕 *Nuevo usuario registrado*\n👤 ${user.name}\n📧 ${user.email}\n📅 ${fecha}\n📱 Trial activo hasta: ${trialHasta}`
+        `🆕 *Nuevo usuario registrado*\n👤 ${user.name}\n📧 ${user.email}\n🎭 Rol: ${user.role}\n📅 ${fecha}`
       ).catch(() => {});
 
       // Generate token
