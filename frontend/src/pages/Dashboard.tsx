@@ -135,9 +135,31 @@ export default function Dashboard() {
     if (!socket) return;
     const onInvited = () => fetchTimelines();
     const onReceived = () => fetchMyInvitations();
+    // Socket events emitted while the app was backgrounded (iOS suspends the
+    // WebView) are lost — refetch on reconnect to catch missed invitations
+    const onReconnect = () => { fetchTimelines(); fetchMyInvitations(); };
     socket.on('timeline:invited', onInvited);
     socket.on('invitation:received', onReceived);
-    return () => { socket.off('timeline:invited', onInvited); socket.off('invitation:received', onReceived); };
+    socket.on('connect', onReconnect);
+    return () => {
+      socket.off('timeline:invited', onInvited);
+      socket.off('invitation:received', onReceived);
+      socket.off('connect', onReconnect);
+    };
+  }, [user, fetchTimelines, fetchMyInvitations]);
+
+  // Returning from background (iOS) or another tab: the socket may still be
+  // reconnecting, so refresh directly when the page becomes visible again
+  useEffect(() => {
+    if (!user) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchTimelines();
+        fetchMyInvitations();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [user, fetchTimelines, fetchMyInvitations]);
 
   useEffect(() => {
