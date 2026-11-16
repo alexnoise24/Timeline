@@ -35,7 +35,8 @@ const Register: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    role: 'photographer' as 'photographer' | 'guest'
+    role: 'photographer' as 'photographer' | 'guest',
+    website: '' // honeypot anti-bot: siempre vacío en humanos
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -110,7 +111,7 @@ const Register: React.FC = () => {
 
     try {
       setIsLoading(true);
-      await register(formData.name, formData.email, formData.password, formData.role);
+      await register(formData.name, formData.email, formData.password, formData.role, formData.website);
       
       // If user registered via invite link, try to accept the invitation
       if (inviteToken) {
@@ -195,6 +196,17 @@ const Register: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Honeypot: invisible para humanos, los bots que llenan formularios lo completan */}
+          <input
+            type="text"
+            name="website"
+            value={formData.website}
+            onChange={(e) => updateFormData('website', e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+          />
           {/* Name */}
           <div className="flex flex-col gap-[6px]">
             <span className="alto-label text-ink">{t('auth.name')}</span>

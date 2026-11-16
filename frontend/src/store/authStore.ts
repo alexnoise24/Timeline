@@ -11,7 +11,7 @@ interface AuthState {
   isAuthenticated: boolean;
   trialExpired: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role?: 'photographer' | 'planner' | 'guest') => Promise<void>;
+  register: (name: string, email: string, password: string, role?: 'photographer' | 'planner' | 'guest', website?: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -57,17 +57,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (name, email, password, role = 'guest') => {
+  register: async (name, email, password, role = 'guest', website = '') => {
     set({ isLoading: true });
     console.log('Starting registration for:', email);
-    
+
     try {
       // Register the user
-      await api.post('/auth/register', { 
-        name, 
-        email, 
-        password, 
-        role 
+      await api.post('/auth/register', {
+        name,
+        email,
+        password,
+        role,
+        website
       });
       
       console.log('Registration successful, logging in...');

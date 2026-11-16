@@ -709,6 +709,21 @@ scp -r "/Volumes/T7/Web APP/Timeline/frontend/dist/"* \
 - Verificado E2E en prod: sin token 401; token master ve los 4 boards; token colaborador (miembro real de MK & Moty) ve SOLO MK & Motty, 403 al leer board-1, 403 al borrar su board raíz, 403 al crear board raíz, 200 lee/escribe su board; lock screen sin token; iframe desde Lenzu carga con sesión automática; vista completa master muestra todo y limpia el token de la URL
 - Ojo deploy moodboard: ahora también hay que subir `server.js` + `pm2 restart moodboard` cuando cambie el backend del moodboard (antes solo dist)
 
+## Cambios — 15 noviembre 2026
+
+### Ataque de registros falsos (spam turco) — contenido y limpiado
+- Bot desde la IP 87.249.133.204 (un POST cada 1-3s a `/api/auth/register`) creó **4,597 usuarios falsos** el 14-15 nov: nombre `🔥Tek tıkla 15.000 TL bonusu... bit.ly/...` con emails de víctimas reales (turcas) — el objetivo era usar el **email de bienvenida de Lenzu como relay de spam** ("¡Hola {nombre}!" les entregaba el link de casino)
+- Alex aplicó en Cloudflare: block de la IP + rate limit (>3 POST/10s a register → block). Último registro spam: 15 nov 08:13 UTC — el ataque se detuvo
+- **Limpieza en prod**: respaldo `mongodump` en `~/respaldo_antes_limpieza_2026-11-15` (VPS) → borrados los 4,597 por regex de nombre (`Tek tıkla|bit\.ly|bonusu`); quedaron los 48 usuarios reales (cero legítimos registrados desde el 10 nov, cero timelines afectados)
+- **SMTP de GoDaddy BLOQUEADO por el spam**: se enviaron ~500 welcome emails con el link antes de topar la cuota de relay (500/día); desde entonces TODO envío falla con `535 authentication rejected` (verificado con nodemailer verify). **Lenzu no puede enviar ningún correo hasta que Alex lo resuelva con GoDaddy** (cambiar password del buzón suele reactivar; si no, soporte GoDaddy)
+- Arquitectura verificada: todo entra por Cloudflare Tunnel (token-based, config en dashboard); puertos 80/443/5050 NO responden desde internet (firewall Vultr OK) → el atacante no puede saltarse Cloudflare. El tunnel manda /api directo al backend (nginx casi no loggea API)
+
+### Guardas anti-bot en el registro (desplegadas y verificadas E2E)
+- `backend/routes/auth.js`: (1) **honeypot** — campo `website`; si llega con valor → 201 falso sin crear usuario; (2) **nombre spam** — regex de URLs/acortadores/dominios en `name` → 400 "Invalid name" (+ max 80 chars); (3) **rate limit propio** — máx 5 registros/hora por IP (en memoria, `cf-connecting-ip`), 6º → 429. Orden: honeypot → spam → rate limit (rechazos de spam no queman cuota)
+- Frontend: input honeypot invisible en `Register.tsx` (name="website", off-screen, tabIndex -1), threaded por `authStore.register(..., website)`
+- Verificado E2E contra prod: spam name 400, honeypot 201 sin usuario en BD, registro legítimo 201 con token, 6º intento 429 (con pausas de 4s para no disparar el rate limit de Cloudflare). Usuario de prueba borrado
+- Pendiente opcional: Turnstile (necesita widget + keys del dashboard de Cloudflare), verificación de email obligatoria
+
 ## Personas del proyecto
 - Alex Obregon → owner, desarrollador, fotógrafo principal
 - Dani (Daniela) → segunda cámara, cuenta lifetime en Lenzu

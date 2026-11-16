@@ -12,10 +12,45 @@ import { claimPendingEmailInvites } from '../services/inviteClaims.js';
 
 const router = express.Router();
 
+// --- Guardas anti-bot del registro (ataque de spam 15 nov 2026) ---
+// Capa independiente de Cloudflare: si el atacante rota IPs o se salta el WAF,
+// el backend sigue frenando registros masivos.
+const REGISTER_WINDOW_MS = 60 * 60 * 1000;
+const REGISTER_MAX_PER_IP = 5;
+const registerHits = new Map(); // ip -> [timestamps]
+
+function getClientIp(req) {
+  return req.headers['cf-connecting-ip']
+    || req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.socket?.remoteAddress
+    || 'unknown';
+}
+
+function isRegisterRateLimited(ip) {
+  const now = Date.now();
+  const hits = (registerHits.get(ip) || []).filter(t => now - t < REGISTER_WINDOW_MS);
+  if (hits.length >= REGISTER_MAX_PER_IP) {
+    registerHits.set(ip, hits);
+    return true;
+  }
+  hits.push(now);
+  registerHits.set(ip, hits);
+  if (registerHits.size > 1000) {
+    for (const [key, times] of registerHits) {
+      if (!times.some(t => now - t < REGISTER_WINDOW_MS)) registerHits.delete(key);
+    }
+  }
+  return false;
+}
+
+// URLs, acortadores o dominios en el nombre = spam (el welcome email los reenviaría)
+const SPAM_NAME_REGEX = /(https?:\/\/|www\.|bit\.ly|tinyurl|t\.co\/|[a-z0-9-]{2,}\.(?:com|net|org|ru|io|ly|xyz|app|co)\b)/i;
+
 // Register
 router.post('/register',
   [
-    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('name').trim().notEmpty().withMessage('Name is required')
+      .isLength({ max: 80 }).withMessage('Name is too long'),
     body('email').isEmail().withMessage('Invalid email'),
     body('password')
       .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
@@ -31,6 +66,20 @@ router.post('/register',
       }
 
       const { name, email, password, role = 'guest' } = req.body;
+
+      // Honeypot: campo oculto del formulario; un humano nunca lo llena.
+      // Respuesta 201 falsa (sin token ni usuario) para no darle pistas al bot
+      if (req.body.website) {
+        return res.status(201).json({ message: 'User registered successfully' });
+      }
+
+      if (SPAM_NAME_REGEX.test(name)) {
+        return res.status(400).json({ message: 'Invalid name' });
+      }
+
+      if (isRegisterRateLimited(getClientIp(req))) {
+        return res.status(429).json({ message: 'Too many registrations from this IP. Try again later.' });
+      }
 
       // Prevent registration with Master User email
       if (email.toLowerCase() === MASTER_EMAIL.toLowerCase()) {
